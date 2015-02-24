@@ -25,4 +25,4 @@ Unofficial Development Kit for Espressif ESP8266 - this is an unofficial firmwar
 4. Examples in the firmware source code in C language.<br>
 5. Additional tools for working with boards based on the ESP8266.<br>
 
-<a href="http://programs74.ru/udkew.html">Official site of the project, where you can download the installer for Windows</a>
+<a href="http://programs74.ru/udkew-en.html">Official site of the project, where you can download the installer for Windows</a>
