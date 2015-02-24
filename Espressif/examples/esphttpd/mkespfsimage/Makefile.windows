@@ -1,0 +1,21 @@
+TARGET = mkespfsimage.exe
+
+CC = gcc
+LD = $(CC)
+CFLAGS=-c -I../lib/heatshrink -Imman-win32 -std=gnu99
+LDFLAGS=-Lmman-win32 -lmman 
+
+OBJECTS = main.o heatshrink_encoder.o
+
+all: $(TARGET)
+
+$(TARGET): $(OBJECTS)
+	$(LD) -o $@ $^ $(LDFLAGS)
+
+%.o: %.c
+	$(CC) $(CFLAGS) -o $@ $^
+
+clean:
+	rm -f $(OBJECTS) $(TARGET)
+
+.PHONY: all clean

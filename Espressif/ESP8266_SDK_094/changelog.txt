@@ -1,0 +1,65 @@
+esp_iot_sdk_v0.9.4_14_12_19 Release Note
+----------------------------------------
+
+1. Update sniffer to support capture HT20/HT40 packet;
+2. Add APIs to set and get sleep type;
+3. Add APIs to get version info of sdk, delete version.h;
+4. RAW in LWIP is open source now, add API of function ping;
+5. Update spi driver;
+6. Optimize APIs related to espconn;
+7. Fix some bugs to make the software more reliable;
+
+Known Issue:
+1. exception of small probability occured while recving multi-client data in softap
+2. restart of small probability occured while tcp client reconnecting
+
+So sorry that we have some known issues here, we will solve it ASAP.
+
+esp_iot_sdk_v0.9.3_14_11_21 Release Note
+----------------------------------------
+
+1. Add license documentation of ESPRESSIF SDK
+2. Add APIs to read and write RTC memory, and APIs to get RTC time.
+3. Add APIs to swap UART0
+4. Add API to read ADC, delete adc.c.
+5. Add API to read spi flash id
+6. Revise struct station_config, add bssid parameters to distinguish different AP with same ssid ;
+   Note: if station_config.bssid_set == 1 , station_config.bssid has to be set, or connection will fail. So in general, station_config.bssid_set need to be 0.
+7. Revise struct scan_config, add scan_config.show_hidden to set whether scan APs which ssid is hidden or not; not scan, set scan_config.show_hidden to be 0.
+   Add bss_info.is_hidden in struct bss_info to show if this APTs ssid is hidden.
+8. Revise struct softap_config, add softap_config.ssid_len. If softap_config.ssid_len == 0, check ssid till find a termination characters; otherwise it depends on softap_config.ssid_len.
+9. Revise API "wifi_softap_set_config" to take effect immediately, needs not restart to make the configuration enable any more.
+10. Add APIs to set and get physical layer mode(802.11b/g/n)
+11. Add APIs to enable and disable DHCP server of ESP8266 softAP
+12. Add APIs to enable and disable DHCP client of ESP8266 station
+13. Add API to set range of ip address that get from DHCP server
+14. Add APIs to set and get how many TCP connections allowed at max.
+15. Add APIs to set and get how many TCP clients allowed at max to a TCP server.
+16. Revise "wifi_set_ip_info" and "wifi_set_macaddr" to take effect immediately.
+17. Fix some bugs to make the software more reliable.
+
+ESP8266EX: Fix A Potential Error For UART RX in esp_iot_sdk_v0.9.2_14_10_24
+---------------------------------------------------------------------------
+
+The previously released SDK for ESP8266EX inadvertently introduced a bug that may cause a little packet loss when transferring packet by Uart RX.
+So for now,I will release the patch for this bug.Please download the patch from the attachment,and refer to the following steps:
+Following Commands:
+1. REPLACE LIBPHY.A IN SDK/LIB
+2. ADD LIBPP.A TO SDK/LIB
+3. MODIFY SDK/APP/MAKEFILE
+4. ADD "-lpp \" AS BELOW
+-lgcc
+-lhal
+-lpp
+-lphy
+-lnet80211
+-llwip
+-lwpa
+-lmain
+-lssc
+-lssl
+
+esp_iot_sdk_v0.9.2_14_10_24 Release Note
+----------------------------------------
+
+Initial version for public, can be compiled on both windows and lubuntu.

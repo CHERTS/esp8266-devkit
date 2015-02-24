@@ -1,0 +1,127 @@
+--- main.c.orig	2014-12-05 10:08:33.239937900 +0500
++++ main.c	2015-01-11 14:21:49.469764000 +0500
+@@ -1,14 +1,23 @@
+ #include <stdint.h>
++#ifdef _MSC_VER	
++#include "unistd.h"
++#elif defined(__GNUC__)
+ #include <unistd.h>
++#endif
+ #include <sys/types.h>
+ #include <sys/stat.h>
+ #include <fcntl.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+-#include <sys/mman.h>
+-#include <arpa/inet.h>
++#ifdef _MSC_VER
++#include <mman.h>
++#include <winsock2.h>
++#endif
+ #include <string.h>
+ #include "espfsformat.h"
++#ifdef _MSC_VER
++#include <share.h>
++#endif
+ 
+ //Heatshrink
+ #include "heatshrink_common.h"
+@@ -42,9 +51,11 @@
+ 	HSE_poll_res pres;
+ 	HSE_sink_res sres;
+ 	size_t r;
++	heatshrink_encoder *enc;
++
+ 	if (level==-1) level=8;
+ 	level=(level-1)/2; //level is now 0, 1, 2, 3, 4
+-	heatshrink_encoder *enc=heatshrink_encoder_alloc(ws[level], ls[level]);
++	enc=heatshrink_encoder_alloc(ws[level], ls[level]);
+ 	if (enc==NULL) {
+ 		perror("allocating mem for heatshrink");
+ 		exit(1);
+@@ -83,7 +94,12 @@
+ 	off_t size, csize;
+ 	EspFsHeader h;
+ 	int nameLen;
++
++#ifdef _MSC_VER	
++	size=_lseek(f, 0, SEEK_END);
++#elif defined(__GNUC__)
+ 	size=lseek(f, 0, SEEK_END);
++#endif
+ 	fdat=mmap(NULL, size, PROT_READ, MAP_SHARED, f, 0);
+ 	if (fdat==MAP_FAILED) {
+ 		perror("mmap");
+@@ -118,6 +134,16 @@
+ 	h.fileLenComp=htoxl(csize);
+ 	h.fileLenDecomp=htoxl(size);
+ 	
++#ifdef _MSC_VER	
++	_write(1, &h, sizeof(EspFsHeader));
++	_write(1, name, nameLen); //ToDo: this can eat up a few bytes after the buffer.
++	_write(1, cdat, csize);
++	//Pad out to 32bit boundary
++	while (csize&3) {
++		_write(1, "\000", 1);
++		csize++;
++	}
++#elif defined(__GNUC__)
+ 	write(1, &h, sizeof(EspFsHeader));
+ 	write(1, name, nameLen); //ToDo: this can eat up a few bytes after the buffer.
+ 	write(1, cdat, csize);
+@@ -126,6 +152,7 @@
+ 		write(1, "\000", 1);
+ 		csize++;
+ 	}
++#endif
+ 	munmap(fdat, size);
+ 	return (csize*100)/size;
+ }
+@@ -139,7 +166,11 @@
+ 	h.nameLen=htoxs(0);
+ 	h.fileLenComp=htoxl(0);
+ 	h.fileLenDecomp=htoxl(0);
++#ifdef _MSC_VER	
++	_write(1, &h, sizeof(EspFsHeader));
++#elif defined(__GNUC__)
+ 	write(1, &h, sizeof(EspFsHeader));
++#endif
+ }
+ 
+ 
+@@ -175,6 +206,10 @@
+ 		exit(0);
+ 	}
+ 
++#ifdef _MSC_VER
++	_setmode(_fileno(stdout), _O_BINARY);
++#endif
++
+ 	while(fgets(fileName, sizeof(fileName), stdin)) {
+ 		//Kill off '\n' at the end
+ 		fileName[strlen(fileName)-1]=0;
+@@ -185,11 +220,19 @@
+ 			realName=fileName;
+ 			if (fileName[0]=='.') realName++;
+ 			if (realName[0]=='/') realName++;
++#ifdef _MSC_VER	
++			if((_sopen_s(&f, fileName, _O_RDONLY, _SH_DENYNO, _S_IREAD | _S_IWRITE)) != -1) {
++#elif defined(__GNUC__)
+ 			f=open(fileName, O_RDONLY);
+ 			if (f>0) {
++#endif
+ 				rate=handleFile(f, realName, compType, compLvl);
+ 				fprintf(stderr, "%s (%d%%)\n", realName, rate);
++#ifdef _MSC_VER
++				_close(f);
++#elif defined(__GNUC__)
+ 				close(f);
++#endif
+ 			} else {
+ 				perror(fileName);
+ 			}
+@@ -202,4 +245,3 @@
+ 	finishArchive();
+ 	return 0;
+ }
+-

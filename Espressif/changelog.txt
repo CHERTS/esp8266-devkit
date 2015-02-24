@@ -1,0 +1,140 @@
+Changelog:
+----------
+
+v1.0.10:
++ Added examples:
+  esp_mqtt - This is MQTT client library for ESP8266 (compiled, works correctly), original source https://github.com/tuanpmt/esp_mqtt;
+  lwip_lib - Modification of the TCP/IP stack for LWIP ESP8266 from kadamski (compiled, not checked in the work), original source https://github.com/kadamski/esp-lwip;
+* Update a utility "utils\esptool-ck.exe";
+* Updated examples:
+  nodemcu-firmware;
+  esp8266_pcd8544;
+  esp8266_ili9341;
+  esp_iot_rtos_sdk;
+
+v1.0.9:
+* Update a utility to communicate with the ROM bootloader in Espressif ESP8266 (utils\esptool.exe):
+  - fixed a problem with the search tools *nm and *objcopy in mode elf2image;
+* Updated examples:
+  nodemcu-firmware;
+  esphttpd;
+  esp8266_pcd8544;
+
+v1.0.8:
++ Added examples:
+  esp8266_ili9341 - example of working ESP8266 and 2.2 Inch SPI TFT LCD Serial Port Module Display ILI9341 (compiled, works correctly), original source https://github.com/Perfer/esp8266_ili9341;
+* Updated installer;
+* Update a utility to communicate with the ROM bootloader in Espressif ESP8266 (utils\esptool.exe):
+  - added support for read and erase spi flash:
+  - small bugs fixed;
+* Updated utility "utils\esptool-ck.exe";
+* Updated library "ESP8266_SDK\lib\libsmartconfig.a" and "ESP8266_SDK\lib\libmain.a";
+* Updated examples:
+  nodemcu-firmware;
+  esphttpd;
+
+v1.0.7:
++ Added xtensa-lx106-g++ compiler;
++ Added examples:
+  dht22_thingspeak - Example of working sensor DHT22 (temperature and humidity) and send data on the service thingspeak.com (compiled, works correctly);
+  hello_world_cpp and hello_world_cpp_2 - An examples of writing firmware in C++ (compiled, works correctly);
+* Updated xtensa-lx106-gcc compiler;
+* Update SDK v0.9.5; (folder ESP8266_SDK);
+* The old version of SDK 0.9.4 moved to a folder ESP8266_SDK_094, it is necessary to build the firmware "examples\at_v0.20_on_SDKv0.9.4";
+* Updated documentation, added file "docs\ESP8266_IoT_SDK_Programming Guide_v0.9.5.pdf";
+* Updated all the examples in the folder examples, most of the examples in the Makefile appeared parameters (BOOT, APP, SPI_SPEED, SPI_MODE, SPI_SIZE) to configure the build system firmware,
+  just have new goals assembly:
+  - Target "all" - with the target of it you can collect the firmware files, depending on your settings (BOOT, APP, SPI_SPEED, SPI_MODE, SPI_SIZE);
+  - Target "flashonefile" - using it is possible to collect a single flash file and burn the flash at 0x000000, parameters BOOT, APP, SPI_SPEED, SPI_MODE, SPI_SIZE not affect this assembly;
+  - Target "flashboot" - using it you can flash the bootloader v1.1 or v1.2;
+  - Target "flashinit" - using it you can flash files esp_init_data_default.bin and blank.bin;
+* Utility C:\Espressif\xtensa-lx106-elf\bin\esptool.exe updated and moved to the C:\Espressif\utils named esptool-ck.exe, the new version added functionality
+  flash board with ESP8266, but until there is a problem with this regime, they will be removed in future releases.
+
+v1.0.6:
++ Added docs, see file "docs\ESPTool.doc";
++ Added file manipulation utility for NodeMCU firmware (utils\nodemcutil.exe), see help nodemcutil.exe -h:
+  The utility allows you to:
+  - Transfer Lua file from host to flash;
+  - Transfer Lua file from flash to host;
+  - List flash filesystem files;
+  - Delete file from flash;
+  - Execute the specified file;
+  - Execute node.restart() command;
++ Added utility to create a single flash file: utils\gen_appbin.exe, utils\gen_flashbin.exe, utils\genflashbinv6.exe
+  Example of creating a single firmware file nodemcu:
+  1. Build in Eclipse example firmware C:\Espressif\examples\nodemcu-firmware
+  2. Edit the file C:\Espressif\examples\nodemcu-firmware\bin\gen_misc_plus.bat, "comport=COM2" option and specify the number of your COM-port.
+  3. Run the file C:\Espressif\examples\nodemcu-firmware\bin\gen_misc_plus.bat, in the case of the successful creation of a single flash file will start the process of write in the firmware ESP8266.
+  4. To record init.lua in nodemcu, change the file C:\Espressif\examples\nodemcu-firmware\bin\load_init_lua.cmd setting "comport=COM2" and run file load_init_lua.cmd
++ Added examples:
+  nodemcu-spiffy - build a spiffs file system binary for embedding/writing onto the nodemcu ESP8266 spiffs file system (compiled, works correctly), original source https://github.com/xlfe/spiffy
+  esp8266_pcd8544 - PCD8544 LCD driver for esp8266 (Nokia 5110 & 3110 display) (compiled, not checked in the work), original source https://github.com/eadf/esp8266_pcd8544
+* Changed installer;
+* Update a utility to communicate with the ROM bootloader in Espressif ESP8266 (utils\esptool.exe):
+  - added support for spi flash configuration:
+      added option --flash_freq (set SPI Flash frequency, support 40m, 26m, 20m, 80m, default = 40m),
+      added option --flash_mode (set SPI Flash mode, support qio, qout, dio, dout, default = qio),
+      added option --flash_size (set SPI Flash size, support 4m, 2m, 8m, 16m, 32m, default = 4m);
+  - small bugs fixed;
+* Updated examples:
+  nodemcu-firmware - added target init to sending init.lua using nodemcutil.exe (compiled, works correctly), original source https://github.com/nodemcu/nodemcu-firmware;
+  esphttpd;
+  wifi-sta-tcp-client;
+
+v1.0.5:
+* Updated xtensa-lx106-gcc compiler;
+* Updated examples:
+  IOT_Demo - a full IOT_Demo of the SDK v0.9.4, all one to one (compiled, not checked in the work);
+  IOT_Demo_MOD - it mini-version IOT_Demo of the SDK v0.9.4, removed him from the source library json, upgrade, lwip and ssl and have been used for the prebuilt library of SDK (compiled, not checked in the work);
+  i2c_bmp180 (compiled, not checked in the work), source https://github.com/CHERTS/esp8266-i2c_bmp180;
+  i2c_ina219 (compiled, not checked in the work);
+  esphttpd, mkespfsimage.exe utility now works correctly under Windows (compiled, works correctly);
+* Update a utility to communicate with the ROM bootloader in Espressif ESP8266 (utils\esptool.exe):
+  - added reading mac sta and mac ap address (example: C:\Espressif\utils\esptool.exe -p COM2 read_mac);
+  - added reading flash id (example: C:\Espressif\utils\esptool.exe -p COM2 flash_id);
+  - added option --baud (-b) to set serial port baud rate (example: C:\Espressif\utils\esptool.exe -p COM2 -b 256000 write_flash 0x00000 firmware/0x00000.bin 0x40000 firmware/0x40000.bin);
+  - small bugs fixed;
++ Added examples:
+  i2c_bh1750 (compiled, not checked in the work);
+  nodemcu-firmware (compiled, works correctly), source https://github.com/nodemcu/nodemcu-firmware;
+  nodelua (compiled, not checked in the work, bad  code), source https://github.com/haroldmars/nodelua;
+  EspLightNode - ESP8266 firmware to receive lighting data over TPM2, Art-Net and drive a WS2801 addressable LED strip (compiled, not checked in the work), source https://github.com/Frans-Willem/EspLightNode;
+
+v1.0.4:
+* Update SDK v0.9.4;
+* Updated all Makefile in all examples;
+* Update docs, see file "docs\ESP8266EX Pin Definitions.doc";
+* Updated examples:
+  1wire_ds18b20 (compiled, works correctly);
+  dht22 (compiled, works correctly);
+  wifi-sta-tcp-client (compiled, works correctly, but there are problems in the library liblwip.a from espressif, use the native stack LwIP);
+  i2c_24xx16 (compiled, not checked in the work);
+  esphttpd (compiled, works correctly);
++ Added alternative library liblwip (liblwipmod.a) (patch fixes the problem of loss events call disconnect and close the connection stack lwip), source library https://github.com/CHERTS/esp8266-liblwip;
++ Added foto ESP-07 rev2, see file "docs\ESP-07 plate v2.png";
++ Added example:
+  at_v0.20_on_SDKv0.9.4 (official, compiled, works correctly);
+  i2c_24xx32 (compiled, works correctly), source https://github.com/CHERTS/esp8266-i2c_24xx32;
+  dht11_22 (compiled, works correctly), source https://github.com/CHERTS/esp8266-dht11_22;
+  i2c_bmp180 (compiled, not checked in the work);
+  i2c_ina219 (compiled, not checked in the work);
+  i2c_sht21 (compiled, not checked in the work);
+  i2c_hd44780 (compiled, not checked in the work);
+  lpd6803 (compiled, not checked in the work);
+  esp_iot_rtos_sdk (compiled, not checked in the work);
+
+v1.0.3:
++ Added documentation ESP8266;
++ Added example: esphttpd (compiled, works correctly with SDK v0.9.3);
+* Fixed example: IoT_Demo (compiled, not checked in the work);
+
+v1.0.2:
++ Added example: 1wire_ds18b20, dht22, blinky, blinky2, i2c_24xx16, i2c_htu21d, sysinfo;
+* Update libhal.a;
+
+v1.0.1:
++ Added example at_v0.20_on_SDKv0.9.3;
+
+v1.0.0:
+- First release;

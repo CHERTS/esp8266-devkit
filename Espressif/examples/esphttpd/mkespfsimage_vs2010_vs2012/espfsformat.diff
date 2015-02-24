@@ -1,0 +1,40 @@
+--- espfsformat.h.orig	2014-11-10 16:50:29.226960900 +0500
++++ espfsformat.h	2014-12-17 12:20:21.630504900 +0500
+@@ -14,11 +14,28 @@
+ with the FLAG_LASTFILE flag set.
+ */
+ 
+-
+ #define FLAG_LASTFILE (1<<0)
+ #define COMPRESS_NONE 0
+ #define COMPRESS_HEATSHRINK 1
+ 
++#ifdef _MSC_VER
++#define PACK(__Declaration__) __pragma(pack(push, 1)) __Declaration__ __pragma(pack(pop))
++#if !defined(S_ISREG) && defined(S_IFMT) && defined(S_IFREG)
++#define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
++#endif
++#endif
++
++#ifdef _MSC_VER
++PACK(
++typedef struct { 
++	int32_t magic;
++	int8_t flags;
++	int8_t compression;
++	int16_t nameLen;
++	int32_t fileLenComp;
++	int32_t fileLenDecomp;
++} EspFsHeader);
++#elif defined(__GNUC__)
+ typedef struct {
+ 	int32_t magic;
+ 	int8_t flags;
+@@ -27,5 +44,6 @@
+ 	int32_t fileLenComp;
+ 	int32_t fileLenDecomp;
+ } __attribute__((packed)) EspFsHeader;
++#endif
+ 
+ #endif
+\ No newline at end of file
