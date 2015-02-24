@@ -1,10 +1,10 @@
 /*
- * gpio_intr.h
+ * pcd8544.h
  *
- *  GPIO interrupt handler
+ *  PCD8544 bit-banging driver ported from http://playground.arduino.cc/Code/PCD8544
  *
  *  Created on: Jan 7, 2015
- *      Author: EaD
+ *      Author: Eadf
  */
 
 #ifndef INCLUDE_DRIVER_PCD8544_H_
@@ -38,6 +38,11 @@ void PCD8544_lcdPrint(char *characters);
 void PCD8544_printBinary(uint32_t data);
 void PCD8544_gotoXY(int x, int y);
 void PCD8544_drawLine(void);
+/**
+ * Sets the contrast [0x00 - 0x7f].
+ * Useful, visible range is about 40-60.
+ */
+void PCD8544_setContrast(uint8_t val);
 
 void PCD8544_initLCD(PCD8544_Settings *settings);
 /**

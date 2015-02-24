@@ -1,6 +1,14 @@
 Changelog:
 ----------
 
+v1.0.11:
+* Updated examples:
+  nodemcu-firmware;
+  esp_mqtt;
+  esphttpd;
+  esp8266_pcd8544;
+  hello_world - write firmware utility is used utils\esptool-ck.exe;
+
 v1.0.10:
 + Added examples:
   esp_mqtt - This is MQTT client library for ESP8266 (compiled, works correctly), original source https://github.com/tuanpmt/esp_mqtt;

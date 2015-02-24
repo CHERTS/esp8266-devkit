@@ -24,7 +24,7 @@ ESPPORT		?= COM2
 TARGET		= app
 
 # which modules (subdirectories) of the project to include in compiling
-MODULES		= driver user mqtt
+MODULES		= driver user mqtt modules
 EXTRA_INCDIR    = include $(SDK_BASE)/../include
 
 # libraries used in this project, mainly provided by the SDK

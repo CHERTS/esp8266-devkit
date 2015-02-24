@@ -14,11 +14,14 @@ XTENSA_TOOLS_ROOT ?= c:/Espressif/xtensa-lx106-elf/bin
 
 # base directory of the ESP8266 SDK package, absolute
 SDK_BASE	?= c:/Espressif/ESP8266_SDK
+SDK_TOOLS	?= c:/Espressif/utils
 
 # esptool path and port
-SDK_TOOLS	?= c:/Espressif/utils
-ESPTOOL		?= $(SDK_TOOLS)/esptool.exe
-ESPPORT		?= COM2
+ESPTOOL		?=$(SDK_TOOLS)/esptool.exe
+ESPPORT		?=COM2
+# old - use c:/Espressif/utils/esptool.exe util
+# new - use c:/Espressif/utils/esptool-ck.exe util
+ESPTOOLMODE	?=new
 
 # BOOT = none
 # BOOT = old - boot_v1.1
@@ -34,6 +37,12 @@ SPI_SPEED?=40
 SPI_MODE?=QIO
 # SPI_SIZE: 256KB, 512KB, 1024KB, 2048KB, 4096KB
 SPI_SIZE?=512
+
+ifeq ($(ESPTOOLMODE), new)
+    esptoolmode = new
+else
+    esptoolmode = old
+endif
 
 ifeq ($(BOOT), new)
     boot = new
@@ -156,6 +165,10 @@ else
     app = 0
 endif
 
+ifeq ($(esptoolmode), new)
+    ESPTOOL	= $(SDK_TOOLS)/esptool-ck.exe
+endif
+
 # various paths from the SDK used in this project
 SDK_LIBDIR	= lib
 SDK_LDDIR	= ld
@@ -273,16 +286,29 @@ flashonefile: all
 	$(vecho) "No boot needed."
 	$(vecho) "Generate eagle.app.flash.bin successully in folder firmware."
 	$(vecho) "eagle.app.flash.bin-------->0x00000"
+	$(vecho) $(esptoolmode) 
+ifeq ($(esptoolmode), new)
+	$(ESPTOOL) -cp $(ESPPORT) -cd ck -cb 256000 -ca 0x00000 -cf firmware/eagle.app.flash.bin -v
+else
 	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x00000 firmware/eagle.app.flash.bin
+endif
 
-flashboot: all flashinit
+flashboot: all
 ifeq ($(boot), new)
 	$(vecho) "Flash boot_v1.2 and +"
+ifeq ($(esptoolmode), new)
+	$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x00000 -cf $(SDK_BASE)/bin/boot_v1.2.bin -v
+else
 	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x00000 $(SDK_BASE)/bin/boot_v1.2.bin
+endif
 endif
 ifeq ($(boot), old)
 	$(vecho) "Flash boot_v1.1 and +"
+ifeq ($(esptoolmode), new)
+	$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x00000 -cf $(SDK_BASE)/bin/boot_v1.1.bin -v
+else
 	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x00000 $(SDK_BASE)/bin/boot_v1.1.bin
+endif
 endif
 ifeq ($(boot), none)
 	$(vecho) "No boot needed."
@@ -290,18 +316,34 @@ endif
 
 flash: all
 ifeq ($(app), 0) 
+ifeq ($(esptoolmode), new)
+	$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x00000 -cf firmware/eagle.flash.bin -v
+	$(ESPTOOL) -cp $(ESPPORT) -cd ck -cb 256000 -ca 0x40000 -cf firmware/eagle.irom0text.bin -v
+else
 	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x00000 firmware/eagle.flash.bin 0x40000 firmware/eagle.irom0text.bin
+endif
 else
 ifeq ($(boot), none)
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x00000 firmware/eagle.flash.bin 0x40000 firmware/eagle.irom0text.bin
+	ifeq ($(esptoolmode), new)
+		$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x00000 -cf firmware/eagle.flash.bin -v
+		$(ESPTOOL) -cp $(ESPPORT) -cd ck -cb 256000 -ca 0x40000 -cf firmware/eagle.irom0text.bin -v
+	else
+		$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x00000 firmware/eagle.flash.bin 0x40000 firmware/eagle.irom0text.bin
+	endif
+else
+ifeq ($(esptoolmode), new)
+	$(ESPTOOL) -cp $(ESPPORT) -cd ck -cb 256000 -ca $(addr) -cf firmware/upgrade/$(BIN_NAME).bin -v
 else
 	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash $(addr) firmware/upgrade/$(BIN_NAME).bin
 endif
 endif
-
-flashinit:
-	$(vecho) "Flash init data default and blank data."
+endif
+ifeq ($(esptoolmode), new)
+	$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x7c000 -cf $(SDK_BASE)/bin/esp_init_data_default.bin -v
+	$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x7e000 -cf $(SDK_BASE)/bin/blank.bin -v
+else
 	$(ESPTOOL) -p $(ESPPORT) write_flash 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
+endif
 
 rebuild: clean all
 

@@ -39,7 +39,7 @@ static uint8_t openhardware_logo[] = {
 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x0e,0x1f,0x3f,0x7f,0xff,0xff,0xff,0x7f,0x7f,0x3f,0x3f,0x1f,0x3f,0x3f,0x3f,0x0f,0x01,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x03,0x0f,0x3f,0x3f,0x3f,0x1f,0x3f,0x3f,0x7f,0xff,0xff,0xff,0xff,0x3f,0x3f,0x1e,0x0c,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
 };
 
-#define user_procLcdUpdatePeriod      1000
+#define user_procLcdUpdatePeriod      500
 #define user_procTaskPrio        0
 #define user_procTaskQueueLen    1
 
@@ -54,7 +54,6 @@ static void nop_procTask(os_event_t *events);
 //Main code function
 static void ICACHE_FLASH_ATTR
 loop(os_event_t *events) {
-  static bool toggle = true;
   static uint32_t loopIterations = 0;
   loopIterations+=1;
   if (loopIterations < 3) {
@@ -62,15 +61,15 @@ loop(os_event_t *events) {
   } else if (loopIterations == 3){
     PCD8544_lcdClear();
   } else {
-    os_printf("Updating display\n");
+
     // Draw a Box
     PCD8544_drawLine();
     int a=0;
     PCD8544_gotoXY(17,1);
     // Put text in Box
     PCD8544_lcdPrint("ESP8266");
-    PCD8544_gotoXY(24,3);
-    if (toggle){
+    PCD8544_gotoXY(24,2);
+    if (loopIterations & 1){
       PCD8544_lcdCharacter('H');
       PCD8544_lcdCharacter('E');
       PCD8544_lcdCharacter('L');
@@ -79,11 +78,10 @@ loop(os_event_t *events) {
       PCD8544_lcdCharacter(' ');
       PCD8544_lcdCharacter('=');
       // Draw + at this position
-      PCD8544_gotoXY(10,3);
+      PCD8544_gotoXY(10,2);
       PCD8544_lcdCharacter('=');
-      os_delay_us(50000);
     } else {
-      PCD8544_gotoXY(24,3);
+      PCD8544_gotoXY(24,2);
       PCD8544_lcdCharacter('h');
       PCD8544_lcdCharacter('e');
       PCD8544_lcdCharacter('l');
@@ -92,11 +90,18 @@ loop(os_event_t *events) {
       PCD8544_lcdCharacter(' ');
       PCD8544_lcdCharacter('-');
       // Draw - at this position
-      PCD8544_gotoXY(10,3);
+      PCD8544_gotoXY(10,2);
       PCD8544_lcdCharacter('-');
-      os_delay_us(50000);
     }
-    toggle = !toggle;
+    uint8_t contrast = ((loopIterations << 2)+25) & 0x7f; // +25 so that we start in the visible range
+    PCD8544_setContrast(contrast);
+    PCD8544_gotoXY(2,3);
+    PCD8544_lcdPrint(" contrast:");
+    char buf[] = "         ";
+    os_sprintf(buf,"%d   ", contrast);
+    PCD8544_gotoXY(32,4);
+    PCD8544_lcdPrint(buf);
+    os_printf("Updating display. Contrast = %d\n", contrast);
   }
 }
 
@@ -145,11 +150,9 @@ user_init(void)
   system_set_os_print(1);
   os_printf("\r\nSystem starting...\r\n");
 
-  //Set station mode
-  //wifi_set_opmode(NULL_MODE); // NULL_MODE will crash the system under 0.9.5. It works with 0.9.4.
-
-  //if you flash your device with code that sets NULL_MODE it will remain in the system
-  //until you flash the device with code that actively sets opmode to something useful.
+  // turn off WiFi for this console only demo
+  wifi_station_set_auto_connect(false);
+  wifi_station_disconnect();
 
   os_timer_disarm(&loop_timer);
 
@@ -160,6 +163,6 @@ user_init(void)
   //Start no-operation os task
   system_os_task(nop_procTask, user_procTaskPrio, user_procTaskQueue, user_procTaskQueueLen);
   system_os_post(user_procTaskPrio, 0, 0);
- 
+
   os_printf("System started\n\r");
 }

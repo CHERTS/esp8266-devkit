@@ -26,7 +26,6 @@
 #include "ets_sys.h"
 #include "os_type.h"
 #include "gpio.h"
-#include "gpio.h"
 
 // These default pin definitions can be changed to any valid GPIO pin.
 // The code in PCD8544_init() should automagically adapt
@@ -42,6 +41,10 @@ static uint8_t pinSclk = 14;  // LCD Clk .... Pin 5
 
 static bool PCD8544_isInitiated = false;
 
+#define PCD8544_FUNCTIONSET 0x20
+#define PCD8544_SETVOP 0x80
+#define PCD8544_EXTENDEDINSTRUCTION 0x01
+
 #define LOW       0
 #define HIGH      1
 #define LCD_CMD   LOW
@@ -55,7 +58,7 @@ static bool PCD8544_isInitiated = false;
 void PCD8544_lcdWrite8(bool dc, uint8_t data);
 void PCD8544_shiftOut8(bool msbFirst, uint8_t data);
 void PCD8544_printBinary(uint32_t data);
-uint8_t PCD8544_pixelAt(uint8_t *image, uint8_t x, uint8_t y);
+//uint8_t PCD8544_pixelAt(uint8_t *image, uint8_t x, uint8_t y);
 
 static const uint8_t ASCII[][5] =
 {
@@ -291,6 +294,19 @@ PCD8544_drawLine(void) {
     PCD8544_gotoXY(0,j);
     PCD8544_lcdWrite8(LCD_DATA,0xff);
   }
+}
+
+/**
+ * Sets the contrast [0x00 - 0x7f].
+ * Useful, visible range is about 40-60.
+ */
+void ICACHE_FLASH_ATTR
+PCD8544_setContrast(uint8_t contrast) {
+  contrast &= 0x7f;
+
+  PCD8544_lcdWrite8( LCD_CMD, PCD8544_FUNCTIONSET | PCD8544_EXTENDEDINSTRUCTION );
+  PCD8544_lcdWrite8( LCD_CMD, PCD8544_SETVOP | contrast);
+  PCD8544_lcdWrite8( LCD_CMD, PCD8544_FUNCTIONSET);
 }
 
 /**

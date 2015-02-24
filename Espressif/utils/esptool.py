@@ -8,8 +8,8 @@
 # This program is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
 # Foundation; either version 2 of the License, or (at your option) any later version.
-# 
-# This program is distributed in the hope that it will be useful, but WITHOUT 
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
 # ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #
@@ -164,7 +164,7 @@ class ESPROM:
          except:
              print "Read reg error"
              return False
-         
+
          chip_flg = (reg3>>15)&0x1
          if chip_flg == 0:
              print 'Warning : ESP8089 CHIP DETECTED, STOP'
@@ -174,12 +174,12 @@ class ESPROM:
              m0 = ((reg2>>16)&0xff)
              m1 = ((reg2>>8)&0xff)
              m2 = ((reg2 & 0xff))
-             m3 = ((reg1>>24)&0xff)   
+             m3 = ((reg1>>24)&0xff)
              self.MAC2 = m0
              self.MAC3 = m1
              self.MAC4 = m2
              self.MAC5 = m3
-            
+
              if m0 ==0:
                  #print "r1: %02x; r2:%02x ; r3: %02x"%(m1,m2,m3)
                  mac= "1A-FE-34-%02x-%02x-%02x"%(m1,m2,m3)
@@ -197,13 +197,13 @@ class ESPROM:
                  mac = mac.upper()
                  mac2 = mac2.upper()
                  mac_ap = ("AC-D0-74-%02x-%02x-%02x"%(m1,m2,m3)).upper()
-                 mac_sta = ("AC-D0-74-%02x-%02x-%02x"%(m1,m2,m3)).upper()   
+                 mac_sta = ("AC-D0-74-%02x-%02x-%02x"%(m1,m2,m3)).upper()
                  print "MAC AP: %s"%(mac_ap)
                  print "MAC STA: %s"%(mac_sta)
                  return True
              else:
                  print "MAC read error..."
-                 return False     
+                 return False
 
     """ Read memory address in target """
     def read_reg(self, addr):
@@ -237,12 +237,38 @@ class ESPROM:
             raise Exception('Failed to leave RAM download mode')
 
     """ Start downloading to Flash (performs an erase) """
-    def flash_begin(self, size, offset):
+    def flash_begin(self, _size, offset):
         old_tmo = self._port.timeout
-        num_blocks = (size + ESPROM.ESP_FLASH_BLOCK - 1) / ESPROM.ESP_FLASH_BLOCK
         self._port.timeout = 10
+
+	area_len = int(_size)
+	sector_no = offset/4096;
+	sector_num_per_block = 16;
+	#total_sector_num = (0== (area_len%4096))? area_len/4096 :  1+(area_len/4096);
+	if 0== (area_len%4096):
+	    total_sector_num = area_len/4096
+	else:
+	    total_sector_num = 1+(area_len/4096)
+	#check if erase area reach over block boundary
+	head_sector_num = sector_num_per_block - (sector_no%sector_num_per_block);
+	#head_sector_num = (head_sector_num>=total_sector_num)? total_sector_num : head_sector_num;
+	if head_sector_num>=total_sector_num :
+	    head_sector_num = total_sector_num
+	else:
+	    head_sector_num = head_sector_num
+
+	if (total_sector_num - 2 * head_sector_num)> 0:
+	    size = (total_sector_num-head_sector_num)*4096
+	    print "head: ",head_sector_num,";total:",total_sector_num
+	    print "erase size : ",size
+	else:
+	    size = int( math.ceil( total_sector_num/2.0) * 4096 )
+	    print "head:",head_sector_num,";total:",total_sector_num
+	    print "erase size :",size
+
+
         if self.command(ESPROM.ESP_FLASH_BEGIN,
-                struct.pack('<IIII', size, num_blocks, ESPROM.ESP_FLASH_BLOCK, offset))[1] != "\0\0":
+                struct.pack('<IIII', size, 0x200, ESPROM.ESP_FLASH_BLOCK, offset))[1] != "\0\0":
             raise Exception('Failed to enter Flash download mode')
         self._port.timeout = old_tmo
 
@@ -254,9 +280,14 @@ class ESPROM:
 
     """ Leave flash mode and run/reboot """
     def flash_finish(self, reboot = False):
-        pkt = struct.pack('<I', int(not reboot))
-        if self.command(ESPROM.ESP_FLASH_END, pkt)[1] != "\0\0":
-            raise Exception('Failed to leave Flash mode')
+        res = self.command(ESPROM.ESP_FLASH_END,
+                struct.pack('<I', int(not reboot)))[1]
+        #if self.command(ESPROM.ESP_FLASH_END,
+                #struct.pack('<I', int(not reboot)))[1] != "\0\0":
+        #print res
+        if res[1] != "\0\0":
+            pass
+            #raise Exception('Failed to leave Flash mode')
 
     """ Run application code in flash """
     def run(self, reboot = False):
@@ -326,7 +357,7 @@ class ESPROM:
         # It it on the other hand unlikely to fail.
 
 class ESPFirmwareImage:
-    
+
     def __init__(self, filename = None):
         self.segments = []
         self.entrypoint = 0
@@ -336,11 +367,11 @@ class ESPFirmwareImage:
         if filename is not None:
             f = file(filename, 'rb')
             (magic, segments, self.flash_mode, self.flash_size_freq, self.entrypoint) = struct.unpack('<BBBBI', f.read(8))
-            
+
             # some sanity check
             if magic != ESPROM.ESP_IMAGE_MAGIC or segments > 16:
                 raise Exception('Invalid firmware image')
-        
+
             for i in xrange(segments):
                 (offset, size) = struct.unpack('<II', f.read(8))
                 if offset > 0x40200000 or offset < 0x3ffe0000 or size > 65536:
@@ -484,8 +515,8 @@ if __name__ == '__main__':
             'make_image',
             help = 'Create an application image from binary files')
     parser_make_image.add_argument('output', help = 'Output image file')
-    parser_make_image.add_argument('--segfile', '-f', action = 'append', help = 'Segment input file') 
-    parser_make_image.add_argument('--segaddr', '-a', action = 'append', help = 'Segment base address', type = arg_auto_int) 
+    parser_make_image.add_argument('--segfile', '-f', action = 'append', help = 'Segment input file')
+    parser_make_image.add_argument('--segaddr', '-a', action = 'append', help = 'Segment base address', type = arg_auto_int)
     parser_make_image.add_argument('--entrypoint', '-e', help = 'Address of entry point', type = arg_auto_int, default = 0)
 
     parser_elf2image = subparsers.add_parser(

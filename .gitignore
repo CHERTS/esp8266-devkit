@@ -1,3 +1,4 @@
 *.cmd
+*.bat
 *.dll
 Installer-Sign.iss
