@@ -38,6 +38,7 @@ Source: "Espressif\xtensa-lx106-elf\*"; DestDir: "{app}\xtensa-lx106-elf"; Flags
 Source: "Espressif\docs\*"; DestDir: "{app}\docs"; Flags: ignoreversion createallsubdirs recursesubdirs
 Source: "Espressif\utils\*"; DestDir: "{app}\utils"; Flags: ignoreversion createallsubdirs recursesubdirs
 Source: "Espressif\examples\*"; DestDir: "{app}\examples"; Flags: ignoreversion createallsubdirs recursesubdirs
+Source: "Espressif\ESP8266_RTOS_SDK\*"; DestDir: "{app}\ESP8266_RTOS_SDK"; Flags: ignoreversion createallsubdirs recursesubdirs
 Source: "Espressif\ESP8266_SDK\*"; DestDir: "{app}\ESP8266_SDK"; Flags: ignoreversion createallsubdirs recursesubdirs
 Source: "Espressif\ESP8266_SDK_094\*"; DestDir: "{app}\ESP8266_SDK_094"; Flags: ignoreversion createallsubdirs recursesubdirs
 Source: "Espressif\Espressif web site.url"; DestDir: "{app}"; Flags: ignoreversion
@@ -53,6 +54,7 @@ Name: "{app}\xtensa-lx106-elf"
 Name: "{app}\docs"
 Name: "{app}\utils"
 Name: "{app}\examples"
+Name: "{app}\ESP8266_RTOS_SDK"
 Name: "{app}\ESP8266_SDK"
 Name: "{app}\ESP8266_SDK_094"
 
@@ -82,6 +84,7 @@ Type: filesandordirs; Name: "{app}\xtensa-lx106-elf\*"
 Type: filesandordirs; Name: "{app}\docs\*"
 Type: filesandordirs; Name: "{app}\utils\*"
 Type: filesandordirs; Name: "{app}\examples\*"
+Type: filesandordirs; Name: "{app}\ESP8266_RTOS_SDK\*"
 Type: filesandordirs; Name: "{app}\ESP8266_SDK\*"
 Type: filesandordirs; Name: "{app}\ESP8266_SDK_094\*"
 Type: files; Name: "{app}\DevKit web site.url"
