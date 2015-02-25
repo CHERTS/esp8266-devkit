@@ -17,7 +17,7 @@ Unofficial Development Kit for Espressif ESP8266
 
 --
 
-Unofficial Development Kit for Espressif ESP8266 - this is an unofficial firmware development kit for SoC Espressif ESP8266.<br>
+<b>Unofficial Development Kit for Espressif ESP8266</b> - this is an unofficial firmware development kit for SoC Espressif ESP8266.<br>
 
 <b>The kit includes the following components and tools:</b><br>
 
