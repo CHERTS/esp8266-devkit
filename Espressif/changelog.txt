@@ -2,6 +2,7 @@ Changelog:
 ----------
 
 v1.0.11:
+* Updated xtensa-lx106-gcc compiler;
 * Updated examples:
   nodemcu-firmware;
   esp_mqtt;
