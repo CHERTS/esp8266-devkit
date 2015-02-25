@@ -13,6 +13,8 @@ Unofficial Development Kit for Espressif ESP8266
 
 <a href="http://programs74.ru/udkew.html">Официальный сайт проекта, где можно скачать инсталлятор для Windows</a>
 
+<br><a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=6D6EFK8LJ74UC">Поддержать проект (PayPal РУБ)</a>
+
 --
 
 Unofficial Development Kit for Espressif ESP8266 - this is an unofficial firmware development kit for SoC Espressif ESP8266.<br>
@@ -26,3 +28,5 @@ Unofficial Development Kit for Espressif ESP8266 - this is an unofficial firmwar
 5. Additional tools for working with boards based on the ESP8266.<br>
 
 <a href="http://programs74.ru/udkew-en.html">Official site of the project, where you can download the installer for Windows</a>
+
+<br><a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=KEZT6SQ9FRRFE">Donate (PayPal USD)</a>
