@@ -1,0 +1,11 @@
+Instructions of building for the installer Unofficial Development Kit for Espressif ESP8266:
+===========================================================================================
+
+1. Clone the repository esp8266-devkit, for this, run the command: git clone https://github.com/CHERTS/esp8266-devkit.git
+2. Download (http://sourceforge.net/projects/mingw/files/Installer/) and install MinGW. Run mingw-get-setup.exe, the installation process to select without GUI, ie uncheck "... also install support for the graphical user interface".
+3. Run the script esp8266-devkit\Espressif\install-mingw-package.bat, it installing the basic modules for MinGW.
+4. Start the MinGW console using the file C:\MinGW\msys\1.0\msys.bat
+5. In the console, navigate to the folder esp8266-devkit/Espressif, like this: cd /c/esp8266-devkit/Espressif
+6. Run the script build-xtensa-lx106-elf.sh, it will download (about 1 GB), and the compiler will compile gcc-xtensa-lx106-elf. Compilation takes 1 to 3 hours, depending on the power of your PC. After a successful build message should appear Done!.
+7. Download (http://www.jrsoftware.org/isdl.php, files isetup-5.5.5-unicode.exe and ispack-5.5.5-unicode.exe) installer and install Inno Setup.
+8. Start Inno Script Studio, open the script "esp8266-devkit/Installer.iss" and compile the script, in the case of final assembly of the installer in the directory should appear Output installer file Espressif-ESP8266-DevKit-v1.0.x-x86.exe
