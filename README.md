@@ -13,7 +13,7 @@ Unofficial Development Kit for Espressif ESP8266
 
 <a href="http://programs74.ru/udkew.html">Официальный сайт проекта, где можно скачать инсталлятор для Windows</a>
 
-<br><a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=6D6EFK8LJ74UC">Поддержать проект (PayPal РУБ)</a>
+<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=6D6EFK8LJ74UC"><img height="47" width="92" src="donate-ru.bmp" alt="Поддержать проект" title="Поддержать проект"></a>
 
 --
 
@@ -29,4 +29,4 @@ Unofficial Development Kit for Espressif ESP8266 - this is an unofficial firmwar
 
 <a href="http://programs74.ru/udkew-en.html">Official site of the project, where you can download the installer for Windows</a>
 
-<br><a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=KEZT6SQ9FRRFE">Donate (PayPal USD)</a>
+<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=KEZT6SQ9FRRFE"><img height="47" width="92" src="donate-en.bmp" alt="Donate" title="Donate"></a>
