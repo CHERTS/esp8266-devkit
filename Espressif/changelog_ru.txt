@@ -5,6 +5,8 @@ v1.0.11 (25.02.2015):
 + Добавлен RTOS SDK, каталог "C:\Espressif\ESP8266_RTOS_SDK";
 + Добавлены новые примеры:
   ESPWebFramework - Пример, показывающий работу с RTOS SDK на языке С++ (компилируется, проверен в работе), оригинальные исходники https://github.com/fdivitto/ESPWebFramework;
+  esp_rtos_sdk_example - Базовый пример работы с RTOS SDK от Espressif (компилируется, работа не проверялась);
+- Удален пример esp_iot_rtos_sdk;
 * Обновлен компилятор xtensa-lx106-gcc;
 * Обновлены примеры:
   nodemcu-firmware;
