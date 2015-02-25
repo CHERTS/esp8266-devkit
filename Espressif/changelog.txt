@@ -2,6 +2,9 @@ Changelog:
 ----------
 
 v1.0.11:
++ Added RTOS SDK, directory "C:\Espressif\ESP8266_RTOS_SDK";
++ Added new examples:
+  ESPWebFramework - example showing work with RTOS SDK in C++ (compiled, works correctly), original source https://github.com/fdivitto/ESPWebFramework;
 * Updated xtensa-lx106-gcc compiler;
 * Updated examples:
   nodemcu-firmware;
