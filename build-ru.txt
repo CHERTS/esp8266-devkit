@@ -3,9 +3,9 @@
 
 1. Клонируйте репозитарий esp8266-devkit, для этого выполните команду: git clone https://github.com/CHERTS/esp8266-devkit.git
 2. Скачайте (http://sourceforge.net/projects/mingw/files/Installer/) и установите MinGW. Запустите mingw-get-setup.exe, в процессе установки выберите режим без GUI, то есть уберите галочку "...also install support for the graphical user interface".
-3. Запустите скрипт esp8266-devkit\Espressif\install-mingw-package.bat, он установит основные модули для MinGW.
-4. Запустите консоль MinGW с помощью файла C:\MinGW\msys\1.0\msys.bat
-5. В консоле перейдите в папку esp8266-devkit/Espressif, например так: cd /c/esp8266-devkit/Espressif
+3. Запустите скрипт "esp8266-devkit\Espressif\install-mingw-package.bat", он установит основные модули для MinGW.
+4. Запустите консоль MinGW с помощью файла "C:\MinGW\msys\1.0\msys.bat"
+5. В консоле перейдите в папку "esp8266-devkit/Espressif", например так: cd /c/esp8266-devkit/Espressif
 6. Запустите скрипт build-xtensa-lx106-elf.sh, он скачает (примерно 1Гбайт) и скомпилирует компилятор gcc-xtensa-lx106-elf. Компиляция занимает от 1 до 3 часов, в зависимости от мощности Вашего ПК. По окончании успешной сборки должно появиться сообщение Done!.
 7. Скачайте (http://www.jrsoftware.org/isdl.php, файлы isetup-5.5.5-unicode.exe и ispack-5.5.5-unicode.exe) и установите инсталлятор Inno Setup.
 8. Запустите Inno Script Studio, откройте скрипт "esp8266-devkit/Installer.iss" и запустите компиляцию скрипта, в случае окончания сборки инсталлятора в каталоге Output должен появится файл инсталлятора Espressif-ESP8266-DevKit-v1.0.x-x86.exe 
