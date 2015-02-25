@@ -8,6 +8,7 @@ v1.0.11 (25.02.2015):
   esp_rtos_sdk_example - Базовый пример работы с RTOS SDK от Espressif (компилируется, работа не проверялась);
 - Удален пример esp_iot_rtos_sdk;
 * Обновлен компилятор xtensa-lx106-gcc;
+* Обновлена утилита "utils\esptool.exe";
 * Обновлены примеры:
   nodemcu-firmware;
   esp_mqtt;

@@ -8,6 +8,7 @@ v1.0.11:
   esp_rtos_sdk_example - Basic example of working with RTOS SDK from Espressif (compiled, not checked in the work);
 - Removed example esp_iot_rtos_sdk;
 * Updated xtensa-lx106-gcc compiler;
+* Update a utility to communicate with the ROM bootloader in Espressif ESP8266 (utils\esptool.exe):
 * Updated examples:
   nodemcu-firmware;
   esp_mqtt;
