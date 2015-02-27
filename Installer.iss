@@ -1,4 +1,4 @@
-;InnoSetupVersion=5.5.0
+п»ї;InnoSetupVersion=5.5.0
 #define DevKitVersion "1.0.11"
 #define DevKitSDKVersion "0.9.5"
 #define DevKitAppName "Unofficial Development Kit for Espressif ESP8266"
@@ -6,11 +6,12 @@
 #define DevKitAppPublisher "Mikhail Grigorev"
 #define DevKitDonateEN "KEZT6SQ9FRRFE"
 #define DevKitDonateRU "6D6EFK8LJ74UC"
+#define DevKitDonateTR "BAVDMNVFZ6WQY"
 
 [Setup]
 AppName={#DevKitAppName}
 AppVerName={#DevKitAppName}
-AppCopyright=Copyright © 2014-2015 {#DevKitAppPublisher}
+AppCopyright=Copyright В© 2014-2015 {#DevKitAppPublisher}
 AppContact=sleuthhound@gmail.com
 AppPublisher={#DevKitAppPublisher}
 AppPublisherURL={#DevKitAppURL}
@@ -43,10 +44,11 @@ Source: "Espressif\ESP8266_SDK\*"; DestDir: "{app}\ESP8266_SDK"; Flags: ignoreve
 Source: "Espressif\ESP8266_SDK_094\*"; DestDir: "{app}\ESP8266_SDK_094"; Flags: ignoreversion createallsubdirs recursesubdirs
 Source: "Espressif\Espressif web site.url"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Espressif\DevKit web site.url"; DestDir: "{app}"; Flags: ignoreversion
-Source: "Espressif\changelog.txt"; DestDir: "{app}"; Flags: ignoreversion; Languages: english
+Source: "Espressif\changelog.txt"; DestDir: "{app}"; Flags: ignoreversion; Languages: english turkish
 Source: "Espressif\changelog_ru.txt"; DestDir: "{app}"; Flags: ignoreversion; Languages: russian
 Source: "donate-en.bmp"; DestDir: "{tmp}"; Flags: dontcopy; Languages: english
 Source: "donate-ru.bmp"; DestDir: "{tmp}"; Flags: dontcopy; Languages: russian
+Source: "donate-tr.bmp"; DestDir: "{tmp}"; Flags: dontcopy; Languages: turkish
 Source: "InnoCallback.dll"; DestDir: "{tmp}"; Flags: dontcopy
 
 [Dirs]
@@ -65,18 +67,21 @@ Root: "HKCU"; Subkey: "Software\Terminal\TmacroForm"; ValueType: string; ValueNa
 [Run]
 
 [Icons]
-Name: "{group}\Документация"; Filename: "{app}\docs"; WorkingDir: "{app}\docs"; MinVersion: 0.0,5.0; Languages: russian
 Name: "{group}\Documentation"; Filename: "{app}\docs"; WorkingDir: "{app}\docs"; MinVersion: 0.0,5.0; Languages: english
-Name: "{group}\Примеры прошивок"; Filename: "{app}\examples"; WorkingDir: "{app}\examples"; MinVersion: 0.0,5.0; Languages: russian
+Name: "{group}\Р”РѕРєСѓРјРµРЅС‚Р°С†РёСЏ"; Filename: "{app}\docs"; WorkingDir: "{app}\docs"; MinVersion: 0.0,5.0; Languages: russian
+Name: "{group}\Belgeler"; Filename: "{app}\docs"; WorkingDir: "{app}\docs"; MinVersion: 0.0,5.0; Languages: turkish
 Name: "{group}\Examples"; Filename: "{app}\examples"; WorkingDir: "{app}\examples"; MinVersion: 0.0,5.0; Languages: english
-Name: "{group}\Запустить Terminal"; Filename: "{app}\utils\Terminal.exe"; WorkingDir: "{app}\utils\"; IconFilename: "{app}\utils\Terminal.exe"; MinVersion: 0.0,5.0; Languages: russian
+Name: "{group}\РџСЂРёРјРµСЂС‹ РїСЂРѕС€РёРІРѕРє"; Filename: "{app}\examples"; WorkingDir: "{app}\examples"; MinVersion: 0.0,5.0; Languages: russian
+Name: "{group}\Г–rnekleri firmware"; Filename: "{app}\examples"; WorkingDir: "{app}\examples"; MinVersion: 0.0,5.0; Languages: turkish
 Name: "{group}\Run terminal"; Filename: "{app}\utils\Terminal.exe"; WorkingDir: "{app}\utils\"; IconFilename: "{app}\utils\Terminal.exe"; MinVersion: 0.0,5.0; Languages: english
-Name: "{group}\Beб-сайт Unofficial Development Kit"; Filename: "{app}\DevKit web site.url"; WorkingDir: "{app}"; IconFilename: "%SystemRoot%\system32\SHELL32.dll"; IconIndex: 13; MinVersion: 0.0,5.0; Languages: russian
-Name: "{group}\Unofficial Development Kit Web site"; Filename: "{app}\DevKit web site.url"; WorkingDir: "{app}"; IconFilename: "%SystemRoot%\system32\SHELL32.dll"; IconIndex: 13; MinVersion: 0.0,5.0; Languages: english
-Name: "{group}\Beб-сайт Espressif"; Filename: "{app}\Espressif web site.url"; WorkingDir: "{app}"; IconFilename: "%SystemRoot%\system32\SHELL32.dll"; IconIndex: 13; MinVersion: 0.0,5.0; Languages: russian
+Name: "{group}\Р—Р°РїСѓСЃС‚РёС‚СЊ Terminal"; Filename: "{app}\utils\Terminal.exe"; WorkingDir: "{app}\utils\"; IconFilename: "{app}\utils\Terminal.exe"; MinVersion: 0.0,5.0; Languages: russian
+Name: "{group}\ProgramД± Terminal"; Filename: "{app}\utils\Terminal.exe"; WorkingDir: "{app}\utils\"; IconFilename: "{app}\utils\Terminal.exe"; MinVersion: 0.0,5.0; Languages: turkish
 Name: "{group}\Espressif Web site"; Filename: "{app}\Espressif web site.url"; WorkingDir: "{app}"; IconFilename: "%SystemRoot%\system32\SHELL32.dll"; IconIndex: 13; MinVersion: 0.0,5.0; Languages: english
-Name: "{group}\Сhangelog"; Filename: "{app}\changelog.txt"; WorkingDir: "{app}"; MinVersion: 0.0,5.0; Languages: english
-Name: "{group}\Список изменений"; Filename: "{app}\changelog_ru.txt"; WorkingDir: "{app}"; MinVersion: 0.0,5.0; Languages: russian
+Name: "{group}\BeР±-СЃР°Р№С‚ Espressif"; Filename: "{app}\Espressif web site.url"; WorkingDir: "{app}"; IconFilename: "%SystemRoot%\system32\SHELL32.dll"; IconIndex: 13; MinVersion: 0.0,5.0; Languages: russian
+Name: "{group}\Web sitesi Espressif"; Filename: "{app}\Espressif web site.url"; WorkingDir: "{app}"; IconFilename: "%SystemRoot%\system32\SHELL32.dll"; IconIndex: 13; MinVersion: 0.0,5.0; Languages: turkish
+Name: "{group}\РЎhangelog"; Filename: "{app}\changelog.txt"; WorkingDir: "{app}"; MinVersion: 0.0,5.0; Languages: english
+Name: "{group}\РЎРїРёСЃРѕРє РёР·РјРµРЅРµРЅРёР№"; Filename: "{app}\changelog.txt"; WorkingDir: "{app}"; MinVersion: 0.0,5.0; Languages: russian
+Name: "{group}\DeДџiЕџikliklerin listesi"; Filename: "{app}\changelog.txt"; WorkingDir: "{app}"; MinVersion: 0.0,5.0; Languages: turkish
 Name: "{group}\{cm:UninstallProgram,Espressif ESP8266 Developer Kit}"; Filename: "{uninstallexe}"; MinVersion: 0.0,5.0
 
 [UninstallDelete]
@@ -89,23 +94,27 @@ Type: filesandordirs; Name: "{app}\ESP8266_SDK\*"
 Type: filesandordirs; Name: "{app}\ESP8266_SDK_094\*"
 Type: files; Name: "{app}\DevKit web site.url"
 Type: files; Name: "{app}\Espressif web site.url"
-Type: files; Name: "{app}\changelog.txt"; Languages: english
+Type: files; Name: "{app}\changelog.txt"; Languages: english turkish
 Type: files; Name: "{app}\changelog_ru.txt"; Languages: russian
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "russian"; MessagesFile: "compiler:Languages\Russian.isl"
+Name: "turkish"; MessagesFile: "compiler:Languages\Turkish.isl"
 
 [Messages]
 ;BeveledLabel=Espressif ESP8266 Developer Kit
-russian.WelcomeLabel2=Сейчас на Ваш компьютер будет установлен {#DevKitAppName}. В состав комплекта входят неофициальный компилятор для SoC Xtensa LX106, ESP8266 SDK v{#DevKitSDKVersion}, набор утилит и примеры написания прошивок.
 english.WelcomeLabel2=Now your computer will set an {#DevKitAppName}. The DevKit includes a unofficial compiler for SoC Xtensa LX106 and ESP8266 SDK v{#DevKitSDKVersion}, utils and examples of writing firmware.
+russian.WelcomeLabel2=РЎРµР№С‡Р°СЃ РЅР° Р’Р°С€ РєРѕРјРїСЊСЋС‚РµСЂ Р±СѓРґРµС‚ СѓСЃС‚Р°РЅРѕРІР»РµРЅ {#DevKitAppName}. Р’ СЃРѕСЃС‚Р°РІ РєРѕРјРїР»РµРєС‚Р° РІС…РѕРґСЏС‚ РЅРµРѕС„РёС†РёР°Р»СЊРЅС‹Р№ РєРѕРјРїРёР»СЏС‚РѕСЂ РґР»СЏ SoC Xtensa LX106, ESP8266 SDK v{#DevKitSDKVersion}, РЅР°Р±РѕСЂ СѓС‚РёР»РёС‚ Рё РїСЂРёРјРµСЂС‹ РЅР°РїРёСЃР°РЅРёСЏ РїСЂРѕС€РёРІРѕРє.
+turkish.WelcomeLabel2=Ећu an bilgisayarД±nД±zda yГјklГј olacak {#DevKitAppName}. Kompozisyon kit iГ§erir derleyici iГ§in SoC Xtensa LX106, ESP8266 SDK v{#DevKitSDKVersion}, yardД±mcД± ve Г¶rnekleri.
 
 [CustomMessages]
-russian.UninstallProgram=Удалить %1
 english.UninstallProgram=Uninstall %1
+russian.UninstallProgram=РЈРґР°Р»РёС‚СЊ %1
+turkish.UninstallProgram=KaldД±r %1
 english.DONATE=Dear users, support this project and it will continue to develop:
-russian.DONATE=Уважаемые пользователи, поддержите проект и благодаря Вам он сможет развиваться дальше:
+russian.DONATE=РЈРІР°Р¶Р°РµРјС‹Рµ РїРѕР»СЊР·РѕРІР°С‚РµР»Рё, РїРѕРґРґРµСЂР¶РёС‚Рµ РїСЂРѕРµРєС‚ Рё Р±Р»Р°РіРѕРґР°СЂСЏ Р’Р°Рј РѕРЅ СЃРјРѕР¶РµС‚ СЂР°Р·РІРёРІР°С‚СЊСЃСЏ РґР°Р»СЊС€Рµ:
+turkish.DONATE=Sevgili kullanД±cД±lar, lГјtfen yardД±m projesi:
 
 [Code]
 const
@@ -141,18 +150,22 @@ procedure SiteLabelOnClick(Sender: TObject);
 var
   ErrorCode: Integer;
 begin
-  if ActiveLanguage = 'english' then 
-    ShellExec('open', 'https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id={#DevKitDonateEN}', '', '', SW_SHOWNORMAL, ewNoWait, ErrorCode)
-  else
+  if ActiveLanguage = 'russian' then 
     ShellExec('open', 'https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id={#DevKitDonateRU}', '', '', SW_SHOWNORMAL, ewNoWait, ErrorCode)
+  else if ActiveLanguage = 'turkish' then 
+    ShellExec('open', 'https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id={#DevKitDonateTR}', '', '', SW_SHOWNORMAL, ewNoWait, ErrorCode)
+  else
+    ShellExec('open', 'https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id={#DevKitDonateEN}', '', '', SW_SHOWNORMAL, ewNoWait, ErrorCode)
 end;
 
 procedure CreateImage;
 begin
-  if ActiveLanguage = 'english' then 
-    ExtractTemporaryFile('donate-en.bmp')
+  if ActiveLanguage = 'russian' then 
+    ExtractTemporaryFile('donate-ru.bmp')
+  else if ActiveLanguage = 'turkish' then 
+    ExtractTemporaryFile('donate-tr.bmp')
   else
-    ExtractTemporaryFile('donate-ru.bmp');
+    ExtractTemporaryFile('donate-en.bmp');
   StaticText:=TNewStaticText.Create(WizardForm);
   with StaticText do
   begin
@@ -170,14 +183,19 @@ begin
   begin
     Left:=176;
     Top:=250;
-    if ActiveLanguage = 'english' then 
+    if ActiveLanguage = 'russian' then 
     begin
-      Width:=147;
+      Width:=92;
+      Height:=47;
+    end
+    else if ActiveLanguage = 'turkish' then 
+    begin
+      Width:=129;
       Height:=47;
     end
     else
     begin
-      Width:=92;
+      Width:=147;
       Height:=47;
     end;
     Cursor:=crHand;
@@ -189,10 +207,12 @@ begin
   begin
     AutoSize:=True;
     Enabled:=False;
-    if ActiveLanguage = 'english' then 
-      Bitmap.LoadFromFile(ExpandConstant('{tmp}')+'\donate-en.bmp')
+    if ActiveLanguage = 'russian' then 
+      Bitmap.LoadFromFile(ExpandConstant('{tmp}')+'\donate-ru.bmp')
+    else if ActiveLanguage = 'turkish' then 
+      Bitmap.LoadFromFile(ExpandConstant('{tmp}')+'\donate-tr.bmp')
     else
-      Bitmap.LoadFromFile(ExpandConstant('{tmp}')+'\donate-ru.bmp');
+      Bitmap.LoadFromFile(ExpandConstant('{tmp}')+'\donate-en.bmp');
     Parent:=DonatePanel;
   end;
 end;

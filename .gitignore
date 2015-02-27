@@ -2,3 +2,4 @@
 *.bat
 *.dll
 Installer-Sign.iss
+Installer-Test.iss
