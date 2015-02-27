@@ -104,7 +104,7 @@ Name: "turkish"; MessagesFile: "compiler:Languages\Turkish.isl"
 
 [Messages]
 ;BeveledLabel=Espressif ESP8266 Developer Kit
-english.WelcomeLabel2=Now your computer will set an {#DevKitAppName}. The DevKit includes a unofficial compiler for SoC Xtensa LX106 and ESP8266 SDK v{#DevKitSDKVersion}, utils and examples of writing firmware.
+english.WelcomeLabel2=Now on your PC will be installed {#DevKitAppName}. The DevKit includes a unofficial compiler for SoC Xtensa LX106 and ESP8266 SDK v{#DevKitSDKVersion}, utilities and examples of writing firmware.
 russian.WelcomeLabel2=Сейчас на Ваш компьютер будет установлен {#DevKitAppName}. В состав комплекта входят неофициальный компилятор для SoC Xtensa LX106, ESP8266 SDK v{#DevKitSDKVersion}, набор утилит и примеры написания прошивок.
 turkish.WelcomeLabel2=Şu an bilgisayarınızda yüklü olacak {#DevKitAppName}. Kompozisyon kit içerir derleyici için SoC Xtensa LX106, ESP8266 SDK v{#DevKitSDKVersion}, yardımcı ve örnekleri.
 
