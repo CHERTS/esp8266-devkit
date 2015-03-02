@@ -179,7 +179,7 @@ easygpio_pinMode(uint8_t gpio_pin, EasyGPIO_PullStatus pullStatus, EasyGPIO_PinM
  * Sets the 'gpio_pin' pin as a GPIO and sets the interrupt to trigger on that pin
  */
 bool ICACHE_FLASH_ATTR
-easygpio_attachInterrupt(uint8_t gpio_pin, EasyGPIO_PullStatus pullStatus, void (*interruptHandler)(void)) {
+easygpio_attachInterrupt(uint8_t gpio_pin, EasyGPIO_PullStatus pullStatus, void (*interruptHandler)(int8_t key)) {
   uint32_t gpio_name;
   uint8_t gpio_func;
 

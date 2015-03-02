@@ -26,10 +26,20 @@ void hspi_init(void)
 	   ((3 & SPI_CLKCNT_L) << SPI_CLKCNT_L_S));
 }
 
-static void writeDataToBuffer(uint8_t *data, uint8_t numberByte)
+static void hspi_setAmountBit(uint8_t amountByte)
+{
+	uint16_t numberBit = amountByte * 8 - 1;
+	WRITE_PERI_REG(SPI_FLASH_USER1(HSPI),
+			( (numberBit & SPI_USR_OUT_BITLEN) << SPI_USR_OUT_BITLEN_S ) |
+			( (numberBit & SPI_USR_DIN_BITLEN) << SPI_USR_DIN_BITLEN_S ) );
+}
+
+static void hspi_loadToBuffer(uint8_t *data, uint8_t numberByte)
 {
 	uint8_t i = 0;
 	uint8_t amount4byte = (numberByte / 4) + 1;
+
+	hspi_setAmountBit(numberByte);
 
 	for (i = 0; i < amount4byte; ++i)
 	{
@@ -37,7 +47,7 @@ static void writeDataToBuffer(uint8_t *data, uint8_t numberByte)
 	}
 }
 
-static void readDataFromBuffer(uint8_t * data, uint8_t numberByte)
+static void hspi_readFromBuffer(uint8_t * data, uint8_t numberByte)
 {
 
 	uint8_t i = 0;
@@ -56,97 +66,119 @@ static void readDataFromBuffer(uint8_t * data, uint8_t numberByte)
 	}
 }
 
-void hspi_TxRx(uint8_t * data, uint8_t numberByte)
+static void hspi_startSend(void)
 {
-	uint32_t regvalue = 0;
-	uint16_t numberBit = 0;
+	SET_PERI_REG_MASK(SPI_FLASH_CMD(HSPI), SPI_FLASH_USR);
+}
 
-	while (READ_PERI_REG(SPI_FLASH_CMD(HSPI))&SPI_FLASH_USR);
-
-	regvalue |=  SPI_FLASH_DOUT | SPI_DOUTDIN | SPI_CK_I_EDGE;
-    regvalue &= ~(BIT2 | SPI_FLASH_USR_ADDR | SPI_FLASH_USR_DUMMY | SPI_FLASH_USR_DIN | SPI_USR_COMMAND); //clear bit 2 see example IoT_Demo
-	WRITE_PERI_REG(SPI_FLASH_USER(HSPI), regvalue);
-
-	numberBit = numberByte * 8 - 1;
-
-	WRITE_PERI_REG(SPI_FLASH_USER1(HSPI),
-			( (numberBit & SPI_USR_OUT_BITLEN) << SPI_USR_OUT_BITLEN_S ) |
-			( (numberBit & SPI_USR_DIN_BITLEN) << SPI_USR_DIN_BITLEN_S ) );
-
-	writeDataToBuffer(data, numberByte);
-
-	SET_PERI_REG_MASK(SPI_FLASH_CMD(HSPI), SPI_FLASH_USR);   // send
-
-	while (READ_PERI_REG(SPI_FLASH_CMD(HSPI)) & SPI_FLASH_USR);
-
-	readDataFromBuffer(data, numberByte);
+static void hspi_whaitReady(void)
+{
+	while (READ_PERI_REG(SPI_FLASH_CMD(HSPI)) & SPI_FLASH_USR) {};
 }
 
 
+static void hspi_config(int configState)
+{
+	uint32_t valueOfRegisters = 0;
+
+	hspi_whaitReady();
+
+	if (configState == CONFIG_FOR_TX)
+	{
+		valueOfRegisters |=  SPI_FLASH_DOUT;
+		valueOfRegisters &= ~(BIT2 | SPI_FLASH_USR_ADDR | SPI_FLASH_USR_DUMMY | SPI_FLASH_USR_DIN | SPI_USR_COMMAND | SPI_DOUTDIN); //clear bit 2 see example IoT_Demo
+	}
+	else if  (configState == CONFIG_FOR_RX_TX)
+	{
+		valueOfRegisters |=  SPI_FLASH_DOUT | SPI_DOUTDIN | SPI_CK_I_EDGE;
+		valueOfRegisters &= ~(BIT2 | SPI_FLASH_USR_ADDR | SPI_FLASH_USR_DUMMY | SPI_FLASH_USR_DIN | SPI_USR_COMMAND); //clear bit 2 see example IoT_Demo
+	}
+	else
+	{
+		return;
+	}
+	WRITE_PERI_REG(SPI_FLASH_USER(HSPI), valueOfRegisters);
+}
+
+void hspi_TxRx(uint8_t * data, uint8_t numberByte)
+{
+	hspi_config(CONFIG_FOR_RX_TX);
+	hspi_loadToBuffer(data, numberByte);
+	hspi_startSend();
+	hspi_whaitReady();
+	hspi_readFromBuffer(data, numberByte);
+}
+
 void hspi_Tx(uint8_t * data, uint8_t numberByte, uint32_t numberRepeat)
 {
-#ifdef USE_HARD_OPTIMIZATION
-
-	uint8_t dataBuffer[MAX_SIZE_BUFFER];
-	uint8_t j = 0;
-	uint8_t k = 0;
-
-#endif
 	uint32_t i = 0;
+	uint32_t j = 0;
 
+	if ((numberByte < 1) || (numberRepeat < 1))
+		return;	// Error parameter
 
-	uint32_t regvalue = 0;
-	uint16_t numberBit = 0;
+	hspi_config(CONFIG_FOR_TX);
 
-	while (READ_PERI_REG(SPI_FLASH_CMD(HSPI))&SPI_FLASH_USR);
-
-	regvalue |=  SPI_FLASH_DOUT;
-    regvalue &= ~(BIT2 | SPI_FLASH_USR_ADDR | SPI_FLASH_USR_DUMMY | SPI_FLASH_USR_DIN | SPI_USR_COMMAND | SPI_DOUTDIN); //clear bit 2 see example IoT_Demo
-	WRITE_PERI_REG(SPI_FLASH_USER(HSPI), regvalue);
-
-
-	if (numberByte > MAX_SIZE_BUFFER)
+	if (numberRepeat > 1)
 	{
-		return;	// Need describe this case or exit :)
-	}
+		uint8_t package[MAX_SIZE_BUFFER];
+		uint8_t amountByteAtPackage = 0;
+		uint8_t amountDataAtPackage = MAX_SIZE_BUFFER /  numberByte;
 
-#ifdef USE_HARD_OPTIMIZATION
+		if (numberByte > MAX_SIZE_BUFFER)
+			return; // Require describe this case or exit :)
 
-	for (i = 0; i < numberRepeat; i ++)
-	{
-		for (j = 0; j < numberByte; j++)
+		if (amountDataAtPackage > numberRepeat)
+			amountDataAtPackage = numberRepeat;
+
+		for (i = 0; i < amountDataAtPackage; ++i)
+			for (j = 0; j < numberByte; ++j)
+			{
+				package[amountByteAtPackage] = data[j];
+				amountByteAtPackage++;
+			}
+
+		hspi_loadToBuffer(package, amountByteAtPackage);
+
+		// send main part of data
+
+		for (i = 0; i < numberRepeat; i += amountDataAtPackage)
 		{
-			dataBuffer[k] = data[j];
-			k++;
+			hspi_startSend();
+			hspi_whaitReady();
 		}
-		if (k >= (MAX_SIZE_BUFFER - MAX_SIZE_BUFFER % numberByte) || (i == (numberRepeat - 1)))
+
+		// send residual part of data
+
+		if (numberRepeat % amountDataAtPackage != 0)
 		{
-			numberBit = k * 8 - 1;
-			WRITE_PERI_REG(SPI_FLASH_USER1(HSPI), (numberBit & SPI_USR_OUT_BITLEN) << SPI_USR_OUT_BITLEN_S );
-
-			writeDataToBuffer(dataBuffer, k);
-
-			SET_PERI_REG_MASK(SPI_FLASH_CMD(HSPI), SPI_FLASH_USR);   // send
-
-			while (READ_PERI_REG(SPI_FLASH_CMD(HSPI)) & SPI_FLASH_USR);
-
-			k = 0;
+			hspi_setAmountBit((numberRepeat % amountDataAtPackage) * amountByteAtPackage);
+			hspi_startSend();
+			hspi_whaitReady();
 		}
+
 	}
-
-#else
-
-	numberBit = numberByte * 8 - 1;
-
-	WRITE_PERI_REG(SPI_FLASH_USER1(HSPI), (numberBit & SPI_USR_OUT_BITLEN) << SPI_USR_OUT_BITLEN_S );
-
-	writeDataToBuffer(data, numberByte);
-
-	for (i = 0; i < numberRepeat; i ++)
+	else
 	{
-		SET_PERI_REG_MASK(SPI_FLASH_CMD(HSPI), SPI_FLASH_USR);   // send
-		while (READ_PERI_REG(SPI_FLASH_CMD(HSPI)) & SPI_FLASH_USR);
-	}
+		uint8_t byteAtPackage = (numberByte < MAX_SIZE_BUFFER) ? numberByte : MAX_SIZE_BUFFER;
 
-#endif
+		// send main part of data
+
+		for (i = 0; i < numberByte - numberByte % byteAtPackage; i += byteAtPackage)
+		{
+			hspi_loadToBuffer(&data[i], byteAtPackage);
+			hspi_startSend();
+			hspi_whaitReady();
+		}
+
+		// send residual part of data
+
+		if (numberByte % byteAtPackage != 0)
+		{
+			hspi_loadToBuffer(&data[numberByte - numberByte % byteAtPackage], numberByte % byteAtPackage);
+			hspi_startSend();
+			hspi_whaitReady();
+		}
+
+	}
 }

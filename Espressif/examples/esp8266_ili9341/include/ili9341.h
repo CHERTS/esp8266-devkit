@@ -13,6 +13,7 @@
 #include <osapi.h>
 #include <os_type.h>
 #include <gpio.h>
+#include <mem.h>
 #include "hspi.h"
 #include "font.h"
 
@@ -28,6 +29,16 @@ typedef union
 
    	uint32_t all;
 } uint32_t_bytes;
+
+typedef struct
+{
+	uint16_t xLeft;
+	uint16_t xRight;
+	uint16_t yUp;
+	uint16_t yDown;
+	uint16_t *color;
+	uint8_t isOneColor;
+} Rectangle;
 
 #define TFT_CS_ACTIVE	GPIO_OUTPUT_SET(4, 0)
 #define TFT_CS_DEACTIVE GPIO_OUTPUT_SET(4, 1)
@@ -49,7 +60,7 @@ typedef union
 extern uint32_t tft_readId(void);
 extern void tft_init(void);
 extern void tft_configRegister(void);
-extern void tft_fillRectangle(uint16_t xLeft, uint16_t xRight, uint16_t yUp, uint16_t yDown, uint16_t color);
+extern void tft_fillRectangle(uint16_t xLeft, uint16_t xRight, uint16_t yUp, uint16_t yDown, uint16_t *color, uint32_t amountColor);
 extern void tft_setPixel(uint16_t poX, uint16_t poY, uint16_t color);
 extern void tft_drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint16_t color);
 extern void tft_drawChar(int16_t ascii, uint16_t posX, uint16_t posY, uint8_t sizeFont, uint16_t colorFont, uint16 colorBackGround);

@@ -211,6 +211,7 @@ void tft_configRegister(void)
 
 void tft_init(void)
 {
+	uint16_t initColor = 0;
 	hspi_init();
 
 	TFT_CS_INIT;
@@ -224,14 +225,12 @@ void tft_init(void)
 
 	tft_readId();
 	tft_configRegister();
-	tft_fillRectangle(MIN_TFT_X, MAX_TFT_X, MIN_TFT_Y, MAX_TFT_Y, 0);
+	tft_fillRectangle(MIN_TFT_X, MAX_TFT_X, MIN_TFT_Y, MAX_TFT_Y, &initColor, 1);
 }
 
-void tft_fillRectangle(uint16_t xLeft, uint16_t xRight, uint16_t yUp, uint16_t yDown, uint16_t color)
+void tft_fillRectangle(uint16_t xLeft, uint16_t xRight, uint16_t yUp, uint16_t yDown, uint16_t *colors, uint32_t amountColor)
 {
-    uint32_t numRepeat = 0;
     uint32_t i = 0;
-    uint8_t data[2] = {0};
 
     if (xLeft > xRight) swap(&xLeft, &xRight);
     if (yUp > yDown) swap(&yUp, &yDown);
@@ -241,27 +240,34 @@ void tft_fillRectangle(uint16_t xLeft, uint16_t xRight, uint16_t yUp, uint16_t y
     constrain(&yUp, MIN_TFT_Y, MAX_TFT_Y);
     constrain(&yDown, MIN_TFT_Y, MAX_TFT_Y);
 
-    numRepeat = (xRight - xLeft + 1) * (yDown - yUp + 1);
-
     setCol(xLeft, xRight);
     setPage(yUp, yDown);
     transmitCmdData(0x2C, 0, 0);//  start to write to display RAM
 
-    data[0] = color >> 8;
-    data[1] = color & 0xff;
-
-   	transmitData(data, 2, numRepeat);
+    if (amountColor == 1)
+    {
+    	uint32_t numRepeat = (xRight - xLeft + 1) * (yDown - yUp + 1);
+        transmitData((uint8_t *)colors, 2, numRepeat);
+    }
+    else
+    {
+        transmitData((uint8_t *)colors, 2 * amountColor, 1);
+    }
 }
+
+
+
 
 void tft_setPixel(uint16_t poX, uint16_t poY, uint16_t color)
 {
-	tft_fillRectangle(poX, poX, poY, poY, color);
+	tft_fillRectangle(poX, poX, poY, poY, &color, 1);
 }
-
-//#define USE_OPTIMIZATION_DRAWLINE
 
 void tft_drawLine( uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint16_t color)
 {
+
+#define USE_OPTIMIZATION_DRAWLINE
+
     int16_t dx = abs(x1 - x0);
     int16_t dy = -abs(y1 - y0);
     int8_t sx = (x0 < x1) ? 1 : -1;
@@ -269,16 +275,18 @@ void tft_drawLine( uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint16_t 
     int16_t err = dx + dy;
     int16_t e2 = 0;
 
+#ifdef USE_OPTIMIZATION_DRAWLINE
 	uint16_t startX = x0;
 	uint16_t startY = y0;
+#endif
 
     for (;;)
     {
 		#ifdef USE_OPTIMIZATION_DRAWLINE
-    		// Need correction
+    		// Require correction
 			if ((startX != x0) && (startY != y0)) // draw line and not draw point
 			{
-				tft_fillRectangle(startX, x0, startY, y0, color);
+				tft_fillRectangle(startX, x0 - sx, startY, y0 - sy, &color, 1);
 				startX = x0;
 				startY = y0;
 			}
@@ -301,37 +309,47 @@ void tft_drawLine( uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint16_t 
         }
     }
 #ifdef USE_OPTIMIZATION_DRAWLINE
-	tft_fillRectangle(startX, x0, startY, y0, color);
+	tft_fillRectangle(startX, x0, startY, y0, &color, 1);
 #endif
 }
 
-void tft_drawChar(int16_t ascii, uint16_t posX, uint16_t posY, uint8_t sizeFont, uint16_t colorFont, uint16 colorBackGround)
+void tft_drawChar(int16_t ascii, uint16_t posX, uint16_t posY, uint8_t sizeFont, uint16_t colorFont, uint16 colorBackground)
 {
 	uint8_t i = 0;
-	uint8_t j = 0;
+	uint16_t * color = (uint16_t *)os_malloc(sizeof(uint16_t) * FONT_Y * sizeFont);
 
-	ascii = ( (ascii < 32) || (ascii > 127) ) ? 0x20 : ascii - 0x20;
-
+	ascii = ( (ascii < 0x20) || (ascii > 0x7F) ) ? 0x20 : ascii - 0x20;
 
     for (i = 0; i < FONT_X; ++i )
     {
-    	for(j = 0; j < FONT_Y; ++j)
-    	{
-    			uint16_t finalColor = ((simpleFont[ascii][i] >> j) & 0x01) ? colorFont : colorBackGround;
+    	uint8_t j = 0;
+    	uint8_t k = 0;
+    	uint16_t coordX = posX + i * sizeFont;
 
-    			tft_fillRectangle(posX + i * sizeFont, posX + (i+1) * sizeFont,  posY + j * sizeFont, posY + (j+1) * sizeFont, finalColor);
-    	}
+		for(j = 0; j < FONT_Y; ++j)
+		{
+			uint16_t colorActual = ((simpleFont[ascii][i] >> j) & 0x01) ? colorFont : colorBackground;
+			for (k = 0; k < sizeFont; k++)
+				color[j * sizeFont + k] = colorActual;
+		}
+
+		for (k = 0; k < sizeFont; k++)
+		{
+			tft_fillRectangle( coordX, coordX, posY, posY + FONT_Y * sizeFont, color, FONT_Y * sizeFont);
+			coordX++;
+		}
     }
+    os_free(color);
 }
 
 
-void tft_drawString(char *str, uint16_t posX, uint16_t posY, uint8_t sizeFont, uint16_t colorFont, uint16 colorBackGround)
+void tft_drawString(char *str, uint16_t posX, uint16_t posY, uint8_t sizeFont, uint16_t colorFont, uint16 colorBackground)
 {
 
 	void nextString(void)
 	{
 
-	    tft_fillRectangle(posX, MAX_TFT_X, posY, posY + FONT_Y * sizeFont - 1, colorBackGround);
+	    tft_fillRectangle(posX, MAX_TFT_X, posY, posY + FONT_Y * sizeFont - 1, &colorBackground, 1);
 
 	    posX = 0;
 	    posY += FONT_Y * sizeFont + 1;
@@ -342,11 +360,11 @@ void tft_drawString(char *str, uint16_t posX, uint16_t posY, uint8_t sizeFont, u
 	    	posY = 0;
 	    }
 
-	    //tft_fillRectangle(posX, MAX_TFT_X, posY, posY + FONT_Y * sizeFont - 1, colorBackGround);
+	    //tft_fillRectangle(posX, MAX_TFT_X, posY, posY + FONT_Y * sizeFont - 1, &colorBackGround, 1);
 	}
     while(*str)
     {
-        tft_drawChar(*str, posX, posY, sizeFont, colorFont, colorBackGround);
+        tft_drawChar(*str, posX, posY, sizeFont, colorFont, colorBackground);
         str++;
 
         posX += FONT_X * sizeFont; // Move cursor right

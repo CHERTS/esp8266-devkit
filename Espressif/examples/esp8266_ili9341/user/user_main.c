@@ -17,11 +17,15 @@ LOCAL os_timer_t timerHandler;
 
 LOCAL double degree = -180.0;
 LOCAL double scale = 1.0;
-LOCAL double scale_inc = 0.025;
+LOCAL double scale_inc = 0.01;
 
+LOCAL uint16_t count = 0;
 
 static void test(void)
 {
+	char time[10];
+	uint8_t size = 2;
+
 
 	cube_draw(0);
 	if (degree >= 180.0) degree = -180.0;
@@ -32,11 +36,14 @@ static void test(void)
 	scale += scale_inc;
 	cube_draw(0xFFFF);
 	ets_uart_printf("Degree: %d \r\n", (int)degree);
+/*
 
-	tft_drawString("12:42:32\n18:12:54", 0, 0, 2, 0xFFFF, 0x0000);
-
-	tft_drawString("12:42:34", 0, 40, 2, 0xFFFF, 0x0000);
-	tft_drawString("00:01:18", 0, 60, 2, 0xFFFF, 0x0000);
+	count += 1;
+	os_sprintf(time, "%d", count);
+	tft_drawString(time, 0, 0, size, 0xFFFF, 0x0000);
+	//tft_drawString("12:42:34", 0, 40, size, 0xFFFF, 0x0000);
+	//tft_drawString("00:01:18", 0, 60, size, 0xFFFF, 0x0000);
+*/
 }
 
 LOCAL void ICACHE_FLASH_ATTR sendMsgToHandler(void *arg)
@@ -73,4 +80,5 @@ void user_init(void)
 	system_os_task(handler_task, USER_TASK_PRIO_0, handlerQueue, TEST_QUEUE_LEN);
 
 	ets_uart_printf("System init done \r\n");
+
 }

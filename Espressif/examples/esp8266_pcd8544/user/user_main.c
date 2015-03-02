@@ -93,7 +93,7 @@ loop(os_event_t *events) {
       PCD8544_gotoXY(10,2);
       PCD8544_lcdCharacter('-');
     }
-    uint8_t contrast = ((loopIterations << 2)+25) & 0x7f; // +25 so that we start in the visible range
+    uint8_t contrast = ((loopIterations << 2)+25) & 0x3f; // +25 so that we start in the visible range
     PCD8544_setContrast(contrast);
     PCD8544_gotoXY(2,3);
     PCD8544_lcdPrint(" contrast:");
@@ -116,10 +116,8 @@ setup(void) {
   pcd8544_settings.biasMode = 0x14;
   pcd8544_settings.inverse = false;
 
-  pcd8544_settings.resetPin = 4;
-  pcd8544_settings.scePin = 5;
-  //pcd8544_settings.resetPin = 0;
-  //pcd8544_settings.scePin = 2;
+  pcd8544_settings.resetPin = -1; // 4;
+  pcd8544_settings.scePin = -1; //5;
 
   pcd8544_settings.dcPin = 12;
   pcd8544_settings.sdinPin = 13;
@@ -144,11 +142,12 @@ nop_procTask(os_event_t *events) {
 void ICACHE_FLASH_ATTR
 user_init(void)
 {
-  // Configure the UART
-  uart_init(BIT_RATE_115200,0);
-  // enable system messages
-  system_set_os_print(1);
-  os_printf("\r\nSystem starting...\r\n");
+  // Make uart0 work with just the TX pin. Baud:115200,n,8,1
+  // The RX pin is now free for GPIO use.
+  UARTInit(BIT_RATE_115200);
+  os_delay_us(1000);
+
+  os_printf("\r\nSDK version:%s\r\n", system_get_sdk_version());
 
   // turn off WiFi for this console only demo
   wifi_station_set_auto_connect(false);
@@ -163,6 +162,4 @@ user_init(void)
   //Start no-operation os task
   system_os_task(nop_procTask, user_procTaskPrio, user_procTaskQueue, user_procTaskQueueLen);
   system_os_post(user_procTaskPrio, 0, 0);
-
-  os_printf("System started\n\r");
 }

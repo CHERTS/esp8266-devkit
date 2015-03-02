@@ -1,8 +1,14 @@
 Changelog:
 ----------
 
-v1.0.12 (01.03.2015):
+v1.0.12 (10.03.2015):
++ Added new examples:
+  at - an example of using the library "libat" from Espressif (compiled, works correctly);
+  smart_config - an example of using the library "libsmartconfig" from Espressif (compiled, works correctly);
 * Update docs, added file "docs\ESP8266_IoT_SDK_Programming Guide_v0.9.5.pdf";
+* Updated examples:
+  esp8266_ili9341;
+  esp8266_pcd8544;
 
 v1.0.11:
 + Added RTOS SDK, directory "C:\Espressif\ESP8266_RTOS_SDK";

@@ -12,17 +12,20 @@
 
 #include "c_types.h"
 
+// the number of chars per line
+#define PCD8544_LCD_CHARS_PER_LINE 12
+
 typedef struct {
   uint8_t lcdVop;
   uint8_t tempCoeff;
   uint8_t biasMode;
   bool inverse;
 
-  uint8_t resetPin;
-  uint8_t scePin;
-  uint8_t dcPin;
-  uint8_t sdinPin;
-  uint8_t sclkPin;
+  int8_t resetPin;
+  int8_t scePin;
+  int8_t dcPin;
+  int8_t sdinPin;
+  int8_t sclkPin;
 } PCD8544_Settings;
 
 void PCD8544_lcdImage(uint8_t *image);
@@ -38,6 +41,11 @@ void PCD8544_lcdPrint(char *characters);
 void PCD8544_printBinary(uint32_t data);
 void PCD8544_gotoXY(int x, int y);
 void PCD8544_drawLine(void);
+/**
+ * print ' ' a number of times, negative 'spaces' value prints nothing.
+ */
+void PCD8544_lcdPad(int16_t spaces);
+
 /**
  * Sets the contrast [0x00 - 0x7f].
  * Useful, visible range is about 40-60.
