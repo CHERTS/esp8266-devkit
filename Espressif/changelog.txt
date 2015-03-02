@@ -9,6 +9,7 @@ v1.0.12 (10.03.2015):
 * Updated examples:
   esp8266_ili9341;
   esp8266_pcd8544;
+  ESPWebFramework;
 
 v1.0.11:
 + Added RTOS SDK, directory "C:\Espressif\ESP8266_RTOS_SDK";

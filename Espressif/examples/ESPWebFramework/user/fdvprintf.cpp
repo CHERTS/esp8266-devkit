@@ -29,15 +29,14 @@ This code is based on a file that contains the following:
 
 */
 
+
+#include "fdv.h"
+
 extern "C"
 {
-    #include "esp_common.h"    
-    #include "freertos/FreeRTOS.h"
 	#include <stdarg.h>
 	#include <math.h>
 }
-
-#include "fdvflash.h"
 
 
 
@@ -110,21 +109,21 @@ static char const lower_digits[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 static char const upper_digits[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 
-static size_t ICACHE_FLASH_ATTR strnlen(const char *s, size_t count)
+static size_t FUNC_FLASHMEM strnlen(const char *s, size_t count)
 {
   const char *sc;
   for (sc = s; *sc != '\0' && count--; ++sc);
   return sc - s;
 }
 
-static int ICACHE_FLASH_ATTR ee_skip_atoi(const char **s)
+static int FUNC_FLASHMEM ee_skip_atoi(const char **s)
 {
   int i = 0;
   while (is_digit(**s)) i = i*10 + *((*s)++) - '0';
   return i;
 }
 
-static void ICACHE_FLASH_ATTR ee_number(Str& str, long num, int base, int size, int precision, int type)
+static void FUNC_FLASHMEM ee_number(Str& str, long num, int base, int size, int precision, int type)
 {
   char c, sign, tmp[66];
   char const * dig = lower_digits;
@@ -201,7 +200,7 @@ static void ICACHE_FLASH_ATTR ee_number(Str& str, long num, int base, int size, 
   return;
 }
 
-static void ICACHE_FLASH_ATTR eaddr(Str& str, unsigned char *addr, int size, int precision, int type)
+static void FUNC_FLASHMEM eaddr(Str& str, unsigned char *addr, int size, int precision, int type)
 {
   char tmp[24];
   char const * dig = lower_digits;
@@ -223,7 +222,7 @@ static void ICACHE_FLASH_ATTR eaddr(Str& str, unsigned char *addr, int size, int
   return;
 }
 
-static void ICACHE_FLASH_ATTR iaddr(Str& str, unsigned char *addr, int size, int precision, int type)
+static void FUNC_FLASHMEM iaddr(Str& str, unsigned char *addr, int size, int precision, int type)
 {
   char tmp[24];
   int i, n, len;
@@ -266,7 +265,7 @@ static void ICACHE_FLASH_ATTR iaddr(Str& str, unsigned char *addr, int size, int
 
 #define CVTBUFSIZE 80
 
-static char * ICACHE_FLASH_ATTR cvt(double arg, int ndigits, int *decpt, int *sign, char *buf, int eflag)
+static char * FUNC_FLASHMEM cvt(double arg, int ndigits, int *decpt, int *sign, char *buf, int eflag)
 {
   int r2;
   double fi, fj;
@@ -345,28 +344,28 @@ static char * ICACHE_FLASH_ATTR cvt(double arg, int ndigits, int *decpt, int *si
   return buf;
 }
 
-static char * ICACHE_FLASH_ATTR ecvtbuf(double arg, int ndigits, int *decpt, int *sign, char *buf)
+static char * FUNC_FLASHMEM ecvtbuf(double arg, int ndigits, int *decpt, int *sign, char *buf)
 {
   return cvt(arg, ndigits, decpt, sign, buf, 1);
 }
 
-static char * ICACHE_FLASH_ATTR fcvtbuf(double arg, int ndigits, int *decpt, int *sign, char *buf)
+static char * FUNC_FLASHMEM fcvtbuf(double arg, int ndigits, int *decpt, int *sign, char *buf)
 {
   return cvt(arg, ndigits, decpt, sign, buf, 0);
 }
 
-static void ICACHE_FLASH_ATTR ee_bufcpy(char *pd, char *ps, int count) 
+static void FUNC_FLASHMEM ee_bufcpy(char *pd, char *ps, int count) 
 {
 	char *pe=ps+count;
 	while (ps!=pe)
 		*pd++=*ps++;
 }
 
-static void ICACHE_FLASH_ATTR parse_float(double value, char *buffer, char fmt, int precision)
+static void FUNC_FLASHMEM parse_float(double value, char *buffer, char fmt, int precision)
 {
   int decpt, sign, exp, pos;
   char *fdigits = NULL;
-  char * cvtbuf = (char*)malloc(CVTBUFSIZE);
+  char * cvtbuf = (char*)Memory::malloc(CVTBUFSIZE);
   int capexp = 0;
   int magnitude;
 
@@ -463,10 +462,10 @@ static void ICACHE_FLASH_ATTR parse_float(double value, char *buffer, char fmt, 
   }
 
   *buffer = '\0';
-  free(cvtbuf);
+  Memory::free(cvtbuf);
 }
 
-static void ICACHE_FLASH_ATTR decimal_point(char *buffer)
+static void FUNC_FLASHMEM decimal_point(char *buffer)
 {
   while (*buffer)
   {
@@ -493,7 +492,7 @@ static void ICACHE_FLASH_ATTR decimal_point(char *buffer)
   }
 }
 
-static void ICACHE_FLASH_ATTR cropzeros(char *buffer)
+static void FUNC_FLASHMEM cropzeros(char *buffer)
 {
   char *stop;
 
@@ -509,7 +508,7 @@ static void ICACHE_FLASH_ATTR cropzeros(char *buffer)
   }
 }
 
-static void ICACHE_FLASH_ATTR flt(Str& str, double num, int size, int precision, char fmt, int flags)
+static void FUNC_FLASHMEM flt(Str& str, double num, int size, int precision, char fmt, int flags)
 {
   char tmp[80];
   char c, sign;
@@ -567,7 +566,7 @@ static void ICACHE_FLASH_ATTR flt(Str& str, double num, int size, int precision,
 #endif
 
 // buf = NULL -> just count required buffer length
-uint16_t ICACHE_FLASH_ATTR vsprintf(char *buf, const char *fmt, va_list args)
+uint16_t FUNC_FLASHMEM vsprintf(char *buf, const char *fmt, va_list args)
 {
   int len;
   unsigned long num;

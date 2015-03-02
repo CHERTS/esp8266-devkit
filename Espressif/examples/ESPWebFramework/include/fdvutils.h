@@ -25,15 +25,129 @@
 #define _FDVUTILS_H_
 
 
+#include "fdv.h"
 
 
 
- 
+namespace fdv
+{
+
+
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+// Memory
+
+struct Memory
+{
+	static void* malloc(uint32_t size);
+	static void free(void* ptr);
+};
+
+
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+// Ptr
+// A very simple smart pointer (without copy or ref counting functionalities)
+// For arrays (new[]) use APtr
+
+template <typename T>
+class Ptr
+{	
+private:
+	Ptr(Ptr const& c);	// no copy constructor
+	
+public:
+	explicit Ptr(T* ptr)
+		: m_ptr(ptr)
+	{
+	}
+	
+	~Ptr()
+	{
+		delete m_ptr;
+	}
+	
+	T& operator*()
+	{
+		return *m_ptr;
+	}
+	
+	T* operator->()
+	{
+		return m_ptr;
+	}
+	
+	T* get()
+	{
+		return m_ptr;
+	}
+	
+	void reset(T* ptr)
+	{
+		delete m_ptr;
+		m_ptr = ptr;
+	}
+	
+private:
+	T* m_ptr;
+};
+
+
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+// APtr
+// A very simple smart pointer (without copy or ref counting functionalities)
+// For single objects (new) use Ptr
+
+template <typename T>
+class APtr
+{	
+private:
+	APtr(APtr const& c);	// no copy constructor
+	
+public:
+	explicit APtr(T* ptr)
+		: m_ptr(ptr)
+	{
+	}
+	
+	~APtr()
+	{
+		delete[] m_ptr;
+	}
+	
+	T& operator*()
+	{
+		return *m_ptr;
+	}
+	
+	T* operator->()
+	{
+		return m_ptr;
+	}
+	
+	T* get()
+	{
+		return m_ptr;
+	}
+
+	void reset(T* ptr)
+	{
+		delete[] m_ptr;
+		m_ptr = ptr;
+	}
+	
+private:
+	T* m_ptr;
+};
 
 
 
 
 
+
+
+}
 
 
 #endif

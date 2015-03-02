@@ -23,10 +23,47 @@
 
 #include "fdv.h"
 
-
-namespace fdv
+extern "C"
 {
-
-	
-	
+	#include <stdarg.h>
 }
+
+
+
+
+// fmt can be in RAM or in Flash
+void FUNC_FLASHMEM debug(char const *fmt, ...)
+{
+	va_list args;
+	
+	char const* ramFmt = fmt;
+	if (fdv::isStoredInFlash(fmt))
+		ramFmt = fdv::f_strdup(fmt);
+
+	va_start(args, fmt);
+	uint16_t len = fdv::vsprintf(NULL, ramFmt, args);
+	va_end(args);
+
+	char buf[len + 1];
+	
+	va_start(args, fmt);
+	fdv::vsprintf(buf, ramFmt, args);
+	va_end(args);
+	
+	fdv::enterCritical();
+	fdv::HardwareSerial::getSerial(0)->write(buf);
+	fdv::exitCritical();
+
+	if (ramFmt != fmt)
+		delete[] ramFmt;
+}
+
+void FUNC_FLASHMEM debugstrn(char const* str, uint32_t len)
+{
+	fdv::enterCritical();
+	while (len--)
+		fdv::HardwareSerial::getSerial(0)->write(*str++);
+	fdv::exitCritical();
+}
+
+

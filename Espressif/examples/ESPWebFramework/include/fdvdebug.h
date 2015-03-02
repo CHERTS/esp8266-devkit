@@ -21,12 +21,30 @@
 */
 
 
+#ifndef _FDVDEBUG_H_
+#define _FDVDEBUG_H_
+
+
 #include "fdv.h"
 
-
-namespace fdv
+extern "C"
 {
-
-	
-	
+	#include <stdarg.h>
 }
+
+
+
+void debug(char const *fmt, ...);
+void debugstrn(char const* str, uint32_t len);
+
+
+
+
+
+
+
+
+
+
+
+#endif

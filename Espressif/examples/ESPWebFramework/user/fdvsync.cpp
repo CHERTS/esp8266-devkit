@@ -21,14 +21,8 @@
 */
 
 
-extern "C"
-{
-#include "esp_common.h"    
-#include "freertos/FreeRTOS.h"	
-#include "freertos/semphr.h"
-}
+#include "fdv.h"
 
-#include "fdvsync.h"
 
 
 
@@ -42,25 +36,25 @@ extern "C" void ets_intr_unlock();
 namespace fdv
 {
 
-	void ICACHE_FLASH_ATTR DisableWatchDog()
+	void FUNC_FLASHMEM DisableWatchDog()
 	{
 		ets_wdt_disable();
 	}
 	
 	
-	void ICACHE_FLASH_ATTR EnableWatchDog()
+	void FUNC_FLASHMEM EnableWatchDog()
 	{
 		ets_wdt_enable();
 	}
 	
 	
-	uint32_t ICACHE_FLASH_ATTR millisISR()
+	uint32_t FUNC_FLASHMEM millisISR()
 	{
 		return xTaskGetTickCountFromISR() * portTICK_RATE_MS;
 	}
 	
 	
-	uint32_t ICACHE_FLASH_ATTR millis()
+	uint32_t FUNC_FLASHMEM millis()
 	{
 		return xTaskGetTickCount() * portTICK_RATE_MS; 
 	}
@@ -68,7 +62,7 @@ namespace fdv
 	
 	// calculates time difference in milliseconds, taking into consideration the time overflow
 	// note: time1 must be less than time2 (time1 < time2)
-	uint32_t ICACHE_FLASH_ATTR millisDiff(uint32_t time1, uint32_t time2)
+	uint32_t FUNC_FLASHMEM millisDiff(uint32_t time1, uint32_t time2)
 	{
 		if (time1 > time2)
 			// overflow

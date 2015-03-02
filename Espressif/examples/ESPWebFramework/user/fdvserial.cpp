@@ -20,18 +20,16 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA
 */
 
+#include "fdv.h"
+
 extern "C" 
 {
-    #include "esp_common.h"    
-    #include "freertos/FreeRTOS.h"
-    #include "freertos/task.h"
-	#include "freertos/queue.h"
 	#include "ESP8266/uart_register.h"
 	#include "ESP8266/gpio_register.h"
 }
 
 
-#include "fdvserial.h"
+
 
 
 #define ETS_UART_INTR_ENABLE()  _xt_isr_unmask(1 << ETS_UART_INUM)
@@ -47,12 +45,12 @@ extern "C" void uart_div_modify(int no, unsigned int freq);
 namespace fdv
 {
 
-	void ICACHE_FLASH_ATTR dummy_write_char(char c)
+	void FUNC_FLASHMEM dummy_write_char(char c)
 	{
 	}
 
 	
-	void ICACHE_FLASH_ATTR DisableStdOut()
+	void FUNC_FLASHMEM DisableStdOut()
 	{
 		os_install_putc1(dummy_write_char);	
 	}
@@ -86,7 +84,7 @@ namespace fdv
 	}
 	
 	
-	void ICACHE_FLASH_ATTR HardwareSerial::reconfig(uint32_t baud_rate)
+	void MTD_FLASHMEM HardwareSerial::reconfig(uint32_t baud_rate)
 	{
 		// wait tx fifo empty
 		while (READ_PERI_REG(UART_STATUS(0)) & (UART_TXFIFO_CNT << UART_TXFIFO_CNT_S));
@@ -128,7 +126,7 @@ namespace fdv
 	}
 
 	
-	void ICACHE_FLASH_ATTR HardwareSerial::write(uint8_t b)
+	void MTD_FLASHMEM HardwareSerial::write(uint8_t b)
 	{
 		while (true)
 		{

@@ -23,14 +23,8 @@
 #ifndef _FDVTASK_H_
 #define _FDVTASK_H_
 
-extern "C"
-{
-    #include "esp_common.h"    
-    #include "freertos/FreeRTOS.h"
-    #include "freertos/task.h"
-	#include "stdarg.h"
-}
 
+#include "fdv.h"
 
 
 namespace fdv
@@ -45,12 +39,12 @@ namespace fdv
 	//
 	// struct MainTask : fdv::Task
 	// {
-	//   void ICACHE_FLASH_ATTR exec()
+	//   void MTD_FLASHMEM exec()
 	//   {
 	//     fdv::DisableStdOut();
 	//     fdv::DisableWatchDog();		
 	//     fdv::HardwareSerial serial(115200, 128);		
-	//     Task1 anotherTask;  // creates another task		
+	//     Task1 anotherTask(false);  // creates another task		
 	//     suspend();
 	//   }
 	// };
@@ -60,30 +54,25 @@ namespace fdv
 	{
 	public:
 		
-		Task(uint16_t stackDepth = 256, uint32_t priority = 2, bool suspended = false)
+		Task(bool suspended = true, uint16_t stackDepth = 256, uint32_t priority = 2)
 			: m_stackDepth(stackDepth), m_priority(priority), m_handle(NULL)
 		{
 			if (!suspended)
 				resume();			
 		}
 		
-		virtual ~Task()
-		{
-			vTaskDelete(m_handle);
-		}
-		
 		// call only when "suspended" in constructor is true and before resume()
-		void ICACHE_FLASH_ATTR setStackDepth(uint16_t stackDepth)
+		void MTD_FLASHMEM setStackDepth(uint16_t stackDepth)
 		{
 			m_stackDepth = stackDepth;
 		}
 		
-		void ICACHE_FLASH_ATTR suspend()
+		void MTD_FLASHMEM suspend()
 		{
 			vTaskSuspend(m_handle);
 		}
 		
-		void ICACHE_FLASH_ATTR resume()
+		void MTD_FLASHMEM resume()
 		{
 			if (m_handle)
 				vTaskResume(m_handle);
@@ -91,19 +80,19 @@ namespace fdv
 				xTaskCreate(entry, (const signed char*)"", m_stackDepth, this, m_priority, &m_handle);			
 		}
 		
-		void ICACHE_FLASH_ATTR delay(uint32_t ms)
+		void MTD_FLASHMEM delay(uint32_t ms)
 		{
 			vTaskDelay(ms / portTICK_RATE_MS);
 		}
 		
 		// task free stack (in bytes)
-		static uint32_t ICACHE_FLASH_ATTR getFreeStack()
+		static uint32_t MTD_FLASHMEM getFreeStack()
 		{
 			return uxTaskGetStackHighWaterMark(NULL) * 4;
 		}
 		
 		// global free heap (in bytes)
-		static uint32_t ICACHE_FLASH_ATTR getFreeHeap()
+		static uint32_t MTD_FLASHMEM getFreeHeap()
 		{
 			return system_get_free_heap_size();
 		}
@@ -115,9 +104,10 @@ namespace fdv
 
 	private:
 	
-		static void ICACHE_FLASH_ATTR entry(void* params)
+		static void MTD_FLASHMEM entry(void* params)
 		{
 			static_cast<Task*>(params)->exec();
+			vTaskSuspend(NULL);
 		}
 		
 	private:
@@ -138,8 +128,8 @@ namespace fdv
 	// {
 	//   MyClass()
 	//   {		
-	//      m_task1 = new MethodTask<MyClass, &MyClass::task1>(*this);
-	//      m_task2 = new MethodTask<MyClass, &MyClass::task2>(*this);
+	//      m_task1 = new MethodTask<MyClass, &MyClass::task1>(this, false);
+	//      m_task2 = new MethodTask<MyClass, &MyClass::task2>(this, false);
 	//   }
 	//   void task1()
 	//   {
@@ -158,17 +148,22 @@ namespace fdv
 	class MethodTask : public Task
 	{
 	public:
-		MethodTask(T& object, uint16_t stackDepth = 256, uint32_t priority = 2)
-			: Task(stackDepth, priority), m_object(object)
+		MethodTask(T* object = NULL, bool suspended = true, uint16_t stackDepth = 256, uint32_t priority = 2)
+			: Task(suspended, stackDepth, priority), m_object(object)
 		{
+		}
+		
+		void setObject(T* object)
+		{
+			m_object = object;
 		}
 		
 		void exec()
 		{
-			(m_object.*Method)();
+			(m_object->*Method)();
 		}
 	private:
-		T& m_object;
+		T* m_object;
 	};
 	
 	

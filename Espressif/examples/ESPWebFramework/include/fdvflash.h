@@ -23,20 +23,10 @@
 #ifndef _FDVFLASH_H_
 #define _FDVFLASH_H_
 
-extern "C"
-{
-    #include "esp_common.h"    
-    #include "freertos/FreeRTOS.h"
-    #include "freertos/task.h"
-}
 
 
-#include "fdvsync.h"
+#include "fdv.h"
 
-
-
-#define FLASHMEM __attribute__((aligned(4))) __attribute__((section(".irom.text")))
-#define FSTR(s) (__extension__({static const char __c[] FLASHMEM = (s); &__c[0];}))
 
 
 // Flash from 0x0 to 0x8000      mapped to 0x40100000, len = 0x8000 (32KBytes)    - ".text"
@@ -56,92 +46,101 @@ namespace fdv
 
 	///////////////////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////////////
-	// FStrUtils
-	// String utilities to work with both Flash stored strings and RAM stored strings
-	//
-	// Example:
-	//   static char const STR1[] FLASHMEM = "1234567890";
-	//   
-	//   if (FlashUtils::strcmp(STR1, otherstring) == 0)
-	//     dosomething();
-	// 
-	// Example:
-	//   if (FlashUtils::strcmp(FSTR("1234567890"), otherstring) == 0)
-	//     dosomething();
-
-	
-	struct FStrUtils
+	// isStoredInFlash
+	static inline bool FUNC_FLASHMEM isStoredInFlash(void const* ptr)
 	{
-		
-		static bool ICACHE_FLASH_ATTR isStoredInFlash(void const* ptr)
+		return (uint32_t)ptr >= 0x40200000 && (uint32_t)ptr < 0x40300000;
+	}
+	
+
+	///////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////
+	// getChar
+	// flash mapped "text" is readable as 4 byte aligned blocks
+	// works with both RAM and Flash stored data
+	// str must be 32 bit aligned
+	static inline char FUNC_FLASHMEM getChar(char const* str, uint32_t index)
+	{
+		if (isStoredInFlash(str))
 		{
-			return (uint32_t)ptr >= 0x40200000 && (uint32_t)ptr < 0x40300000;
-		}
-		
-		// flash mapped "text" is readable as 4 byte aligned blocks
-		static char ICACHE_FLASH_ATTR getChar(char const* flashString, uint32_t index)
-		{
-			uint32_t u32 = ((uint32_t const*)flashString)[index >> 2];
+			uint32_t u32 = ((uint32_t const*)str)[index >> 2];
 			return ((char const*)&u32)[index & 0x3];
 		}
-		
-		static uint32_t ICACHE_FLASH_ATTR strlen(char const* str)
+		else
+			return str[index];
+	}
+
+
+	///////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////
+	// getChar
+	// flash mapped "text" is readable as 4 byte aligned blocks
+	// works with both RAM and Flash stored data
+	// Returns first char of str
+	// str may Not be 32 bit aligned
+	static inline char FUNC_FLASHMEM getChar(char const* str)
+	{
+		if (isStoredInFlash(str))
 		{
-			if (isStoredInFlash(str))
-			{
-				uint32_t len = 0;
-				for (; getChar(str, len) != 0; ++len)
-					;
-				return len;
-			}
-			else
-				return ::strlen(str);
+			uint32_t index = (uint32_t)str & 0x3;
+			str = (char const*)((uint32_t)str & 0xFFFFFFFC);  // align str
+			uint32_t u32 = *((uint32_t const*)str);
+			return ((char const*)&u32)[index];
+		}
+		else
+			return *str;
+	}		
+	
+	
+	//////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+	// CharIterator
+	// Can iterate both RAM and Flash strings
+
+	struct CharIterator
+	{
+		CharIterator(char const* str = NULL)
+			: m_str(str)
+		{
 		}
 		
-		static char* ICACHE_FLASH_ATTR strdup(char const* str)
+		char const* MTD_FLASHMEM get()
 		{
-			return FStrUtils::strcpy((char*)malloc(FStrUtils::strlen(str) + 1), str);
+			return m_str;
 		}
 		
-		static char* ICACHE_FLASH_ATTR strcpy(char* destination, char const* source)
+		char MTD_FLASHMEM operator*()
 		{
-			if (isStoredInFlash(source))
-			{
-				char* destptr = destination;
-				uint32_t idx = 0;
-				while (true)
-				{
-					*destptr = getChar(source, idx++);
-					if (*destptr++ == 0)
-						return destination;
-				}
-			}
-			else
-				return ::strcpy(destination, source);
+			return getChar(m_str);
 		}
 		
-		// note: only "s1" can be stored in flash!
-		static int32_t ICACHE_FLASH_ATTR strcmp(char const* s1, char const* s2)
+		CharIterator MTD_FLASHMEM operator++(int)
 		{
-			if (isStoredInFlash(s1))
-			{
-				char c;
-				uint32_t idx = 0;
-				while (true)
-				{
-					c = getChar(s1, idx);
-					if (c == 0 || c != *s2)
-						break;
-					++idx;
-					++s2;
-				}
-				return (uint8_t)c - *(uint8_t const*)s2;
-			}
-			else
-				return ::strcmp(s1, s2);
+			CharIterator p = *this;
+			++m_str;
+			return p;
 		}
 		
+		CharIterator MTD_FLASHMEM operator++()
+		{
+			++m_str;
+			return *this;
+		}
+		
+		bool MTD_FLASHMEM operator==(char const* rhs)
+		{
+			return getChar(m_str) == *rhs;
+		}
+		
+		bool MTD_FLASHMEM operator!=(char const* rhs)
+		{
+			return getChar(m_str) != *rhs;
+		}
+		
+	private:
+		char const* m_str;
 	};
+
 	
 
 	///////////////////////////////////////////////////////////////////////////////////////
@@ -177,7 +176,7 @@ namespace fdv
 		
 		// format the entire available space
 		// This is required only if you want to remove previous files
-		static void ICACHE_FLASH_ATTR format()
+		static void MTD_FLASHMEM format()
 		{
 			Critical critical;
 			for (uint16_t s = 0; s != FLASHFILESYSTEMLENGTH_SECTOR; ++s)
@@ -185,7 +184,7 @@ namespace fdv
 		}
 				
 		// ret false if file doesn't exist
-		static bool ICACHE_FLASH_ATTR load(char const* filename, void* buffer)
+		static bool MTD_FLASHMEM load(char const* filename, void* buffer)
 		{
 			SectorHeader header;
 			uint16_t sector = find(filename, &header);
@@ -201,7 +200,7 @@ namespace fdv
 		
 		// length cannot exceed initial allocated sectors
 		// buffer can be NULL: in this case the specified space is allocated and erased
-		static void ICACHE_FLASH_ATTR save(char const* filename, void* buffer, uint16_t length)
+		static void MTD_FLASHMEM save(char const* filename, void* buffer, uint16_t length)
 		{
 			SectorHeader header;
 			uint16_t sector = find(filename, &header);
@@ -219,7 +218,7 @@ namespace fdv
 		}
 		
 		// ret -1 if doesn't exist
-		static int32_t ICACHE_FLASH_ATTR getLength(char const* filename)
+		static int32_t MTD_FLASHMEM getLength(char const* filename)
 		{
 			SectorHeader header;
 			if (find(filename, &header))
@@ -241,7 +240,7 @@ namespace fdv
 		};
 		
 		// header is filled with valid values
-		static uint16_t ICACHE_FLASH_ATTR findFreeSector(char const* filename, uint16_t length, SectorHeader* header)
+		static uint16_t MTD_FLASHMEM findFreeSector(char const* filename, uint16_t length, SectorHeader* header)
 		{
 			// find free position
 			for (uint16_t s = 0; s != FLASHFILESYSTEMLENGTH_SECTOR; s += header->sectors)
@@ -260,19 +259,19 @@ namespace fdv
 			return 0;
 		}		
 	
-		static uint16_t ICACHE_FLASH_ATTR calcRequiredSectors(uint16_t length)
+		static uint16_t MTD_FLASHMEM calcRequiredSectors(uint16_t length)
 		{
 			return (sizeof(SectorHeader) + length + SPI_FLASH_SEC_SIZE - 1) / SPI_FLASH_SEC_SIZE;
 		}
 		
-		static void ICACHE_FLASH_ATTR readSectorHeader(uint16_t sector, SectorHeader* header)
+		static void MTD_FLASHMEM readSectorHeader(uint16_t sector, SectorHeader* header)
 		{
 			Critical critical;
 			spi_flash_read((uint32_t)(sector * SPI_FLASH_SEC_SIZE), (uint32*)header, sizeof(SectorHeader));
 		}
 		
 		// ret 0 if not found
-		static uint16_t ICACHE_FLASH_ATTR find(char const* filename, SectorHeader* header)
+		static uint16_t MTD_FLASHMEM find(char const* filename, SectorHeader* header)
 		{
 			for (uint16_t s = 0; s != FLASHFILESYSTEMLENGTH_SECTOR; s += header->sectors)
 			{

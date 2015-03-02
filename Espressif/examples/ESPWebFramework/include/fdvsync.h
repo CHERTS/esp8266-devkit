@@ -24,12 +24,12 @@
 #define _FDVSYNC_H
 
 
+
+#include "fdv.h"
+
 extern "C"
 {
-#include "esp_common.h"
-#include "freertos/FreeRTOS.h"	
 #include "freertos/semphr.h"
-#include "freertos/task.h"
 #include "freertos/queue.h"
 }
 

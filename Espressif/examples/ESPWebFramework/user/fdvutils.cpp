@@ -20,18 +20,14 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA
 */
 
+
+#include "fdv.h"
+
 extern "C"
 {
-    #include "esp_common.h"    
-    #include "freertos/FreeRTOS.h"
-    #include "freertos/task.h"
-
-	//#include <stdio.h>
-	//#include <stdarg.h>
-	//#include <string.h>
-	//#include <stdlib.h>
+	#include "freertos/semphr.h"
+	#include "lwip/mem.h"
 }
-
 
 
 
@@ -39,46 +35,63 @@ extern "C"
 void *__dso_handle;
 
 
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+// Memory
 
+namespace fdv
+{
+
+void* MTD_FLASHMEM Memory::malloc(uint32_t size)
+{
+	return mem_malloc(size);
+}
+
+void MTD_FLASHMEM Memory::free(void* ptr)
+{
+	mem_free(ptr);
+}
+
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////
 
-void * ICACHE_FLASH_ATTR operator new(size_t size)
+void * FUNC_FLASHMEM operator new(size_t size)
 {
-  return malloc(size);
+	return mem_malloc(size);
 }
 
-void * ICACHE_FLASH_ATTR operator new[](size_t size) 
+void * FUNC_FLASHMEM operator new[](size_t size) 
 {
-  return malloc(size);
+	return mem_malloc(size);
 }
 
-void ICACHE_FLASH_ATTR operator delete(void * ptr) 
+void FUNC_FLASHMEM operator delete(void * ptr) 
 {
-  free(ptr);
+	mem_free(ptr);
 }
 
-void ICACHE_FLASH_ATTR operator delete[](void * ptr) 
+void FUNC_FLASHMEM operator delete[](void * ptr) 
 {
-  free(ptr);
+	mem_free(ptr);
 }
 
 extern "C" void __cxa_pure_virtual(void) __attribute__ ((__noreturn__));
 
 extern "C" void __cxa_deleted_virtual(void) __attribute__ ((__noreturn__));
 
-extern "C" void ICACHE_FLASH_ATTR abort() 
+extern "C" void FUNC_FLASHMEM abort() 
 {
   while(true); // enter an infinite loop and get reset by the WDT
 }
 
-void ICACHE_FLASH_ATTR __cxa_pure_virtual(void) 
+void FUNC_FLASHMEM __cxa_pure_virtual(void) 
 {
   abort();
 }
 
-void ICACHE_FLASH_ATTR __cxa_deleted_virtual(void) 
+void FUNC_FLASHMEM __cxa_deleted_virtual(void) 
 {
   abort();
 }

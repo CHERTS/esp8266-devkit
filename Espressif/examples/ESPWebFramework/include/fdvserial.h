@@ -23,18 +23,13 @@
 #ifndef _FDVSERIAL_H_
 #define _FDVSERIAL_H_
 
+#include "fdv.h"
+
 extern "C"
 {
-    #include "esp_common.h"    
-    #include "freertos/FreeRTOS.h"
-    #include "freertos/task.h"
 	#include <stdarg.h>
 }
 
-
-#include "fdvsync.h"
-#include "fdvprintf.h"
-#include "fdvflash.h"
 
 
 
@@ -63,7 +58,7 @@ namespace fdv
 			virtual bool waitForData(uint32_t timeOutMs = portMAX_DELAY) = 0;
 					
 			
-			uint16_t ICACHE_FLASH_ATTR read(uint8_t* buffer, uint16_t bufferLen)
+			uint16_t MTD_FLASHMEM read(uint8_t* buffer, uint16_t bufferLen)
 			{
 				uint16_t ret = 0;
 				for (int16_t c; bufferLen > 0 && (c = read()) > -1; --bufferLen, ++ret)
@@ -74,40 +69,40 @@ namespace fdv
 			}			
 						
 			
-			void ICACHE_FLASH_ATTR writeNewLine()
+			void MTD_FLASHMEM writeNewLine()
 			{
 				write(0x0D);
 				write(0x0A);	
 			}
 			
 			
-			void ICACHE_FLASH_ATTR write(uint8_t const* buffer, uint16_t bufferLen)
+			void MTD_FLASHMEM write(uint8_t const* buffer, uint16_t bufferLen)
 			{
 				for (;bufferLen > 0; --bufferLen)
 					write(*buffer++);
 			}
 
 
-			void ICACHE_FLASH_ATTR write(char const* str)
+			void MTD_FLASHMEM write(char const* str)
 			{
 				while (*str)
 					write(*str++);
 			}
 			
-			void ICACHE_FLASH_ATTR writeln(char const* str)
+			void MTD_FLASHMEM writeln(char const* str)
 			{
 				write(str);
 				writeNewLine();
 			}
 
 			// fmt can be in RAM or in Flash
-			uint16_t ICACHE_FLASH_ATTR printf(char const *fmt, ...)
+			uint16_t MTD_FLASHMEM printf(char const *fmt, ...)
 			{
 				va_list args;
 				
 				char const* ramFmt = fmt;
-				if (FStrUtils::isStoredInFlash(fmt))
-					ramFmt = FStrUtils::strdup(fmt);
+				if (isStoredInFlash(fmt))
+					ramFmt = f_strdup(fmt);
 
 				va_start(args, fmt);
 				uint16_t len = vsprintf(NULL, ramFmt, args);
@@ -122,7 +117,7 @@ namespace fdv
 				write(buf);
 
 				if (ramFmt != fmt)
-					free((void*)ramFmt);
+					delete[] ramFmt;
 
 				return len;
 			}

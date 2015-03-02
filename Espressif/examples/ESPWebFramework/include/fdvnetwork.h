@@ -25,17 +25,11 @@
 #define _FDVWIFI_H_
 
 
-// disable macros like "read"
-#ifndef LWIP_POSIX_SOCKETS_IO_NAMES
-#define LWIP_POSIX_SOCKETS_IO_NAMES 0
-#endif
+#include "fdv.h"
 
 
 extern "C"
 {
-	#include "esp_common.h"    
-	#include "freertos/FreeRTOS.h"
-	#include "freertos/task.h"
 	#include "lwip/ip_addr.h"
 	#include "lwip/sockets.h"
 	#include "lwip/dns.h"
@@ -46,18 +40,13 @@ extern "C"
 }
 
 
-#include "fdvserial.h"
-#include "fdvsync.h"
-#include "fdvflash.h"
-#include "fdvtask.h"
-
 
 extern "C"
 {
 bool wifi_station_dhcpc_start(void);
 bool wifi_station_dhcpc_stop(void);
 bool dhcp_set_info(dhcp_info *if_dhcp);
-sint8 ICACHE_FLASH_ATTR udhcpd_stop(void);
+sint8 FUNC_FLASHMEM udhcpd_stop(void);
 }	
 
 	
@@ -88,13 +77,13 @@ namespace fdv
 			WPA_WPA2_PSK  = AUTH_WPA_WPA2_PSK
 		};
 
-		static Mode ICACHE_FLASH_ATTR setMode(Mode mode)
+		static Mode MTD_FLASHMEM setMode(Mode mode)
 		{
 			Critical critical;
 			wifi_set_opmode(mode);
 		}
 		
-		static Mode ICACHE_FLASH_ATTR getMode()
+		static Mode MTD_FLASHMEM getMode()
 		{
 			Mode mode = (Mode)wifi_get_opmode();
 			return mode;
@@ -103,7 +92,7 @@ namespace fdv
 		// setMode must be called with AccessPoint or ClientAndAccessPoint
 		// note: make sure there is enough stack space free otherwise mail cause reset (fatal exception)!
 		// channel: 1..13
-		static void ICACHE_FLASH_ATTR configureAccessPoint(char const* SSID, char const* securityKey, uint8_t channel, SecurityProtocol securityProtocol = WPA2_PSK, bool hiddenSSID = false)
+		static void MTD_FLASHMEM configureAccessPoint(char const* SSID, char const* securityKey, uint8_t channel, SecurityProtocol securityProtocol = WPA2_PSK, bool hiddenSSID = false)
 		{						
 			softap_config config = {0};
 			wifi_softap_get_config(&config);
@@ -118,7 +107,7 @@ namespace fdv
 		}
 		
 		// setMode must be called with Client or ClientAndAccessPoint
-		static void ICACHE_FLASH_ATTR configureClient(char const* SSID, char const* securityKey)
+		static void MTD_FLASHMEM configureClient(char const* SSID, char const* securityKey)
 		{
 			station_config config = {0};
 			strcpy((char *)config.ssid, SSID);
@@ -148,7 +137,7 @@ namespace fdv
 		};
 	
 		// don't need to call configureDHCP
-		static void ICACHE_FLASH_ATTR configureStatic(Network network, char const* IP, char const* netmask, char const* gateway)
+		static void MTD_FLASHMEM configureStatic(Network network, char const* IP, char const* netmask, char const* gateway)
 		{
 			ip_info info;
 			info.ip.addr      = ipaddr_addr(IP);
@@ -161,7 +150,7 @@ namespace fdv
 		}
 		
 		// applied only to ClientNetwork
-		static void ICACHE_FLASH_ATTR configureDHCP(Network network)
+		static void MTD_FLASHMEM configureDHCP(Network network)
 		{
 			if (network == ClientNetwork)
 			{
@@ -181,7 +170,7 @@ namespace fdv
 	{
 		
 		// warn: each IP in the range requires memory!
-		static void ICACHE_FLASH_ATTR configure(char const* startIP, char const* endIP, uint32_t maxLeases)
+		static void MTD_FLASHMEM configure(char const* startIP, char const* endIP, uint32_t maxLeases)
 		{		
 			//udhcpd_stop();
 			dhcp_info info = {0};
@@ -203,15 +192,15 @@ namespace fdv
 	//////////////////////////////////////////////////////////////////////
 	// TCPServer
 	
-	template <typename ConnectionHandler>
+	template <typename ConnectionHandler_T, uint16_t MaxThreads_V, uint16_t ThreadsStackDepth_V>
 	struct TCPServer
 	{
 		
 		static uint32_t const ACCEPTWAITTIMEOUTMS = 20000;
+		static uint32_t const SOCKETQUEUESIZE     = 1;	// can queue only one socket (nothing to do with working threads)
 		
-		
-		TCPServer(uint16_t port, uint16_t maxThreads = 2, uint16_t threadsStackDepth = 256)
-			: m_threadsStackDepth(threadsStackDepth), m_threadResourcesCounter(maxThreads)
+		TCPServer(uint16_t port)
+			: m_socketQueue(SOCKETQUEUESIZE)
 		{
 			m_socket = lwip_socket(PF_INET, SOCK_STREAM, 0);
 			sockaddr_in sLocalAddr = {0};
@@ -220,38 +209,47 @@ namespace fdv
 			sLocalAddr.sin_addr.s_addr = htonl(INADDR_ANY);	// todo: allow other choices other than IP_ADDR_ANY
 			sLocalAddr.sin_port = htons(port);
 			lwip_bind(m_socket, (sockaddr*)&sLocalAddr, sizeof(sockaddr_in));			
-			lwip_listen(m_socket, maxThreads);
+			lwip_listen(m_socket, MaxThreads_V);
+
+			// prepare listener task
+			m_listenerTask.setStackDepth(200);
+			m_listenerTask.setObject(this);
+			m_listenerTask.resume();
 			
-			m_listenerTask = new MethodTask<TCPServer, &TCPServer::listenerTask>(*this, 160);
+			// prepare handler tasks
+			for (uint16_t i = 0; i != MaxThreads_V; ++i)
+			{
+				m_threads[i].setStackDepth(ThreadsStackDepth_V);
+				m_threads[i].setSocketQueue(&m_socketQueue);
+				m_threads[i].resume();
+			}
 		}
 		
 		virtual ~TCPServer()
 		{
-			delete m_listenerTask;
 			lwip_close(m_socket);
 		}
 		
-		void ICACHE_FLASH_ATTR listenerTask()
+		void MTD_FLASHMEM listenerTask()
 		{
 			while (true)
 			{
-				printf("B.FreeStack=%d bytes\n\r", Task::getFreeStack());
-				printf("Wait for accept\n\r");
+				//debug(FSTR("B. FreeStack = %d bytes\n\r"), Task::getFreeStack());
+				//debug(FSTR("B. FreeHeap  = %d bytes\n\r"), Task::getFreeHeap());
+				//debug(FSTR("Wait for accept\n\r"));
 				sockaddr_in clientAddr;
 				socklen_t addrLen = sizeof(sockaddr_in);
 				int clientSocket = lwip_accept(m_socket, (sockaddr*)&clientAddr, &addrLen);
 				if (clientSocket > 0)
 				{
-					printf("Connected, wait for a free thread\n\r");
-					if (m_threadResourcesCounter.get(ACCEPTWAITTIMEOUTMS))
+					//debug(FSTR("Connected, wait for a free thread\n\r"));
+					if (m_socketQueue.send(clientSocket, ACCEPTWAITTIMEOUTMS))
 					{
-						printf("Start receiving data\n\r");
-						ConnectionHandler* connectionHandler = new ConnectionHandler;
-						connectionHandler->start(m_threadsStackDepth, clientSocket, m_threadResourcesCounter);						
+						//debug(FSTR("Start receiving data\n\r"));
 					}
 					else
 					{
-						printf("Timout, no thread available, disconnecting\n\r");
+						debug(FSTR("Timout, no thread available, disconnecting\n\r"));
 						lwip_close(clientSocket);
 					}
 				}
@@ -260,11 +258,10 @@ namespace fdv
 		
 	private:
 	
-		uint16_t            m_threadsStackDepth;
-		int                 m_socket;
-		Task*               m_listenerTask;
-		uint16_t            m_maxThreads;
-		ResourceCounter     m_threadResourcesCounter;
+		int                                             m_socket;
+		MethodTask<TCPServer, &TCPServer::listenerTask> m_listenerTask;
+		ConnectionHandler_T                             m_threads[MaxThreads_V];
+		Queue<int>                                      m_socketQueue;
 	};
 	
 	
@@ -276,17 +273,33 @@ namespace fdv
 	{
 		
 		TCPConnectionHandler()
-			: Task(256, 2, true), m_connected(false)	// create task as suspended
+			: m_connected(false)
 		{
 		}
 		
-		void start(uint16_t stackDepth, int socket, ResourceCounter& threadsResourcesCounter)
+		void setSocketQueue(Queue<int>* socketQueue)
 		{
-			m_socket = socket;
-			m_threadResourcesCounter = &threadsResourcesCounter;
-			setStackDepth(stackDepth);
-			resume();
+			m_socketQueue = socketQueue;
 		}
+				
+		/*
+		Unfortunately FIONREAD has not been compiled into lwip!
+		uint32_t available()
+		{
+			int n = 0;
+			if (lwip_ioctl(m_socket, FIONREAD, &n) < 0 || n < 0)
+				n = 0;
+			return n;
+		}
+		
+		// as available() but wait for at least one byte to be available
+		uint32_t availableWait()
+		{
+			char c;
+			peek(&c, 1);
+			return available();
+		}
+		*/
 		
 		// ret -1 = error, ret 0 = disconnected
 		int32_t read(void* buffer, uint32_t maxLength)
@@ -328,6 +341,7 @@ namespace fdv
 				lwip_close(m_socket);
 				m_socket = 0;
 			}
+			m_connected = false;
 		}
 		
 		bool isConnected()
@@ -337,24 +351,218 @@ namespace fdv
 		
 		void exec()
 		{
-			m_connected = true;
-			connectionHandler();
-			close();
-			m_threadResourcesCounter->release();
-			delete this;	// this will free heap for the object and remove the RTOS vTaskDelete
+			while (true)
+			{
+				if (m_socketQueue->receive(&m_socket))
+				{
+					m_connected = true;
+					connectionHandler();
+					close();
+				}
+			}
 		}
 		
 		// applications override this
 		virtual void connectionHandler() = 0;
 		
 	private:
-		int              m_socket;
-		ResourceCounter* m_threadResourcesCounter;
-		bool             m_connected;
+		int         m_socket;
+		Queue<int>* m_socketQueue;
+		bool        m_connected;
 	};
     
 	
 	
+	//////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+	// HTTPHandler
+	
+	class HTTPHandler : public TCPConnectionHandler
+	{
+	
+		static uint32_t const CHUNK_CAPACITY = 32;
+	
+		typedef ChunkedBuffer<char> Chunks;
+	
+		// implements TCPConnectionHandler
+		void MTD_FLASHMEM connectionHandler()
+		{
+			while (isConnected())
+			{
+				Chunks::Chunk* chunk = m_chunks.addChunk(CHUNK_CAPACITY);
+				chunk->items = read(chunk->data, CHUNK_CAPACITY);
+				if (processRequest())
+					break;
+			}
+			m_chunks.clear();
+			m_request.query.clear();
+			m_request.headers.clear();
+		}
+		
+		bool MTD_FLASHMEM processRequest()
+		{
+			// look for 0x0D 0x0A 0x0D 0x0A
+			Chunks::Iterator headerEnd = t_strstr(m_chunks.begin(), m_chunks.end(), CharIterator(FSTR("\x0D\x0A\x0D\x0A")));
+			if (headerEnd != Chunks::Iterator())
+			{
+				// move header end after CRLFCRLF
+				headerEnd += 4;
+				
+				Chunks::Iterator curc = m_chunks.begin();
+				
+				// extract method (GET, POST, etc..)				
+				m_request.method = curc;
+				while (*curc != ' ' && curc != headerEnd)
+					++curc;
+				*curc++ = 0;	// ends method				
+				
+				// extract requested page and query parameters
+				m_request.requestedPage = curc;
+				Chunks::Iterator key;
+				Chunks::Iterator value;
+				while (curc != headerEnd)
+				{
+					if (*curc == '?')
+					{
+						*curc = 0;	// ends requestedPage
+						key = curc;
+						++key;	// bypass '?'
+					}
+					else if (*curc == '=')
+					{
+						*curc = 0;	// ends key
+						value = curc;
+						++value;	// bypass '='
+					}
+					else if (*curc == '&' || *curc == ' ')
+					{
+						if (key && value)
+						{
+							m_request.query.add(key, value);	// store parameter
+							key = value = Chunks::Iterator();	// reset
+						}
+						if (*curc == ' ')
+						{
+							*curc++ = 0; // ends value or requested page
+							break;
+						}
+						*curc = 0;	// ends value or requested page
+						key = curc;	// bypass '&'
+						++key;
+					}
+					++curc;
+				}
+				
+				// bypass HTTP version
+				while (curc != headerEnd && *curc != 0x0D)
+					++curc;
+								
+				// extract headers
+				while (curc != headerEnd)
+				{
+					if (*curc == 0x0D && key && value)  // CR?
+					{
+						*curc = 0;	// ends key
+						// store header
+						m_request.headers.add(key, value);
+						key = value = Chunks::Iterator(); // reset
+					}					
+					else if (!isspace(*curc) && !key)
+					{
+						// bookmark "key"
+						key = curc;
+					}
+					else if (*curc == ':')
+					{
+						*curc++ = 0;	// ends value
+						// bypass spaces
+						while (curc != headerEnd && isspace(*curc))
+							++curc;
+						// bookmark value
+						value = curc;
+					}
+					++curc;					
+				}
+				
+				// look for data (maybe POST data)
+				Chunks::Iterator contentLengthStr = m_request.headers[FSTR("Content-Length")];
+				if (contentLengthStr)
+				{
+					int32_t contentLength = t_strtol(contentLengthStr, 10);
+					// todo
+				}
+				
+				dispatch();
+				
+				return true;
+			}
+			else
+			{
+				// header is not complete
+				return false;
+			}
+		}
+		
+		virtual void MTD_FLASHMEM dispatch()
+		{
+			for (uint32_t i = 0; i != m_routesCount; ++i)
+			{
+				if (f_strcmp(FSTR("*"), m_routes[i].page) == 0 || t_strcmp(m_request.requestedPage, CharIterator(m_routes[i].page)) == 0)
+				{
+					(this->*m_routes[i].pageHandler)();
+					return;
+				}
+			}
+			// not found
+			processNotFound();
+		}
+		
+		
+		virtual void MTD_FLASHMEM processNotFound()
+		{
+			debug(FSTR("processNotFound()\r\n"));
+			//reply(request, STR_HTTP404, NULL, 0, NULL, 0, SendStringItem(NULL, PSTR("Not found"), 0, StringItem::Flash));
+		}
+		
+
+	public:
+		
+		struct Request
+		{
+			Chunks::Iterator                             method;	    // ex: GET, POST, etc...
+			Chunks::Iterator                             requestedPage;	// ex: "/", "/data"...						
+			IterDict<Chunks::Iterator, Chunks::Iterator> query;         // parsed query as key->value dictionary
+			IterDict<Chunks::Iterator, Chunks::Iterator> headers;		// parsed headers as key->value dictionary
+		};
+				
+		typedef void (HTTPHandler::*PageHandler)();
+				
+		struct Route
+		{
+			char const* page;
+			PageHandler pageHandler;
+		};
+		
+		void MTD_FLASHMEM setRoutes(Route const* routes, uint32_t routesCount)
+		{
+			m_routes      = routes;
+			m_routesCount = routesCount;
+		}
+		
+		// valid only inside processRequest()
+		Request& MTD_FLASHMEM getRequest()
+		{
+			return m_request;
+		}
+		
+		
+	private:
+	
+		Chunks       m_chunks;
+		Route const* m_routes;
+		uint32_t     m_routesCount;
+		Request      m_request;		// valid only inside processRequest()
+	};
 	
 }
 

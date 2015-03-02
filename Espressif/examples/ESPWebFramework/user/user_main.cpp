@@ -20,50 +20,52 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA
 */
 
-// disable macros like "read"
-#ifndef LWIP_POSIX_SOCKETS_IO_NAMES
-#define LWIP_POSIX_SOCKETS_IO_NAMES 0
-#endif
+#include "fdv.h"
 
-extern "C"
+
+struct MyHTTPHandler : public fdv::HTTPHandler
 {
-    #include "esp_common.h"    
-    #include "freertos/FreeRTOS.h"
-    #include "freertos/task.h"
-}
-
-#include "fdvserial.h"
-#include "fdvsync.h"
-#include "fdvflash.h"
-#include "fdvtask.h"
-#include "fdvnetwork.h"
-
-
-struct MyTCPConnectionHandler : public fdv::TCPConnectionHandler
-{
-	void ICACHE_FLASH_ATTR connectionHandler()
+	MyHTTPHandler()
 	{
-		while (isConnected())
+		static const Route routes[] =
 		{
-			printf("C.free stack=%d bytes\n\r", fdv::Task::getFreeStack());
-			printf("Waiting for data\n\r");
-			char buffer[64];
-			int32_t len = read(buffer, sizeof(buffer));
-			if (len > 0)
-			{
-				printf("%d -> ", len);
-				char const* data = buffer;
-				while (len--)
-					printf("%c", *data++);
-				printf("\n\r");
-				write("ok\n\r", 4);
-			}
-		}
-		printf("disconnected\n\r");
+			{FSTR("/"),	     (PageHandler)&MyHTTPHandler::get_home},
+			{FSTR("/test1"), (PageHandler)&MyHTTPHandler::get_test1},
+			{FSTR("*"),      (PageHandler)&MyHTTPHandler::get_all},
+		};
+		setRoutes(routes, sizeof(routes) / sizeof(Route));
 	}
+	
+	void MTD_FLASHMEM get_home()
+	{
+		debug(FSTR("\n\rget_home()\r\n"));
+		debug(FSTR("Query params count = %d\n\r"), getRequest().query.getItemsCount());
+		getRequest().query.dump();
+		debug(FSTR("\n\rHeaders count = %d\n\r"), getRequest().headers.getItemsCount());
+		getRequest().headers.dump();
+
+		/*
+		PGM_P templ = PSTR("val1 = ^ val2 = ^ val3 = ^");	// testare anche ^ all'inizio, e sequenza di ^^^^
+		StringItem val1(NULL, "1", 0, StringItem::RAM);
+		StringItem val2(&val1, "due", 0, StringItem::RAM);
+		StringItem val3(&val2, "3", 0, StringItem::RAM);
+		
+		WebResponseTemplateHTML(request, templ, val1);
+		*/
+	}
+
+	void MTD_FLASHMEM get_test1()
+	{
+		debug("get_test1()\r\n");
+		//WebResponseHTML(request, SendStringItem(NULL, PSTR("This is the TEST1"), 0, StringItem::Flash));
+	}
+
+	void MTD_FLASHMEM get_all()
+	{
+		debug("get_all()\r\n");
+		//WebResponseRedirect(request, PSTR("http://192.168.1.10:8085"));
+	}			
 };
-
-
 
 
 
@@ -71,13 +73,14 @@ struct Task1 : fdv::Task
 {
 
 	Task1(fdv::Serial* serial)
-		: fdv::Task(400), m_serial(serial)
+		: fdv::Task(false, 400), m_serial(serial)
 	{		
 	}
 
 	fdv::Serial* m_serial;
 	
-	void ICACHE_FLASH_ATTR exec()
+	
+	void MTD_FLASHMEM exec()
 	{
 		
 		m_serial->printf(FSTR("\n\rESPWebFramework started.\n\r"));
@@ -97,7 +100,7 @@ struct Task1 : fdv::Task
 						m_serial->printf(FSTR("h    = help\n\r"));
 						m_serial->printf(FSTR("r    = reset\n\r"));	
 						m_serial->printf(FSTR("0    = format flash filesystem\n\r"));
-						m_serial->printf(FSTR("1    = start AccessPoint mode (MyESP, myesp111)\n\r"));
+						m_serial->printf(FSTR("1    = start AccessPoint mode\n\r"));
 						m_serial->printf(FSTR("2    = start DHCP server\n\r"));
 						m_serial->printf(FSTR("3    = start Client mode static IP\n\r"));
 						m_serial->printf(FSTR("4    = start Client mode dynamic IP\n\r"));
@@ -127,20 +130,20 @@ struct Task1 : fdv::Task
 					case '3':
 						// Client mode with static IP
 						fdv::WiFi::setMode(fdv::WiFi::Client);
-						fdv::WiFi::configureClient("OSPITI", "31415926");
+						fdv::WiFi::configureClient("OSPITI", "P31415926");
 						fdv::IP::configureStatic(fdv::IP::ClientNetwork, "192.168.1.199", "255.255.255.0", "192.168.1.1");						
 						m_serial->printf(FSTR("Ok\n\r"));
 						break;
 					case '4':
 						// Client mode with dynamic IP
 						fdv::WiFi::setMode(fdv::WiFi::Client);
-						fdv::WiFi::configureClient("OSPITI", "31415926");
+						fdv::WiFi::configureClient("OSPITI", "P31415926");
 						fdv::IP::configureDHCP(fdv::IP::ClientNetwork);
 						m_serial->printf(FSTR("Ok\n\r"));
 						break;
 					case '5':
 					{
-						new fdv::TCPServer<MyTCPConnectionHandler>(80);
+						new fdv::TCPServer<MyHTTPHandler, 2, 512>(80);
 						m_serial->printf(FSTR("Ok\n\r"));
 						break;
 					}
@@ -155,7 +158,7 @@ struct Task1 : fdv::Task
 
 struct MainTask : fdv::Task
 {
-	void ICACHE_FLASH_ATTR exec()
+	void MTD_FLASHMEM exec()
 	{
 		//fdv::DisableStdOut(); 
 		fdv::DisableWatchDog();
@@ -169,8 +172,8 @@ struct MainTask : fdv::Task
 };
 
 
-extern "C" void /*ICACHE_FLASH_ATTR*/ user_init(void) 
+extern "C" void FUNC_FLASHMEM user_init(void) 
 {
-	new MainTask;	// never destroy!
+	(new MainTask)->resume();	// never destroy!
 }
 
