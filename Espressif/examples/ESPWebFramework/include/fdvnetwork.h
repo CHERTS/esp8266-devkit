@@ -383,6 +383,11 @@ namespace fdv
 		static uint32_t const CHUNK_CAPACITY = 32;
 	
 		typedef ChunkedBuffer<char> Chunks;
+		
+		typedef Chunks::Iterator ChunkString;
+		
+		typedef IterDict<Chunks::Iterator, Chunks::Iterator> Fields;
+	
 	
 		// implements TCPConnectionHandler
 		void MTD_FLASHMEM connectionHandler()
@@ -397,99 +402,74 @@ namespace fdv
 			m_chunks.clear();
 			m_request.query.clear();
 			m_request.headers.clear();
+			m_request.form.clear();
 		}
+		
 		
 		bool MTD_FLASHMEM processRequest()
 		{
 			// look for 0x0D 0x0A 0x0D 0x0A
-			Chunks::Iterator headerEnd = t_strstr(m_chunks.begin(), m_chunks.end(), CharIterator(FSTR("\x0D\x0A\x0D\x0A")));
-			if (headerEnd != Chunks::Iterator())
+			ChunkString headerEnd = t_strstr(m_chunks.getIterator(), ChunkString(), CharIterator(FSTR("\x0D\x0A\x0D\x0A")));
+			if (headerEnd)
 			{
 				// move header end after CRLFCRLF
 				headerEnd += 4;
 				
-				Chunks::Iterator curc = m_chunks.begin();
+				ChunkString curc = m_chunks.getIterator();
 				
 				// extract method (GET, POST, etc..)				
 				m_request.method = curc;
-				while (*curc != ' ' && curc != headerEnd)
+				while (curc != headerEnd && *curc != ' ')
 					++curc;
 				*curc++ = 0;	// ends method				
 				
 				// extract requested page and query parameters
 				m_request.requestedPage = curc;
-				Chunks::Iterator key;
-				Chunks::Iterator value;
 				while (curc != headerEnd)
 				{
 					if (*curc == '?')
 					{
-						*curc = 0;	// ends requestedPage
-						key = curc;
-						++key;	// bypass '?'
+						*curc++ = 0;	// ends requestedPage
+						curc = extractURLEncodedFields(curc, headerEnd, &m_request.query);
+						break;
 					}
-					else if (*curc == '=')
+					else if (*curc == ' ')
 					{
-						*curc = 0;	// ends key
-						value = curc;
-						++value;	// bypass '='
-					}
-					else if (*curc == '&' || *curc == ' ')
-					{
-						if (key && value)
-						{
-							m_request.query.add(key, value);	// store parameter
-							key = value = Chunks::Iterator();	// reset
-						}
-						if (*curc == ' ')
-						{
-							*curc++ = 0; // ends value or requested page
-							break;
-						}
-						*curc = 0;	// ends value or requested page
-						key = curc;	// bypass '&'
-						++key;
+						*curc++ = 0;	// ends requestedPage
+						break;
 					}
 					++curc;
-				}
+				}					
 				
 				// bypass HTTP version
 				while (curc != headerEnd && *curc != 0x0D)
 					++curc;
 								
 				// extract headers
-				while (curc != headerEnd)
-				{
-					if (*curc == 0x0D && key && value)  // CR?
-					{
-						*curc = 0;	// ends key
-						// store header
-						m_request.headers.add(key, value);
-						key = value = Chunks::Iterator(); // reset
-					}					
-					else if (!isspace(*curc) && !key)
-					{
-						// bookmark "key"
-						key = curc;
-					}
-					else if (*curc == ':')
-					{
-						*curc++ = 0;	// ends value
-						// bypass spaces
-						while (curc != headerEnd && isspace(*curc))
-							++curc;
-						// bookmark value
-						value = curc;
-					}
-					++curc;					
-				}
+				curc = extractHeaders(curc, headerEnd, &m_request.headers);
 				
 				// look for data (maybe POST data)
-				Chunks::Iterator contentLengthStr = m_request.headers[FSTR("Content-Length")];
+				ChunkString contentLengthStr = m_request.headers[FSTR("Content-Length")];
 				if (contentLengthStr)
 				{
+					// download additional content
 					int32_t contentLength = t_strtol(contentLengthStr, 10);
-					// todo
+					int32_t missingBytes = headerEnd.getPosition() + contentLength - m_chunks.getItemsCount();
+					while (isConnected() && missingBytes > 0)
+					{
+						Chunks::Chunk* chunk = m_chunks.addChunk(missingBytes);
+						chunk->items = read(chunk->data, missingBytes);		
+						missingBytes -= chunk->items;
+					}
+					m_chunks.append(0);	// add additional terminating "0"
+					// check content type
+					ChunkString contentType = m_request.headers[FSTR("Content-Type")];
+					if (contentType && t_strstr(contentType, CharIterator(FSTR("application/x-www-form-urlencoded"))))
+					{
+						ChunkString contentStart = m_chunks.getIterator();	// cannot use directly headerEnd because added data
+						contentStart += headerEnd.getPosition();
+						extractURLEncodedFields(contentStart, ChunkString(), &m_request.form);
+					}
 				}
 				
 				dispatch();
@@ -502,6 +482,75 @@ namespace fdv
 				return false;
 			}
 		}
+
+		
+		ChunkString extractURLEncodedFields(ChunkString begin, ChunkString end, Fields* fields)
+		{
+			ChunkString curc = begin;
+			ChunkString key = curc;
+			ChunkString value;
+			while (curc != end)
+			{
+				if (*curc == '=')
+				{
+					*curc = 0;	// ends key
+					value = curc;
+					++value;	// bypass '='
+				}
+				else if (*curc == '&' || *curc == ' ' || curc.isLast())
+				{
+					if (key && value)
+					{		
+						fields->add(key, value);	 // store parameter
+						key = value = ChunkString(); // reset
+					}
+					if (*curc == ' ' || curc.isLast())
+					{
+						*curc++ = 0; // ends value or requested page
+						break;
+					}
+					*curc = 0;	// ends value or requested page
+					key = curc;	// bypass '&'
+					++key;
+				}
+				++curc;
+			}
+			return curc;
+		}
+		
+		ChunkString extractHeaders(ChunkString begin, ChunkString end, Fields* fields)
+		{		
+			ChunkString curc = begin;
+			ChunkString key;
+			ChunkString value;
+			while (curc != end)
+			{
+				if (*curc == 0x0D && key && value)  // CR?
+				{
+					*curc = 0;	// ends key
+					// store header
+					fields->add(key, value);
+					key = value = ChunkString(); // reset
+				}					
+				else if (!isspace(*curc) && !key)
+				{
+					// bookmark "key"
+					key = curc;
+				}
+				else if (*curc == ':')
+				{
+					*curc++ = 0;	// ends value
+					// bypass spaces
+					while (curc != end && isspace(*curc))
+						++curc;
+					// bookmark value
+					value = curc;
+				}
+				++curc;					
+			}
+			return curc;
+		}
+		
 		
 		virtual void MTD_FLASHMEM dispatch()
 		{
@@ -529,10 +578,11 @@ namespace fdv
 		
 		struct Request
 		{
-			Chunks::Iterator                             method;	    // ex: GET, POST, etc...
-			Chunks::Iterator                             requestedPage;	// ex: "/", "/data"...						
-			IterDict<Chunks::Iterator, Chunks::Iterator> query;         // parsed query as key->value dictionary
-			IterDict<Chunks::Iterator, Chunks::Iterator> headers;		// parsed headers as key->value dictionary
+			ChunkString method;	        // ex: GET, POST, etc...
+			ChunkString requestedPage;	// ex: "/", "/data"...						
+			Fields      query;          // parsed query as key->value dictionary
+			Fields      headers;		// parsed headers as key->value dictionary
+			Fields      form;			// parsed form fields as key->value dictionary
 		};
 				
 		typedef void (HTTPHandler::*PageHandler)();

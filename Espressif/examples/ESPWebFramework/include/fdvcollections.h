@@ -61,7 +61,7 @@ struct ChunkedBuffer
 	struct Iterator
 	{
 		Iterator(Chunk* chunk = NULL)
-			: m_chunk(chunk), m_pos(0)
+			: m_chunk(chunk), m_pos(0), m_absPos(0)
 		{
 		}
 		T& MTD_FLASHMEM operator*()
@@ -101,9 +101,18 @@ struct ChunkedBuffer
 		{
 			return t_strdup(*this);
 		}
+		uint32_t getPosition()
+		{
+			return m_absPos;
+		}
+		bool isLast()
+		{
+			return m_chunk->next == NULL && m_pos + 1 >= m_chunk->items;
+		}
 	private:
 		void MTD_FLASHMEM next()
 		{
+			++m_absPos;
 			++m_pos;
 			if (m_pos == m_chunk->items)
 			{
@@ -113,7 +122,8 @@ struct ChunkedBuffer
 		}
 	private:
 		Chunk*   m_chunk;
-		uint32_t m_pos;
+		uint32_t m_pos;  	// position inside this chunk
+		uint32_t m_absPos;	// absolute position (starting from beginning of ChunkedBuffer)
 	};
 
 	
@@ -151,16 +161,31 @@ struct ChunkedBuffer
 		return m_current;
 	}
 	
+	
+	void MTD_FLASHMEM append(T const& value)
+	{
+		Chunk* chunk = addChunk(sizeof(T));
+		chunk->data[0] = value;
+		chunk->items = 1;
+	}
+	
 
-	Iterator MTD_FLASHMEM begin()
+	Iterator MTD_FLASHMEM getIterator()
 	{
 		return Iterator(m_chunks);
 	}
 
-	
-	Iterator MTD_FLASHMEM end()
+
+	uint32_t MTD_FLASHMEM getItemsCount()
 	{
-		return Iterator();
+		uint32_t len = 0;
+		Chunk* chunk = m_chunks;
+		while (chunk)
+		{
+			len += chunk->items;
+			chunk = chunk->next;
+		}
+		return len;
 	}
 
 private:
@@ -269,7 +294,7 @@ public:
 		{
 			APtr<char> key(getItem(i).key.dup());
 			APtr<char> value(getItem(i).value.dup());
-			debug("Key = %s  Value = %s\n\r", key.get(), value.get());
+			debug("%s = %s\n\r", key.get(), value.get());
 		}
 	}		
 	

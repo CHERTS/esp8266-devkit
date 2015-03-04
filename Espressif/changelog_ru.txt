@@ -6,10 +6,14 @@ v1.0.12 (10.03.2015):
   at - Пример использования библиотеки libat от Espressif (компилируется, проверен в работе);
   smart_config - Пример использования библиотеки libsmartconfig от Espressif (компилируется, проверен в работе);
 * Обновлена документация, добавлен файл "docs\ESP8266_IoT_SDK_Programming Guide_v0.9.5.pdf";
+* Обновлена утилита "utils\esptool-ck.exe";
 * Обновлены примеры:
   esp8266_ili9341;
   esp8266_pcd8544;
   ESPWebFramework;
+  esp_mqtt;
+  dht22 - Универсальный драйвер для сенсоров DHT11 и DHT22 (компилируется, проверен в работе), оригинальные исходники https://github.com/CHERTS/esp8266-dht11_22;
+- Удален пример dht11_22;
 
 v1.0.11 (25.02.2015):
 + Добавлен RTOS SDK, каталог "C:\Espressif\ESP8266_RTOS_SDK";
