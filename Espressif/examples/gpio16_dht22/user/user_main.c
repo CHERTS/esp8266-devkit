@@ -64,7 +64,7 @@ LOCAL void ICACHE_FLASH_ATTR dht22_cb(void *arg)
 	    console_printf("Temperature: %s *C\r\n", DHTFloat2String(buff, data.temperature));
 	    console_printf("Humidity: %s %%\r\n", DHTFloat2String(buff, data.humidity));
 	} else {
-		console_printf("Failed to read temperature and humidity sensor on GPIO%d\n", pin);
+	    console_printf("Failed to read temperature and humidity sensor on GPIO%d\n", pin);
 	}
 #else
 	// Two DHT22 sensors
@@ -79,7 +79,7 @@ LOCAL void ICACHE_FLASH_ATTR dht22_cb(void *arg)
 		    console_printf("Humidity: %s %%\r\n", DHTFloat2String(buff, data.humidity));
 		    console_printf("--------------------\r\n");
 		} else {
-			console_printf("Failed to read temperature and humidity sensor on GPIO%d\n", pin);
+		    console_printf("Failed to read temperature and humidity sensor on GPIO%d\n", pin);
 		}
 	}
 #endif
@@ -114,7 +114,7 @@ void user_init(void)
 	// Pin number 4 = GPIO2
 	sensor.pin = 4;
 	sensor.type = DHT22;
-    console_printf("DHT22 init on GPIO%d\r\n", pin_num[sensor.pin]);
+	console_printf("DHT22 init on GPIO%d\r\n", pin_num[sensor.pin]);
 	DHTInit(&sensor);
 #else
 	// Two DHT22 sensors
@@ -122,9 +122,9 @@ void user_init(void)
 	sensors[0].pin = 3;
 	sensors[0].type = DHT22;
 	if (DHTInit(&sensors[0]))
-		console_printf("DHT22 #0 init on GPIO%d\r\n", pin_num[sensors[0].pin]);
+	    console_printf("DHT22 #0 init on GPIO%d\r\n", pin_num[sensors[0].pin]);
 	else
-		console_printf("Error init DHT22 #0 on GPIO%d\r\n", pin_num[sensors[0].pin]);
+	    console_printf("Error init DHT22 #0 on GPIO%d\r\n", pin_num[sensors[0].pin]);
 	// Sensor 2: Pin number 4 = GPIO2
 	sensors[1].pin = 4;
 	sensors[1].type = DHT22;
@@ -134,7 +134,7 @@ void user_init(void)
 		console_printf("Error init DHT22 #1 on GPIO%d\r\n", pin_num[sensors[1].pin]);
 #endif
 
-    console_printf("--------------------\r\n");
+	console_printf("--------------------\r\n");
 	os_timer_disarm(&dht22_timer);
 	os_timer_setfn(&dht22_timer, (os_timer_func_t *)dht22_cb, (void *)0);
 	os_timer_arm(&dht22_timer, DELAY, 1);

@@ -1,7 +1,11 @@
-Driver for the temperature and humidity sensor DHT11 and DHT22
---------------------------------------------------------------
+Example of reading data from the sensor DHT22
+---------------------------------------------
 
-Official repo: https://github.com/CHERTS/esp8266-dht11_22
+Repository: https://github.com/CHERTS/esp8266-dht11_22
+
+The example uses:
+1. Driver GPIO16
+2. Driver DHT11_22
 
 For a single device, connect as follows DHT22 to ESP-01:
 DHT22 1 (Vcc) to Vcc (3.3 Volts) ESP-01

@@ -50,12 +50,12 @@
 		</cconfiguration>
 	</storageModule>
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-		<project id="dht22.null.1541714069" name="dht22"/>
+		<project id="gpio16_dht22.null.1541714069" name="gpio16_dht22"/>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="refreshScope" versionNumber="2">
 		<configuration configurationName="Default">
-			<resource resourceType="PROJECT" workspacePath="/dht22"/>
+			<resource resourceType="PROJECT" workspacePath="/gpio16_dht22"/>
 		</configuration>
 	</storageModule>
 	<storageModule moduleId="scannerConfiguration">
