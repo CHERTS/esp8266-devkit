@@ -50,12 +50,12 @@
 		</cconfiguration>
 	</storageModule>
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-		<project id="gpio16.null.1541714069" name="gpio16"/>
+		<project id="gpio16_key.null.1541714069" name="gpio16_key"/>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="refreshScope" versionNumber="2">
 		<configuration configurationName="Default">
-			<resource resourceType="PROJECT" workspacePath="/gpio16"/>
+			<resource resourceType="PROJECT" workspacePath="/gpio16_key"/>
 		</configuration>
 	</storageModule>
 	<storageModule moduleId="scannerConfiguration">
