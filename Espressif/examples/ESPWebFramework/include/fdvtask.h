@@ -80,7 +80,7 @@ namespace fdv
 				xTaskCreate(entry, (const signed char*)"", m_stackDepth, this, m_priority, &m_handle);			
 		}
 		
-		void MTD_FLASHMEM delay(uint32_t ms)
+		static void MTD_FLASHMEM delay(uint32_t ms)
 		{
 			vTaskDelay(ms / portTICK_RATE_MS);
 		}

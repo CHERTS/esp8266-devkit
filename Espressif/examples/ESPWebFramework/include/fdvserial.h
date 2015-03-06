@@ -95,29 +95,23 @@ namespace fdv
 				writeNewLine();
 			}
 
-			// fmt can be in RAM or in Flash
+			// buf can stay in RAM or Flash
+			// "strings" of args can stay in RAM or Flash
 			uint16_t MTD_FLASHMEM printf(char const *fmt, ...)
 			{
 				va_list args;
 				
-				char const* ramFmt = fmt;
-				if (isStoredInFlash(fmt))
-					ramFmt = f_strdup(fmt);
-
 				va_start(args, fmt);
-				uint16_t len = vsprintf(NULL, ramFmt, args);
+				uint16_t len = vsprintf(NULL, fmt, args);
 				va_end(args);
 
 				char buf[len + 1];
 				
 				va_start(args, fmt);
-				vsprintf(buf, ramFmt, args);
+				vsprintf(buf, fmt, args);
 				va_end(args);
 				
 				write(buf);
-
-				if (ramFmt != fmt)
-					delete[] ramFmt;
 
 				return len;
 			}

@@ -142,7 +142,21 @@ private:
 };
 
 
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+// min / max
 
+template <typename T>
+T min(T const& v1, T const& v2)
+{
+	return v1 < v2? v1 : v2;
+}
+
+template <typename T>
+T max(T const& v1, T const& v2)
+{
+	return v1 > v2? v1 : v2;
+}
 
 
 

@@ -37,6 +37,8 @@ extern "C"
 	#include "lwip/api.h"
 	#include "lwip/netbuf.h"
 	#include "udhcp/dhcpd.h"	
+
+	#include <stdarg.h>
 }
 
 
@@ -234,22 +236,14 @@ namespace fdv
 		{
 			while (true)
 			{
-				//debug(FSTR("B. FreeStack = %d bytes\n\r"), Task::getFreeStack());
-				//debug(FSTR("B. FreeHeap  = %d bytes\n\r"), Task::getFreeHeap());
-				//debug(FSTR("Wait for accept\n\r"));
 				sockaddr_in clientAddr;
 				socklen_t addrLen = sizeof(sockaddr_in);
 				int clientSocket = lwip_accept(m_socket, (sockaddr*)&clientAddr, &addrLen);
 				if (clientSocket > 0)
 				{
-					//debug(FSTR("Connected, wait for a free thread\n\r"));
-					if (m_socketQueue.send(clientSocket, ACCEPTWAITTIMEOUTMS))
+					if (!m_socketQueue.send(clientSocket, ACCEPTWAITTIMEOUTMS))
 					{
-						//debug(FSTR("Start receiving data\n\r"));
-					}
-					else
-					{
-						debug(FSTR("Timout, no thread available, disconnecting\n\r"));
+						// Timeout, no thread available, disconnecting
 						lwip_close(clientSocket);
 					}
 				}
@@ -319,22 +313,51 @@ namespace fdv
 			return bytesRecv;
 		}
 		
+		// buffer can stay in RAM of Flash
 		// ret -1 = error, ret 0 = disconnected
 		int32_t write(void const* buffer, uint32_t length)
 		{
-			int32_t bytesSent = lwip_send(m_socket, buffer, length, 0);
+			void const* ramBuffer = buffer;
+			if (isStoredInFlash(buffer))
+				ramBuffer = f_memdup(buffer, length);
+			int32_t bytesSent = lwip_send(m_socket, ramBuffer, length, 0);
 			if (bytesSent > 0)
 				m_connected = (bytesSent > 0);
+			if (ramBuffer != buffer)
+				delete[] (uint8_t*)ramBuffer;
 			return bytesSent;
 		}
 		
+		// str can stay in RAM of Flash
 		// ret -1 = error, ret 0 = disconnected
 		int32_t write(char const* str)
 		{
-			return write(str, strlen(str));
+			return write((uint8_t const*)str, f_strlen(str));
 		}
 		
-		void close()
+		// like printf
+		// buf can stay in RAM or Flash
+		// "strings" of args can stay in RAM or Flash
+		uint16_t MTD_FLASHMEM writeFmt(char const *fmt, ...)
+		{
+			va_list args;
+			
+			va_start(args, fmt);
+			uint16_t len = vsprintf(NULL, fmt, args);
+			va_end(args);
+
+			char buf[len + 1];
+			
+			va_start(args, fmt);
+			vsprintf(buf, fmt, args);
+			va_end(args);
+			
+			write(buf, len);
+
+			return len;
+		}
+		
+		void MTD_FLASHMEM close()
 		{
 			if (m_socket > 0)
 			{
@@ -344,12 +367,12 @@ namespace fdv
 			m_connected = false;
 		}
 		
-		bool isConnected()
+		bool MTD_FLASHMEM isConnected()
 		{
 			return m_connected;
 		}
 		
-		void exec()
+		void MTD_FLASHMEM exec()
 		{
 			while (true)
 			{
@@ -360,6 +383,12 @@ namespace fdv
 					close();
 				}
 			}
+		}
+		
+		void MTD_FLASHMEM setNoDelay(bool value)
+		{
+			int32_t one = (int32_t)value;
+			lwip_setsockopt(m_socket, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
 		}
 		
 		// applications override this
@@ -391,7 +420,7 @@ namespace fdv
 	
 		// implements TCPConnectionHandler
 		void MTD_FLASHMEM connectionHandler()
-		{
+		{			
 			while (isConnected())
 			{
 				Chunks::Chunk* chunk = m_chunks.addChunk(CHUNK_CAPACITY);
@@ -518,6 +547,7 @@ namespace fdv
 			return curc;
 		}
 		
+
 		ChunkString extractHeaders(ChunkString begin, ChunkString end, Fields* fields)
 		{		
 			ChunkString curc = begin;
@@ -537,7 +567,7 @@ namespace fdv
 					// bookmark "key"
 					key = curc;
 				}
-				else if (*curc == ':')
+				else if (!value && *curc == ':')
 				{
 					*curc++ = 0;	// ends value
 					// bypass spaces
@@ -562,16 +592,9 @@ namespace fdv
 					return;
 				}
 			}
-			// not found
-			processNotFound();
+			// not found (routes should always have route "*" to handle 404 not found)
 		}
 		
-		
-		virtual void MTD_FLASHMEM processNotFound()
-		{
-			debug(FSTR("processNotFound()\r\n"));
-			//reply(request, STR_HTTP404, NULL, 0, NULL, 0, SendStringItem(NULL, PSTR("Not found"), 0, StringItem::Flash));
-		}
 		
 
 	public:
@@ -612,6 +635,80 @@ namespace fdv
 		Route const* m_routes;
 		uint32_t     m_routesCount;
 		Request      m_request;		// valid only inside processRequest()
+	};
+	
+	
+	//////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+	// HTTPResponse
+	
+	class HTTPResponse
+	{
+	public:
+		typedef ChunkedBuffer<char> Chunks;
+	
+	
+		HTTPResponse(HTTPHandler* httpHandler, char const* status, char const* content = NULL)
+			: m_httpHandler(httpHandler)
+		{
+			// status line
+			m_httpHandler->writeFmt(FSTR("HTTP/1.0 %s\r\n"), status);
+			// default headers
+			addHeader(FSTR("Connection"), FSTR("close"));
+			addHeader(FSTR("Content-Type"), FSTR("text/html; charset=UTF-8"));
+			// content (if present, otherwise use addContent())
+			if (content)
+				addContent(content);
+		}
+		
+		~HTTPResponse()
+		{
+			flush();
+		}
+		
+		// accept RAM or Flash strings
+		void MTD_FLASHMEM addHeader(char const* key, char const* value)
+		{
+			m_httpHandler->writeFmt(FSTR("%s: %s\r\n"), key, value);
+		}
+		
+		// accept RAMT or Flash data
+		// WARN: data is not copied! Just a pointer is stored
+		void MTD_FLASHMEM addContent(void const* data, uint32_t length)
+		{
+			Chunks::Chunk* chunk = m_chunks.addChunk((char*)data, length, false);
+		}
+		
+		// accept RAMT or Flash strings
+		// WARN: data is not copied! Just a pointer is stored
+		// can be called many times
+		void MTD_FLASHMEM addContent(char const* str)
+		{
+			addContent(str, f_strlen(str));
+		}
+				
+		// should be called only at the end of addContent calls
+		void MTD_FLASHMEM flush()
+		{
+			if (m_chunks.getItemsCount() > 0)
+			{
+				// write content length header
+				m_httpHandler->writeFmt(FSTR("Content-Length: %d\r\n\r\n"), m_chunks.getItemsCount());
+				
+				// write data
+				Chunks::Chunk* chunk = m_chunks.getFirstChunk();
+				while (chunk)
+				{
+					m_httpHandler->write((uint8_t const*)chunk->data, chunk->items);
+					chunk = chunk->next;
+				}
+				m_chunks.clear();
+			}
+		}
+		
+	private:
+		HTTPHandler* m_httpHandler;
+		Chunks       m_chunks;
 	};
 	
 }

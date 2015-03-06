@@ -119,7 +119,8 @@ static size_t FUNC_FLASHMEM strnlen(const char *s, size_t count)
 static int FUNC_FLASHMEM ee_skip_atoi(const char **s)
 {
   int i = 0;
-  while (is_digit(**s)) i = i*10 + *((*s)++) - '0';
+  while (is_digit(fdv::getChar(*s))) 
+	  i = i*10 + fdv::getChar((*s)++) - '0';
   return i;
 }
 
@@ -565,6 +566,8 @@ static void FUNC_FLASHMEM flt(Str& str, double num, int size, int precision, cha
 
 #endif
 
+// buf can stay in RAM or Flash
+// "strings" of args can stay in RAM or Flash
 // buf = NULL -> just count required buffer length
 uint16_t FUNC_FLASHMEM vsprintf(char *buf, const char *fmt, va_list args)
 {
@@ -581,11 +584,11 @@ uint16_t FUNC_FLASHMEM vsprintf(char *buf, const char *fmt, va_list args)
 
   Str str(buf);
 
-  for (; *fmt; fmt++)
+  for (; fdv::getChar(fmt); fmt++)
   {
-    if (*fmt != '%')
+    if (fdv::getChar(fmt) != '%')
     {
-      *str++ = *fmt;
+      *str++ = fdv::getChar(fmt);
       continue;
     }
                   
@@ -593,7 +596,7 @@ uint16_t FUNC_FLASHMEM vsprintf(char *buf, const char *fmt, va_list args)
     flags = 0;
 repeat:
     fmt++; // This also skips first '%'
-    switch (*fmt)
+    switch (fdv::getChar(fmt))
     {
       case '-': flags |= LEFT; goto repeat;
       case '+': flags |= PLUS; goto repeat;
@@ -604,9 +607,9 @@ repeat:
           
     // Get field width
     field_width = -1;
-    if (is_digit(*fmt))
+    if (is_digit(fdv::getChar(fmt)))
       field_width = ee_skip_atoi(&fmt);
-    else if (*fmt == '*')
+    else if (fdv::getChar(fmt) == '*')
     {
       fmt++;
       field_width = va_arg(args, int);
@@ -619,12 +622,12 @@ repeat:
 
     // Get the precision
     precision = -1;
-    if (*fmt == '.')
+    if (fdv::getChar(fmt) == '.')
     {
       ++fmt;    
-      if (is_digit(*fmt))
+      if (is_digit(fdv::getChar(fmt)))
         precision = ee_skip_atoi(&fmt);
-      else if (*fmt == '*')
+      else if (fdv::getChar(fmt) == '*')
       {
         ++fmt;
         precision = va_arg(args, int);
@@ -634,16 +637,16 @@ repeat:
 
     // Get the conversion qualifier
     qualifier = -1;
-    if (*fmt == 'l' || *fmt == 'L')
+    if (fdv::getChar(fmt) == 'l' || fdv::getChar(fmt) == 'L')
     {
-      qualifier = *fmt;
+      qualifier = fdv::getChar(fmt);
       fmt++;
     }
 
     // Default base
     base = 10;
 
-    switch (*fmt)
+    switch (fdv::getChar(fmt))
     {
       case 'c':
         if (!(flags & LEFT)) while (--field_width > 0) *str++ = ' ';
@@ -653,10 +656,10 @@ repeat:
 
       case 's':
         s = va_arg(args, char *);
-        if (!s) s = "<NULL>";
-        len = strnlen(s, precision);
+        if (!s) s = FSTR("<NULL>");
+        len = f_strnlen(s, precision);
         if (!(flags & LEFT)) while (len < field_width--) *str++ = ' ';
-        for (i = 0; i < len; ++i) *str++ = *s++;
+        for (i = 0; i < len; ++i) *str++ = fdv::getChar(s++);
         while (len < field_width--) *str++ = ' ';
         continue;
 
@@ -701,15 +704,15 @@ repeat:
 #ifdef HAS_FLOAT
 
       case 'f':
-        flt(str, va_arg(args, double), field_width, precision, *fmt, flags | SIGN);
+        flt(str, va_arg(args, double), field_width, precision, fdv::getChar(fmt), flags | SIGN);
         continue;
 
 #endif
 
       default:
-        if (*fmt != '%') *str++ = '%';
-        if (*fmt)
-          *str++ = *fmt;
+        if (fdv::getChar(fmt) != '%') *str++ = '%';
+        if (fdv::getChar(fmt))
+          *str++ = fdv::getChar(fmt);
         else
           --fmt;
         continue;

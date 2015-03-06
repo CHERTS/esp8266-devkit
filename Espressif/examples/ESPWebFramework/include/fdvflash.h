@@ -31,13 +31,10 @@
 
 // Flash from 0x0 to 0x8000      mapped to 0x40100000, len = 0x8000 (32KBytes)    - ".text"
 // Flash from 0x40000 to 0x7C000 mapped to 0x40240000, len = 0x3C000 (240KBytes)  - ".irom0.text"
-//
-// We use flash from 0x14000 for a maximum size of 180KBytes (usable in blocks of 4K)
-static uint32_t const FLASHFILESYSTEMSTART   = 0x14000;
-static uint32_t const FLASHFILESYSTEMLENGTH  = 0x2C000;
+// Settings (FlashDictionary) may be written starting from 0x14000, with maximum (0x2C000) 180KBytes (usable in blocks of 4K)
 
-static uint16_t const FLASHFILESYSTEMSTART_SECTOR  = FLASHFILESYSTEMSTART / SPI_FLASH_SEC_SIZE;
-static uint16_t const FLASHFILESYSTEMLENGTH_SECTOR =  FLASHFILESYSTEMLENGTH / SPI_FLASH_SEC_SIZE;
+static uint32_t const FLASH_MAP_START = 0x40200000;
+
 
 
 
@@ -90,6 +87,43 @@ namespace fdv
 		else
 			return *str;
 	}		
+
+
+	///////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////
+	// getByte
+	// like getChar but for uint8_t
+	// buffer can be unaligned
+	static inline uint8_t FUNC_FLASHMEM getByte(void const* buffer)
+	{
+		return (uint8_t)getChar((char const*)buffer);
+	}
+
+
+	///////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////
+	// getWord
+	// like getByte but for uint16_t
+	// buffer can be unaligned
+	// read as little-endian
+	static inline uint16_t FUNC_FLASHMEM getWord(void const* buffer)
+	{
+		char const* pc = (char const*)buffer;
+		return (uint8_t)getChar(pc) | ((uint8_t)getChar(pc + 1) << 8);
+	}
+
+
+	///////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////
+	// getDWord
+	// like getWord but for uint32_t
+	// buffer can be unaligned
+	// read as little-endian
+	static inline uint32_t FUNC_FLASHMEM getDWord(void const* buffer)
+	{
+		char const* pc = (char const*)buffer;
+		return (uint8_t)getChar(pc) | ((uint8_t)getChar(pc + 1) << 8) | ((uint8_t)getChar(pc + 2) << 16) | ((uint8_t)getChar(pc + 3) << 24);
+	}
 	
 	
 	//////////////////////////////////////////////////////////////////////
@@ -142,149 +176,55 @@ namespace fdv
 	};
 
 	
+	//////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+	// ByteIterator
+	// Can iterate both RAM and Flash buffers
 
-	///////////////////////////////////////////////////////////////////////////////////////
-	///////////////////////////////////////////////////////////////////////////////////////
-	// FlashFileSystem
-	//
-	// filename: only first four characters are stored
-	// note: cannot free an already allocated file
-	// max 44 files of 4096 bytes can be stored. No check is done on available space. 
-	//
-	// Example:
-	//
-	//   struct MyStore
-	//  {
-	//    char name[16];
-	//    char surname[16];
-	//  };
-	//
-	//  Save data:
-	//    MyStore t;
-	//    strcpy(t.name, "Fabrizio");
-	//    strcpy(t.surname, "Di Vittorio");
-	//    fdv::FlashFileSystem::save("USR0", &t, sizeof(MyStore));
-	// 
-	//  Load data:
-	//    MyStore t;
-	//    fdv::FlashFileSysten::load("USR0", &t);
-	//    printf("%s %s", t.name, t.surname);
-	
-	
-	struct FlashFileSystem
+	struct ByteIterator
 	{
-		
-		// format the entire available space
-		// This is required only if you want to remove previous files
-		static void MTD_FLASHMEM format()
+		ByteIterator(uint8_t const* buf = NULL)
+			: m_buf(buf)
 		{
-			Critical critical;
-			for (uint16_t s = 0; s != FLASHFILESYSTEMLENGTH_SECTOR; ++s)
-				spi_flash_erase_sector(FLASHFILESYSTEMSTART_SECTOR + s);
-		}
-				
-		// ret false if file doesn't exist
-		static bool MTD_FLASHMEM load(char const* filename, void* buffer)
-		{
-			SectorHeader header;
-			uint16_t sector = find(filename, &header);
-			if (sector > 0)
-			{
-				// found
-				Critical critical;
-				spi_flash_read((uint32_t)(sector * SPI_FLASH_SEC_SIZE + sizeof(SectorHeader)), (uint32*)buffer, header.length);
-				return true;
-			}
-			return false;	// not found			
 		}
 		
-		// length cannot exceed initial allocated sectors
-		// buffer can be NULL: in this case the specified space is allocated and erased
-		static void MTD_FLASHMEM save(char const* filename, void* buffer, uint16_t length)
+		uint8_t const* MTD_FLASHMEM get()
 		{
-			SectorHeader header;
-			uint16_t sector = find(filename, &header);
-			if (sector == 0)				
-				sector = findFreeSector(filename, length, &header); // initial file allocation, prepare header
-			else				
-				header.length = length; // already allocated, update header
-			Critical critical;
-			for (uint16_t s = 0; s != header.sectors; ++s)
-				spi_flash_erase_sector(sector + s);
-			spi_flash_write((uint32_t)(sector * SPI_FLASH_SEC_SIZE), (uint32*)&header, sizeof(SectorHeader));
-			if (buffer)
-				// todo: can spi_flash_write write more than one sector?
-				spi_flash_write((uint32_t)(sector * SPI_FLASH_SEC_SIZE + sizeof(SectorHeader)), (uint32*)buffer, length);
+			return m_buf;
 		}
 		
-		// ret -1 if doesn't exist
-		static int32_t MTD_FLASHMEM getLength(char const* filename)
+		uint8_t MTD_FLASHMEM operator*()
 		{
-			SectorHeader header;
-			if (find(filename, &header))
-				return header.length;
-			return -1;
+			return getByte(m_buf);
 		}
 		
+		ByteIterator MTD_FLASHMEM operator++(int)
+		{
+			ByteIterator p = *this;
+			++m_buf;
+			return p;
+		}
+		
+		ByteIterator MTD_FLASHMEM operator++()
+		{
+			++m_buf;
+			return *this;
+		}
+		
+		bool MTD_FLASHMEM operator==(uint8_t const* rhs)
+		{
+			return getByte(m_buf) == *rhs;
+		}
+		
+		bool MTD_FLASHMEM operator!=(uint8_t const* rhs)
+		{
+			return getByte(m_buf) != *rhs;
+		}
 		
 	private:
-
-		static uint32_t const MAGIC = 0x46445631;
-		
-		struct SectorHeader
-		{
-			uint32_t magic;		// MAGIC if allocated
-			uint32_t filename;	// 4 bytes filename
-			uint16_t sectors;	// used sectors
-			uint16_t length;    // used bytes (not including size of SectorHeader)
-		};
-		
-		// header is filled with valid values
-		static uint16_t MTD_FLASHMEM findFreeSector(char const* filename, uint16_t length, SectorHeader* header)
-		{
-			// find free position
-			for (uint16_t s = 0; s != FLASHFILESYSTEMLENGTH_SECTOR; s += header->sectors)
-			{
-				readSectorHeader(FLASHFILESYSTEMSTART_SECTOR + s, header);
-				if (header->magic != MAGIC)
-				{
-					// write header
-					header->magic    = MAGIC;
-					header->filename = *((uint32_t const*)filename);
-					header->sectors  = calcRequiredSectors(length);
-					header->length   = length;
-					return FLASHFILESYSTEMSTART_SECTOR + s;
-				}
-			}
-			return 0;
-		}		
-	
-		static uint16_t MTD_FLASHMEM calcRequiredSectors(uint16_t length)
-		{
-			return (sizeof(SectorHeader) + length + SPI_FLASH_SEC_SIZE - 1) / SPI_FLASH_SEC_SIZE;
-		}
-		
-		static void MTD_FLASHMEM readSectorHeader(uint16_t sector, SectorHeader* header)
-		{
-			Critical critical;
-			spi_flash_read((uint32_t)(sector * SPI_FLASH_SEC_SIZE), (uint32*)header, sizeof(SectorHeader));
-		}
-		
-		// ret 0 if not found
-		static uint16_t MTD_FLASHMEM find(char const* filename, SectorHeader* header)
-		{
-			for (uint16_t s = 0; s != FLASHFILESYSTEMLENGTH_SECTOR; s += header->sectors)
-			{
-				readSectorHeader(FLASHFILESYSTEMSTART_SECTOR + s, header);
-				if (header->magic != MAGIC)
-					break;
-				if (header->filename == *((uint32_t const*)filename))
-					return FLASHFILESYSTEMSTART_SECTOR + s;	// found
-			}
-			return 0;	// not found			
-		}
+		uint8_t const* m_buf;
 	};
-
+	
 	
 	
 	
