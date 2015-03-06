@@ -5,6 +5,7 @@ v1.0.12 (10.03.2015):
 + Added new examples:
   at - an example of using the library "libat" from Espressif (compiled, works correctly);
   smart_config - an example of using the library "libsmartconfig" from Espressif (compiled, works correctly);
+  gpio16 - driver and an example of using GPIO (read, write, interrupt) (compiled, works correctly), original source https://github.com/CHERTS/esp8266-gpio16;
 * Update docs, added file "docs\ESP8266_IoT_SDK_Programming Guide_v0.9.5.pdf";
 * Update a utility "utils\esptool-ck.exe";
 * Updated examples:

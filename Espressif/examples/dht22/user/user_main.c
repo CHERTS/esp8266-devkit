@@ -56,9 +56,9 @@ LOCAL void ICACHE_FLASH_ATTR dht22_cb(void *arg)
 	os_timer_disarm(&dht22_timer);
 #if 0
 	// One DHT22 sensor
+	pin = pin_num[sensor.pin];
 	if (DHTRead(&sensor, &data))
 	{
-		pin = pin_num[sensor.pin];
 	    char buff[20];
 	    console_printf("GPIO%d\r\n", pin);
 	    console_printf("Temperature: %s *C\r\n", DHTFloat2String(buff, data.temperature));
