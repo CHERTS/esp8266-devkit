@@ -7,6 +7,7 @@ v1.0.12 (10.03.2015):
   smart_config - an example of using the library "libsmartconfig" from Espressif (compiled, works correctly);
   gpio16_key - GPIO driver and example - 2 buttons (compiled, works correctly), the original source https://github.com/CHERTS/esp8266-gpio16;
   gpio16_led - GPIO driver and example - 1 button and 1 LED (compiled, works correctly);
+  gpio16_dht22 - Example of reading data from the sensor DHT22 (compiled, works correctly), original source https://github.com/CHERTS/esp8266-dht11_22;
 * Update docs, added file "docs\ESP8266_IoT_SDK_Programming Guide_v0.9.5.pdf";
 * Update a utility "utils\esptool-ck.exe";
 * Updated examples:
@@ -14,8 +15,9 @@ v1.0.12 (10.03.2015):
   esp8266_pcd8544;
   ESPWebFramework;
   esp_mqtt;
-  dht22 - Driver for the temperature and humidity sensor DHT11 and DHT22 (compiled, works correctly), original source https://github.com/CHERTS/esp8266-dht11_22;
-- Removed example dht11_22;
+- Removed examples:
+  dht22;
+  dht11_22;
 
 v1.0.11:
 + Added RTOS SDK, directory "C:\Espressif\ESP8266_RTOS_SDK";

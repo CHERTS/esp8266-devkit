@@ -29,29 +29,27 @@ struct MyHTTPHandler : public fdv::HTTPHandler
 	{
 		static const Route routes[] =
 		{
-			{FSTR("/"),	     (PageHandler)&MyHTTPHandler::get_home},
-			{FSTR("/test1"), (PageHandler)&MyHTTPHandler::get_test1},
-			{FSTR("*"),      (PageHandler)&MyHTTPHandler::get_all},
+			{FSTR("/"),	         (PageHandler)&MyHTTPHandler::get_home},
+			{FSTR("/confignet"), (PageHandler)&MyHTTPHandler::get_confignet},
+			{FSTR("*"),          (PageHandler)&MyHTTPHandler::get_all},
 		};
 		setRoutes(routes, sizeof(routes) / sizeof(Route));
 	} 
 	
 	void MTD_FLASHMEM get_home()
 	{
-		debug(FSTR("\r\nget_home()\r\n"));
-		fdv::HTTPResponse(this, FSTR("200 OK"), FSTR("<html><head></head><body><h1>This is Home Page</h1></body></html>")).flush();
+		fdv::HTTPResponse(this, FSTR("200 OK"), FSTR("<html><head></head><body><h1>This is Home Page</h1></body></html>"));
 	}
 
-	void MTD_FLASHMEM get_test1()
+	void MTD_FLASHMEM get_confignet()
 	{
-		debug("get_test1()\r\n");
-		fdv::HTTPResponse(this, FSTR("200 OK"), FSTR("<html><head></head><body><h1>This is test1</h1></body></html>"));
+		fdv::HTTPWifiConfigurationResponse(this);
 	}
 
 	void MTD_FLASHMEM get_all()
 	{
-		debug("get_all()\r\n");
-		fdv::HTTPResponse(this, FSTR("404 Not Found"), FSTR("Page not found!"));
+		debug("get %s\r\n", fdv::Ptr<char>(t_strdup(getRequest().requestedPage)).get());		 
+		fdv::HTTPStaticFileResponse(this, getRequest().requestedPage + 1);	// +1 to bypass url slash
 	}			
 };
 

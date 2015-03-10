@@ -74,10 +74,6 @@ struct ChunkedBuffer
 		{			
 			return m_chunk->data[m_pos];
 		}
-		MTD_FLASHMEM operator bool()
-		{
-			return m_chunk != NULL;
-		}
 		Iterator MTD_FLASHMEM operator++(int)
 		{
 			Iterator c = *this;
@@ -94,6 +90,12 @@ struct ChunkedBuffer
 			while (rhs-- > 0)
 				next();
 			return *this;
+		}
+		Iterator MTD_FLASHMEM operator+(int32_t rhs)
+		{
+			Iterator newval = *this;
+			newval += rhs;
+			return newval;
 		}
 		bool MTD_FLASHMEM operator==(Iterator const& rhs)
 		{
@@ -114,6 +116,10 @@ struct ChunkedBuffer
 		bool isLast()
 		{
 			return m_chunk->next == NULL && m_pos + 1 >= m_chunk->items;
+		}
+		bool isValid()
+		{
+			return m_chunk != NULL;
 		}
 	private:
 		void MTD_FLASHMEM next()
@@ -353,7 +359,7 @@ struct FlashDictionary
 {
 
 	static uint32_t const FLASH_DICTIONARY_POS = 0x14000;
-	static uint32_t const MAGIC = 0x46445631;
+	static uint32_t const MAGIC                = 0x46445631;
 	
 	// clear the entire available space and write MAGIC at the beginning of the dictionary
 	// This is required only if you want to remove previous content
@@ -490,7 +496,7 @@ struct FlashDictionary
 			if (keylen == 0xFF || f_strcmp((char const*)(curpos + 1), key) == 0)
 				return curpos;	// return start of free space or start of key->value block
 			// goto next block
-			curpos += 1 + keylen + 1;	// 1 (keylen field) + keylen + 1 (ending zero)
+			curpos += 1 + keylen + 1;		// 1 (keylen field) + keylen + 1 (ending zero)
 			curpos += 2 + getWord(curpos);	// 2 (valuelen field) + valuelen
 		}
 	}
@@ -505,7 +511,65 @@ struct FlashDictionary
 
 
 
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+// FlashFileSystem
+// It is just a files extractor from the flash.
+// You can write files into the flash using "binarydir.py" (to prepare) and "esptool.py" (to flash) tools.
+// For example, having some files in webcontent subdirectory you can do:
+//   python binarydir.py webcontent webcontent.bin 176128
+//   python ../esptool.py --port COM7 write_flash 0x15000 webcontent.bin
+// Then you can use FlashFileSystem static methods to get actual files content
+// Maximum content size is 176128 bytes and starts from 0x15000 of the flash memory
 
+struct FlashFileSystem
+{
+	static uint32_t const FLASHFILESYSTEM_POS = 0x15000;
+	static uint32_t const MAGIC               = 0x93841A03;
+	
+	// filename can stay in Ram or Flash
+	static bool MTD_FLASHMEM find(char const* filename, char const** mimetype, void const** data, uint16_t* dataLength)
+	{
+		//debug("find: %s\r\n", filename);
+		char const* curc = (char const*)(FLASH_MAP_START + FLASHFILESYSTEM_POS);
+		
+		// check magic
+		if (MAGIC != *((uint32_t const*)curc))
+			return false;	// not found
+		curc += 4;
+		
+		// find file
+		while (true)
+		{
+			// filename length
+			uint8_t filenamelen = getByte(curc);
+			curc += 1;
+			uint8_t mimetypelen = getByte(curc);
+			curc += 1;
+			uint16_t filecontentlen = getWord(curc); 
+			curc += 2;
+			//debug("  filenamelen=%d mimetypelen=%d filecontentlen=%d\r\n", filenamelen, mimetypelen, filecontentlen);
+			if (filenamelen == 0)
+			{
+				return false;	// not found
+			}
+			// check filename
+			if (f_strcmp(filename, curc) == 0)
+			{
+				// found
+				*mimetype   = curc + filenamelen;
+				*data       = (void*)(*mimetype + mimetypelen);
+				*dataLength = filecontentlen;
+				return true;
+			}
+			// bypass this file
+			curc += filenamelen + mimetypelen + filecontentlen;			
+		}
+	}
+	
+	
+
+};
 
 
 

@@ -31,7 +31,7 @@
 
 // Flash from 0x0 to 0x8000      mapped to 0x40100000, len = 0x8000 (32KBytes)    - ".text"
 // Flash from 0x40000 to 0x7C000 mapped to 0x40240000, len = 0x3C000 (240KBytes)  - ".irom0.text"
-// Settings (FlashDictionary) may be written starting from 0x14000, with maximum (0x2C000) 180KBytes (usable in blocks of 4K)
+// Other content (settings, web files) may be written starting from 0x14000, with maximum (0x2C000) 180KBytes (usable in blocks of 4K)
 
 static uint32_t const FLASH_MAP_START = 0x40200000;
 

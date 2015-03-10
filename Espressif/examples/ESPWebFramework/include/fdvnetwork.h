@@ -317,14 +317,36 @@ namespace fdv
 		// ret -1 = error, ret 0 = disconnected
 		int32_t write(void const* buffer, uint32_t length)
 		{
-			void const* ramBuffer = buffer;
+			static uint32_t const CHUNKSIZE = 256;
+			
+			int32_t bytesSent = 0;
 			if (isStoredInFlash(buffer))
-				ramBuffer = f_memdup(buffer, length);
-			int32_t bytesSent = lwip_send(m_socket, ramBuffer, length, 0);
-			if (bytesSent > 0)
+			{
+				// copy from Flash, send in chunks of CHUNKSIZE bytes
+				Ptr<uint8_t> rambuf(new uint8_t[length]);
+				uint8_t const* src = (uint8_t const*)buffer;
+				while (bytesSent < length)
+				{
+					uint32_t bytesToSend = min(CHUNKSIZE, length - bytesSent);
+					f_memcpy(rambuf.get(), src, bytesToSend);			
+					uint32_t chunkBytesSent = lwip_send(m_socket, rambuf.get(), bytesToSend, 0);
+					if (chunkBytesSent == 0)
+					{
+						// error
+						bytesSent = 0;
+						break;
+					}
+					bytesSent += chunkBytesSent;
+					src += chunkBytesSent;
+				}
+			}
+			else
+			{
+				// just send as is
+				bytesSent = lwip_send(m_socket, buffer, length, 0);
+			}
+			if (length > 0)
 				m_connected = (bytesSent > 0);
-			if (ramBuffer != buffer)
-				delete[] (uint8_t*)ramBuffer;
 			return bytesSent;
 		}
 		
@@ -413,10 +435,40 @@ namespace fdv
 	
 		typedef ChunkedBuffer<char> Chunks;
 		
+
+	public:
+	
 		typedef Chunks::Iterator ChunkString;
 		
 		typedef IterDict<Chunks::Iterator, Chunks::Iterator> Fields;
-	
+		
+		enum Method
+		{
+			Unsupported,
+			Get,
+			Post,
+			Head,
+		};
+		
+		struct Request
+		{
+			Method      method;	        // ex: GET, POST, etc...
+			ChunkString requestedPage;	// ex: "/", "/data"...						
+			Fields      query;          // parsed query as key->value dictionary
+			Fields      headers;		// parsed headers as key->value dictionary
+			Fields      form;			// parsed form fields as key->value dictionary
+		};
+				
+		typedef void (HTTPHandler::*PageHandler)();
+				
+		struct Route
+		{
+			char const* page;
+			PageHandler pageHandler;
+		};
+
+		
+	private:
 	
 		// implements TCPConnectionHandler
 		void MTD_FLASHMEM connectionHandler()
@@ -439,7 +491,7 @@ namespace fdv
 		{
 			// look for 0x0D 0x0A 0x0D 0x0A
 			ChunkString headerEnd = t_strstr(m_chunks.getIterator(), ChunkString(), CharIterator(FSTR("\x0D\x0A\x0D\x0A")));
-			if (headerEnd)
+			if (headerEnd.isValid())
 			{
 				// move header end after CRLFCRLF
 				headerEnd += 4;
@@ -447,10 +499,18 @@ namespace fdv
 				ChunkString curc = m_chunks.getIterator();
 				
 				// extract method (GET, POST, etc..)				
-				m_request.method = curc;
+				ChunkString method = curc;
 				while (curc != headerEnd && *curc != ' ')
 					++curc;
-				*curc++ = 0;	// ends method				
+				*curc++ = 0;	// ends method
+				if (t_strcmp(method, CharIterator(FSTR("GET"))) == 0)
+					m_request.method = Get;
+				else if (t_strcmp(method, CharIterator(FSTR("POST"))) == 0)
+					m_request.method = Post;
+				else if (t_strcmp(method, CharIterator(FSTR("HEAD"))) == 0)
+					m_request.method = Head;
+				else
+					m_request.method = Unsupported;
 				
 				// extract requested page and query parameters
 				m_request.requestedPage = curc;
@@ -479,7 +539,7 @@ namespace fdv
 				
 				// look for data (maybe POST data)
 				ChunkString contentLengthStr = m_request.headers[FSTR("Content-Length")];
-				if (contentLengthStr)
+				if (contentLengthStr.isValid())
 				{
 					// download additional content
 					int32_t contentLength = t_strtol(contentLengthStr, 10);
@@ -493,7 +553,7 @@ namespace fdv
 					m_chunks.append(0);	// add additional terminating "0"
 					// check content type
 					ChunkString contentType = m_request.headers[FSTR("Content-Type")];
-					if (contentType && t_strstr(contentType, CharIterator(FSTR("application/x-www-form-urlencoded"))))
+					if (contentType.isValid() && t_strstr(contentType, CharIterator(FSTR("application/x-www-form-urlencoded"))).isValid())
 					{
 						ChunkString contentStart = m_chunks.getIterator();	// cannot use directly headerEnd because added data
 						contentStart += headerEnd.getPosition();
@@ -528,7 +588,7 @@ namespace fdv
 				}
 				else if (*curc == '&' || *curc == ' ' || curc.isLast())
 				{
-					if (key && value)
+					if (key.isValid() && value.isValid())
 					{		
 						fields->add(key, value);	 // store parameter
 						key = value = ChunkString(); // reset
@@ -555,19 +615,19 @@ namespace fdv
 			ChunkString value;
 			while (curc != end)
 			{
-				if (*curc == 0x0D && key && value)  // CR?
+				if (*curc == 0x0D && key.isValid() && value.isValid())  // CR?
 				{
 					*curc = 0;	// ends key
 					// store header
 					fields->add(key, value);
 					key = value = ChunkString(); // reset
 				}					
-				else if (!isspace(*curc) && !key)
+				else if (!isspace(*curc) && !key.isValid())
 				{
 					// bookmark "key"
 					key = curc;
 				}
-				else if (!value && *curc == ':')
+				else if (!value.isValid() && *curc == ':')
 				{
 					*curc++ = 0;	// ends value
 					// bypass spaces
@@ -595,26 +655,8 @@ namespace fdv
 			// not found (routes should always have route "*" to handle 404 not found)
 		}
 		
-		
 
 	public:
-		
-		struct Request
-		{
-			ChunkString method;	        // ex: GET, POST, etc...
-			ChunkString requestedPage;	// ex: "/", "/data"...						
-			Fields      query;          // parsed query as key->value dictionary
-			Fields      headers;		// parsed headers as key->value dictionary
-			Fields      form;			// parsed form fields as key->value dictionary
-		};
-				
-		typedef void (HTTPHandler::*PageHandler)();
-				
-		struct Route
-		{
-			char const* page;
-			PageHandler pageHandler;
-		};
 		
 		void MTD_FLASHMEM setRoutes(Route const* routes, uint32_t routesCount)
 		{
@@ -646,30 +688,31 @@ namespace fdv
 	{
 	public:
 		typedef ChunkedBuffer<char> Chunks;
+		typedef IterDict<CharIterator, CharIterator> Fields;
 	
 	
 		HTTPResponse(HTTPHandler* httpHandler, char const* status, char const* content = NULL)
-			: m_httpHandler(httpHandler)
+			: m_httpHandler(httpHandler), m_status(status)
 		{
-			// status line
-			m_httpHandler->writeFmt(FSTR("HTTP/1.0 %s\r\n"), status);
-			// default headers
-			addHeader(FSTR("Connection"), FSTR("close"));
-			addHeader(FSTR("Content-Type"), FSTR("text/html; charset=UTF-8"));
 			// content (if present, otherwise use addContent())
 			if (content)
 				addContent(content);
 		}
 		
-		~HTTPResponse()
+		virtual ~HTTPResponse()
 		{
 			flush();
+		}
+		
+		void MTD_FLASHMEM setStatus(char const* status)
+		{
+			m_status = status;
 		}
 		
 		// accept RAM or Flash strings
 		void MTD_FLASHMEM addHeader(char const* key, char const* value)
 		{
-			m_httpHandler->writeFmt(FSTR("%s: %s\r\n"), key, value);
+			m_headers.add(CharIterator(key), CharIterator(value));
 		}
 		
 		// accept RAMT or Flash data
@@ -687,15 +730,24 @@ namespace fdv
 			addContent(str, f_strlen(str));
 		}
 				
-		// should be called only at the end of addContent calls
+		// should be called only at the end of addContent calls and One Time!
 		void MTD_FLASHMEM flush()
 		{
-			if (m_chunks.getItemsCount() > 0)
+			// status line
+			m_httpHandler->writeFmt(FSTR("HTTP/1.0 %s\r\n"), m_status);
+			// HTTPResponse headers
+			addHeader(FSTR("Connection"), FSTR("close"));			
+			// user headers
+			for (uint32_t i = 0; i != m_headers.getItemsCount(); ++i)
 			{
-				// write content length header
-				m_httpHandler->writeFmt(FSTR("Content-Length: %d\r\n\r\n"), m_chunks.getItemsCount());
-				
-				// write data
+				Fields::Item& item = m_headers[i];
+				m_httpHandler->writeFmt(FSTR("%s: %s\r\n"), Ptr<char>(t_strdup(item.key)).get(), Ptr<char>(t_strdup(item.value)).get());
+			}
+			// content length header
+			m_httpHandler->writeFmt(FSTR("Content-Length: %d\r\n\r\n"), m_chunks.getItemsCount());
+			// actual content
+			if (m_chunks.getItemsCount() > 0)
+			{				
 				Chunks::Chunk* chunk = m_chunks.getFirstChunk();
 				while (chunk)
 				{
@@ -708,7 +760,90 @@ namespace fdv
 		
 	private:
 		HTTPHandler* m_httpHandler;
+		char const*  m_status;
 		Chunks       m_chunks;
+		Fields       m_headers;
+	};
+
+
+	//////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+	// HTTPStaticFileResponse
+	struct HTTPStaticFileResponse : public HTTPResponse
+	{
+		template <typename Iterator>
+		HTTPStaticFileResponse(HTTPHandler* httpHandler, Iterator filename)
+			: HTTPResponse(httpHandler, NULL)
+		{
+			// convert filename to actual string
+			Ptr<char> filenameStr(t_strdup(filename));
+			
+			debug(FSTR("HTTPStaticFileResponse: %s\r\n"), fdv::Ptr<char>(t_strdup(filename)).get());
+			
+			char const* mimetype;
+			void const* data;
+			uint16_t dataLength;
+			if (FlashFileSystem::find(filenameStr.get(), &mimetype, &data, &dataLength))
+			{
+				// found
+				setStatus(FSTR("200 OK"));
+				addHeader(FSTR("Content-Type"), mimetype);
+				addContent(data, dataLength);
+				debug(FSTR("  ok, sending %d bytes\r\n"), dataLength);
+			}
+			else
+			{
+				// not found
+				setStatus(FSTR("404 Not Found"));
+				debug(FSTR("  not found!\r\n"));
+			}
+		}
+	};
+	
+
+	//////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+	// Configuration helper web pages
+		
+	struct HTTPWifiConfigurationResponse : public HTTPResponse
+	{
+		HTTPWifiConfigurationResponse(HTTPHandler* httpHandler)
+			: HTTPResponse(httpHandler, FSTR("200 OK"))
+		{
+			addHeader(FSTR("Content-Type"), FSTR("text/html; charset=UTF-8"));
+			if (httpHandler->getRequest().method == HTTPHandler::Post)
+			{
+				debug("post\r\n");
+				HTTPHandler::ChunkString clientmode = httpHandler->getRequest().form["clientmode"];
+				HTTPHandler::ChunkString apmode = httpHandler->getRequest().form["apmode"];
+				if (clientmode.isValid() && apmode.isValid())
+					debug("enable clientmode and acess point mode\r\n");
+				else if (clientmode.isValid())
+					debug("enable clientmode\r\n");
+				else if (apmode.isValid())
+					debug("enable access point mode\r\n");
+			}
+			
+			HTTPResponse response(httpHandler, FSTR("200 OK"));
+			response.addContent(FSTR("<!DOCTYPE html><html><head><meta charset='UTF-8'></head><body>"));		
+			response.addContent(FSTR("<h1>Wifi configuration</h1>"));
+			
+			response.addContent(FSTR("<form method='POST'>"));
+			
+			WiFi::Mode mode = WiFi::getMode();
+			response.addContent(FSTR("<input type='checkbox' name='clientmode' value='1' "));
+			if (mode == WiFi::Client || mode == WiFi::ClientAndAccessPoint)
+				response.addContent(FSTR("checked"));
+			response.addContent(FSTR("> Client Mode"));
+			
+			response.addContent(FSTR("<input type='checkbox' name='apmode' value='1' "));
+			if (mode == WiFi::AccessPoint || mode == WiFi::ClientAndAccessPoint)
+				response.addContent(FSTR("checked"));
+			response.addContent(FSTR("> Access Point Mode"));
+			
+			response.addContent(FSTR("<input type=\"submit\" value=\"Save\"></form>"));
+			response.addContent(FSTR("</body></html>"));
+		}
 	};
 	
 }

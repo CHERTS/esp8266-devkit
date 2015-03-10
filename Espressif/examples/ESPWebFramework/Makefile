@@ -21,6 +21,9 @@ SDK_BASE	?= $(TOOLS_ROOT)/ESP8266_RTOS_SDK
 ESPTOOL		?= $(TOOLS_ROOT)/utils/esptool.exe
 ESPPORT		?= COM2
 
+WEBDIR = ./webcontent/
+MAXWEBCONTENT = 176128
+
 # name for the target project
 TARGET		= app
 
@@ -97,7 +100,7 @@ $1/%.o: %.cpp
 	$(Q) $(CXX) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CXXFLAGS)  -c $$< -o $$@
 endef
 
-.PHONY: all checkdirs clean iromlibs firmware flashonefile flash flashinit rebuild
+.PHONY: all checkdirs clean iromlibs firmware flashonefile flash flashinit rebuild flashweb
 
 all: checkdirs $(TARGET_OUT)
 
@@ -172,6 +175,10 @@ flashinit:
 	$(vecho) "Flash init data default and blank data."
 	$(ESPTOOL) -p $(ESPPORT) write_flash 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
 
+flashweb:
+	binarydir.exe $(WEBDIR) webcontent.bin $(MAXWEBCONTENT)
+	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x15000 webcontent.bin
+
 rebuild: clean all
 
 clean:
@@ -181,6 +188,7 @@ clean:
 	$(Q) rm -f *.sym
 	$(Q) rm -f *.ii
 	$(Q) rm -f *.s
+	$(Q) rm -f webcontent.bin
 	$(Q) rm -rf $(BUILD_DIR)
 	$(Q) rm -rf $(BUILD_BASE)
 	$(Q) rm -rf $(FW_BASE)
