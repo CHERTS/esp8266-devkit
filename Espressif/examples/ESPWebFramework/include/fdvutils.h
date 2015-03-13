@@ -62,6 +62,12 @@ public:
 	{
 	}
 	
+	Ptr()
+		: m_ptr(NULL)
+	{
+	}
+	
+	
 	~Ptr()
 	{
 		delete m_ptr;

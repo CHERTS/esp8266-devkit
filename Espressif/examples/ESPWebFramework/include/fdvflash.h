@@ -161,14 +161,29 @@ namespace fdv
 			return *this;
 		}
 		
+		CharIterator MTD_FLASHMEM operator+(int32_t rhs)
+		{
+			return m_str + rhs;
+		}
+		
 		bool MTD_FLASHMEM operator==(char const* rhs)
 		{
 			return getChar(m_str) == *rhs;
 		}
 		
+		bool MTD_FLASHMEM operator==(CharIterator const& rhs)
+		{
+			return m_str == rhs.m_str;
+		}
+		
 		bool MTD_FLASHMEM operator!=(char const* rhs)
 		{
 			return getChar(m_str) != *rhs;
+		}
+		
+		bool MTD_FLASHMEM operator!=(CharIterator const& rhs)
+		{
+			return m_str != rhs.m_str;
 		}
 		
 	private:

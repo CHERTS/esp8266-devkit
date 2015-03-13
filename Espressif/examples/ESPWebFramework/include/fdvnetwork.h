@@ -433,14 +433,9 @@ namespace fdv
 	
 		static uint32_t const CHUNK_CAPACITY = 32;
 	
-		typedef ChunkedBuffer<char> Chunks;
-		
-
 	public:
 	
-		typedef Chunks::Iterator ChunkString;
-		
-		typedef IterDict<Chunks::Iterator, Chunks::Iterator> Fields;
+		typedef IterDict<CharChunksIterator, CharChunksIterator> Fields;
 		
 		enum Method
 		{
@@ -452,11 +447,11 @@ namespace fdv
 		
 		struct Request
 		{
-			Method      method;	        // ex: GET, POST, etc...
-			ChunkString requestedPage;	// ex: "/", "/data"...						
-			Fields      query;          // parsed query as key->value dictionary
-			Fields      headers;		// parsed headers as key->value dictionary
-			Fields      form;			// parsed form fields as key->value dictionary
+			Method             method;	        // ex: GET, POST, etc...
+			CharChunksIterator requestedPage;	// ex: "/", "/data"...						
+			Fields             query;           // parsed query as key->value dictionary
+			Fields             headers;		    // parsed headers as key->value dictionary
+			Fields             form;			// parsed form fields as key->value dictionary
 		};
 				
 		typedef void (HTTPHandler::*PageHandler)();
@@ -475,12 +470,12 @@ namespace fdv
 		{			
 			while (isConnected())
 			{
-				Chunks::Chunk* chunk = m_chunks.addChunk(CHUNK_CAPACITY);
+				CharChunk* chunk = m_receivedData.addChunk(CHUNK_CAPACITY);
 				chunk->items = read(chunk->data, CHUNK_CAPACITY);
 				if (processRequest())
 					break;
 			}
-			m_chunks.clear();
+			m_receivedData.clear();
 			m_request.query.clear();
 			m_request.headers.clear();
 			m_request.form.clear();
@@ -490,16 +485,16 @@ namespace fdv
 		bool MTD_FLASHMEM processRequest()
 		{
 			// look for 0x0D 0x0A 0x0D 0x0A
-			ChunkString headerEnd = t_strstr(m_chunks.getIterator(), ChunkString(), CharIterator(FSTR("\x0D\x0A\x0D\x0A")));
+			CharChunksIterator headerEnd = t_strstr(m_receivedData.getIterator(), CharChunksIterator(), CharIterator(FSTR("\x0D\x0A\x0D\x0A")));
 			if (headerEnd.isValid())
 			{
 				// move header end after CRLFCRLF
 				headerEnd += 4;
 				
-				ChunkString curc = m_chunks.getIterator();
+				CharChunksIterator curc = m_receivedData.getIterator();
 				
 				// extract method (GET, POST, etc..)				
-				ChunkString method = curc;
+				CharChunksIterator method = curc;
 				while (curc != headerEnd && *curc != ' ')
 					++curc;
 				*curc++ = 0;	// ends method
@@ -538,26 +533,26 @@ namespace fdv
 				curc = extractHeaders(curc, headerEnd, &m_request.headers);
 				
 				// look for data (maybe POST data)
-				ChunkString contentLengthStr = m_request.headers[FSTR("Content-Length")];
-				if (contentLengthStr.isValid())
+				Fields::Item* contentLengthStr = m_request.headers[FSTR("Content-Length")];
+				if (contentLengthStr)
 				{
 					// download additional content
-					int32_t contentLength = t_strtol(contentLengthStr, 10);
-					int32_t missingBytes = headerEnd.getPosition() + contentLength - m_chunks.getItemsCount();
+					int32_t contentLength = t_strtol(contentLengthStr->value, 10);
+					int32_t missingBytes = headerEnd.getPosition() + contentLength - m_receivedData.getItemsCount();
 					while (isConnected() && missingBytes > 0)
 					{
-						Chunks::Chunk* chunk = m_chunks.addChunk(missingBytes);
+						CharChunk* chunk = m_receivedData.addChunk(missingBytes);
 						chunk->items = read(chunk->data, missingBytes);		
 						missingBytes -= chunk->items;
 					}
-					m_chunks.append(0);	// add additional terminating "0"
+					m_receivedData.append(0);	// add additional terminating "0"
 					// check content type
-					ChunkString contentType = m_request.headers[FSTR("Content-Type")];
-					if (contentType.isValid() && t_strstr(contentType, CharIterator(FSTR("application/x-www-form-urlencoded"))).isValid())
+					Fields::Item* contentType = m_request.headers[FSTR("Content-Type")];
+					if (contentType && t_strstr(contentType->value, CharIterator(FSTR("application/x-www-form-urlencoded"))).isValid())
 					{
-						ChunkString contentStart = m_chunks.getIterator();	// cannot use directly headerEnd because added data
+						CharChunksIterator contentStart = m_receivedData.getIterator();	// cannot use directly headerEnd because added data
 						contentStart += headerEnd.getPosition();
-						extractURLEncodedFields(contentStart, ChunkString(), &m_request.form);
+						extractURLEncodedFields(contentStart, CharChunksIterator(), &m_request.form);
 					}
 				}
 				
@@ -573,11 +568,11 @@ namespace fdv
 		}
 
 		
-		ChunkString extractURLEncodedFields(ChunkString begin, ChunkString end, Fields* fields)
+		CharChunksIterator extractURLEncodedFields(CharChunksIterator begin, CharChunksIterator end, Fields* fields)
 		{
-			ChunkString curc = begin;
-			ChunkString key = curc;
-			ChunkString value;
+			CharChunksIterator curc = begin;
+			CharChunksIterator key = curc;
+			CharChunksIterator value;
 			while (curc != end)
 			{
 				if (*curc == '=')
@@ -588,31 +583,29 @@ namespace fdv
 				}
 				else if (*curc == '&' || *curc == ' ' || curc.isLast())
 				{
+					bool endLoop = (*curc == ' ' || curc.isLast());
+					*curc++ = 0; // zero-ends value
 					if (key.isValid() && value.isValid())
 					{		
 						fields->add(key, value);	 // store parameter
-						key = value = ChunkString(); // reset
+						key = value = CharChunksIterator(); // reset
 					}
-					if (*curc == ' ' || curc.isLast())
-					{
-						*curc++ = 0; // ends value or requested page
+					if (endLoop)
 						break;
-					}
-					*curc = 0;	// ends value or requested page
-					key = curc;	// bypass '&'
-					++key;
+					key = curc;
 				}
-				++curc;
+				else
+					++curc;
 			}
 			return curc;
 		}
 		
 
-		ChunkString extractHeaders(ChunkString begin, ChunkString end, Fields* fields)
+		CharChunksIterator extractHeaders(CharChunksIterator begin, CharChunksIterator end, Fields* fields)
 		{		
-			ChunkString curc = begin;
-			ChunkString key;
-			ChunkString value;
+			CharChunksIterator curc = begin;
+			CharChunksIterator key;
+			CharChunksIterator value;
 			while (curc != end)
 			{
 				if (*curc == 0x0D && key.isValid() && value.isValid())  // CR?
@@ -620,7 +613,7 @@ namespace fdv
 					*curc = 0;	// ends key
 					// store header
 					fields->add(key, value);
-					key = value = ChunkString(); // reset
+					key = value = CharChunksIterator(); // reset
 				}					
 				else if (!isspace(*curc) && !key.isValid())
 				{
@@ -673,10 +666,10 @@ namespace fdv
 		
 	private:
 	
-		Chunks       m_chunks;
-		Route const* m_routes;
-		uint32_t     m_routesCount;
-		Request      m_request;		// valid only inside processRequest()
+		LinkedCharChunks m_receivedData;
+		Route const*     m_routes;
+		uint32_t         m_routesCount;
+		Request          m_request;		// valid only inside processRequest()
 	};
 	
 	
@@ -687,7 +680,6 @@ namespace fdv
 	class HTTPResponse
 	{
 	public:
-		typedef ChunkedBuffer<char> Chunks;
 		typedef IterDict<CharIterator, CharIterator> Fields;
 	
 	
@@ -699,9 +691,14 @@ namespace fdv
 				addContent(content);
 		}
 		
-		virtual ~HTTPResponse()
+		HTTPHandler* MTD_FLASHMEM getHttpHandler()
 		{
-			flush();
+			return m_httpHandler;
+		}
+		
+		HTTPHandler::Request& MTD_FLASHMEM getRequest()
+		{
+			return m_httpHandler->getRequest();
 		}
 		
 		void MTD_FLASHMEM setStatus(char const* status)
@@ -712,17 +709,17 @@ namespace fdv
 		// accept RAM or Flash strings
 		void MTD_FLASHMEM addHeader(char const* key, char const* value)
 		{
-			m_headers.add(CharIterator(key), CharIterator(value));
+			m_headers.add(key, value);
 		}
 		
-		// accept RAMT or Flash data
+		// accept RAM or Flash data
 		// WARN: data is not copied! Just a pointer is stored
 		void MTD_FLASHMEM addContent(void const* data, uint32_t length)
 		{
-			Chunks::Chunk* chunk = m_chunks.addChunk((char*)data, length, false);
+			CharChunk* chunk = m_content.addChunk((char*)data, length, false);
 		}
 		
-		// accept RAMT or Flash strings
+		// accept RAM or Flash strings
 		// WARN: data is not copied! Just a pointer is stored
 		// can be called many times
 		void MTD_FLASHMEM addContent(char const* str)
@@ -730,39 +727,46 @@ namespace fdv
 			addContent(str, f_strlen(str));
 		}
 				
-		// should be called only at the end of addContent calls and One Time!
-		void MTD_FLASHMEM flush()
+		// can be called many times
+		// WARN: src content is not copied! Just data pointers are stored
+		void MTD_FLASHMEM addContent(LinkedCharChunks* src)
+		{
+			m_content.addChunks(src);
+		}
+				
+		// should be called only after setStatus, addHeader and addContent
+		virtual void MTD_FLASHMEM flush()
 		{
 			// status line
-			m_httpHandler->writeFmt(FSTR("HTTP/1.0 %s\r\n"), m_status);
+			m_httpHandler->writeFmt(FSTR("HTTP/1.1 %s\r\n"), m_status);
 			// HTTPResponse headers
 			addHeader(FSTR("Connection"), FSTR("close"));			
 			// user headers
 			for (uint32_t i = 0; i != m_headers.getItemsCount(); ++i)
 			{
-				Fields::Item& item = m_headers[i];
-				m_httpHandler->writeFmt(FSTR("%s: %s\r\n"), Ptr<char>(t_strdup(item.key)).get(), Ptr<char>(t_strdup(item.value)).get());
+				Fields::Item* item = m_headers[i];
+				m_httpHandler->writeFmt(FSTR("%s: %s\r\n"), Ptr<char>(t_strdup(item->key)).get(), Ptr<char>(t_strdup(item->value)).get());
 			}
 			// content length header
-			m_httpHandler->writeFmt(FSTR("Content-Length: %d\r\n\r\n"), m_chunks.getItemsCount());
+			m_httpHandler->writeFmt(FSTR("Content-Length: %d\r\n\r\n"), m_content.getItemsCount());
 			// actual content
-			if (m_chunks.getItemsCount() > 0)
+			if (m_content.getItemsCount() > 0)
 			{				
-				Chunks::Chunk* chunk = m_chunks.getFirstChunk();
+				CharChunk* chunk = m_content.getFirstChunk();
 				while (chunk)
 				{
 					m_httpHandler->write((uint8_t const*)chunk->data, chunk->items);
 					chunk = chunk->next;
 				}
-				m_chunks.clear();
+				m_content.clear();
 			}
 		}
 		
 	private:
-		HTTPHandler* m_httpHandler;
-		char const*  m_status;
-		Chunks       m_chunks;
-		Fields       m_headers;
+		HTTPHandler*     m_httpHandler;
+		char const*      m_status;		
+		Fields           m_headers;
+		LinkedCharChunks m_content;
 	};
 
 
@@ -774,30 +778,205 @@ namespace fdv
 		template <typename Iterator>
 		HTTPStaticFileResponse(HTTPHandler* httpHandler, Iterator filename)
 			: HTTPResponse(httpHandler, NULL)
+		{			
+			if (*filename == '/')
+				++filename;
+			m_filename.reset(t_strdup(filename));
+		}
+		
+		virtual void MTD_FLASHMEM flush()
 		{
-			// convert filename to actual string
-			Ptr<char> filenameStr(t_strdup(filename));
-			
-			debug(FSTR("HTTPStaticFileResponse: %s\r\n"), fdv::Ptr<char>(t_strdup(filename)).get());
-			
 			char const* mimetype;
 			void const* data;
 			uint16_t dataLength;
-			if (FlashFileSystem::find(filenameStr.get(), &mimetype, &data, &dataLength))
+			if (FlashFileSystem::find(m_filename.get(), &mimetype, &data, &dataLength))
 			{
-				// found
+				// found				
 				setStatus(FSTR("200 OK"));
 				addHeader(FSTR("Content-Type"), mimetype);
 				addContent(data, dataLength);
-				debug(FSTR("  ok, sending %d bytes\r\n"), dataLength);
 			}
 			else
 			{
 				// not found
 				setStatus(FSTR("404 Not Found"));
-				debug(FSTR("  not found!\r\n"));
+			}
+			HTTPResponse::flush();
+		}
+		
+	private:
+	
+		Ptr<char> m_filename;
+	};
+
+
+	//////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+	// ParameterReplacer
+	
+	struct ParameterReplacer
+	{
+		typedef ObjectDict<LinkedCharChunks> Params;
+		
+		static void MTD_FLASHMEM replace(Params* params, char const* strStart, char const* strEnd, LinkedCharChunks* outStr)
+		{
+			char const* start = strStart;
+			while (strStart != strEnd)
+			{
+				if (getChar(strStart) == '{')
+				{
+					if (getChar(strStart + 1) == '{')
+					{
+						// flush previous content (from strstart to strStart no included) 
+						outStr->addChunk(start, strStart - start, false);
+						// found "{{", process parameter tag
+						start = strStart = processParameterTag(params, strStart, strEnd, outStr);
+						continue;
+					}
+				}
+				++strStart;
+			}
+			outStr->addChunk(start, strEnd - start, false);
+		}
+		
+	private:
+		
+		static char const* MTD_FLASHMEM processParameterTag(Params* params, char const* dataptr, char const* dataend, LinkedCharChunks* outStr)
+		{
+			char const* tagEnd;
+			char const* tagStart = extractTagStr(dataptr, dataend, &tagEnd);
+			Params::Item* item = params->getItem(tagStart, tagEnd);
+			if (item)
+			{
+				// flush parameter content
+				outStr->addChunks(&item->value);				
+			}
+			return tagEnd + 2;	// bypass "}}"
+		}
+		
+		static char const* extractTagStr(char const* dataptr, char const* dataend, char const** tagEnd)
+		{
+			char const* tagStart = dataptr + 2; // by pass "{{"
+			*tagEnd = tagStart;
+			while (*tagEnd < dataend && getChar(*tagEnd) != '}')
+				++*tagEnd;
+			return tagStart;
+		}
+	};
+	
+
+	//////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+	// HTTPParameterResponse
+	//
+	// Parameters are tagged with: 
+	//   {{parameter_name}}           
+	// example: 
+	//   {{something}}
+	// Parameters cannot stay in template file.
+	//
+	// No further spaces are allowed inside {{}} tags
+	// No syntax error checkings are done, so be careful!
+	
+	struct HTTPParameterResponse : public HTTPResponse
+	{
+		typedef ObjectDict<LinkedCharChunks> Params;
+
+		HTTPParameterResponse(HTTPHandler* httpHandler, char const* filename)
+			: HTTPResponse(httpHandler, NULL), m_filename(filename)
+		{			
+		}
+		
+		void MTD_FLASHMEM addParam(char const* key, char const* value)
+		{
+			LinkedCharChunks linkedCharChunks;
+			linkedCharChunks.addChunk(value, f_strlen(value) + 1, false);
+			m_params.add(key, linkedCharChunks);
+		}
+		
+		void MTD_FLASHMEM addParam(char const* key, LinkedCharChunks* value)
+		{
+			m_params.add(key, *value);
+		}
+		
+		virtual void MTD_FLASHMEM flush()
+		{
+			processFileRequest();
+			HTTPResponse::flush();
+		}
+		
+	private:
+	
+		void MTD_FLASHMEM processFileRequest()
+		{
+			char const* mimetype;
+			void const* data;
+			uint16_t dataLength;
+			if (FlashFileSystem::find(m_filename, &mimetype, &data, &dataLength))
+			{
+				// found
+				setStatus(FSTR("200 OK"));
+				addHeader(FSTR("Content-Type"), FSTR("text/html"));
+
+				LinkedCharChunks dataOut;
+				ParameterReplacer::replace(&m_params, (char const*)data, (char const*)data + dataLength, &dataOut);
+				addContent(&dataOut);
+			}
+			else
+			{
+				// not found
+				setStatus(FSTR("404 Not Found"));
 			}
 		}
+		
+	private:
+		char const*      m_filename;
+		Params           m_params;
+		
+	};
+
+
+	//////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+	// HTTPTemplateResponse
+	//
+	// Have the same functionalities of HTTPParameterResponse adding file template support.
+	// A template can only contain {{}} tags, which specify the blocks to replace. These tags do not specify parameters. Example:
+	// Content of file "base.tpl":
+	//   <html>
+	//   <head> {{the_head}} </head>
+	//   <body> {{the_body}} </body>
+	//   </html>
+	//
+	// Specialized file can replace template blocks using {%block_name%}. Example:
+	// Content of file "home.html":
+	//   {%the_head%}                  <- start of "the_head" block
+	//   <title>Home Page</title>
+	//   {%the_body%}                  <- start of "the_body" block
+	//   <h1>Hello {{name}}</h1>       <- here the parameter "name" will be replaced with its actual value
+	//
+	// Specialized file must contain at least one {%%} tag, and may not nor may contain {{}} tags (parameters).
+	// Parameter tags and block tags must have different names.
+	//
+	// No further spaces are allowed inside {{}} and {%%} tags
+	// No syntax error checkings are done, so be careful!
+	
+	struct HTTPTemplateResponse : public HTTPParameterResponse
+	{
+		HTTPTemplateResponse(HTTPHandler* httpHandler, char const* templateFilename, char const* specializedFilename)
+			: m_specializedFilename(specializedFilename), HTTPParameterResponse(httpHandler, templateFilename)
+		{
+		}
+
+		virtual void MTD_FLASHMEM flush()
+		{
+			// todo
+			HTTPResponse::flush();
+		}
+
+	private:
+		char const* m_specializedFilename;
+	
 	};
 	
 
@@ -805,48 +984,56 @@ namespace fdv
 	//////////////////////////////////////////////////////////////////////
 	// Configuration helper web pages
 		
-	struct HTTPWifiConfigurationResponse : public HTTPResponse
+	struct HTTPWifiConfigurationResponse : public HTTPParameterResponse
 	{
-		HTTPWifiConfigurationResponse(HTTPHandler* httpHandler)
-			: HTTPResponse(httpHandler, FSTR("200 OK"))
+		HTTPWifiConfigurationResponse(HTTPHandler* httpHandler, char const* filename)
+			: HTTPParameterResponse(httpHandler, filename)
 		{
-			addHeader(FSTR("Content-Type"), FSTR("text/html; charset=UTF-8"));
-			if (httpHandler->getRequest().method == HTTPHandler::Post)
+		}
+		
+		virtual void MTD_FLASHMEM flush()
+		{
+			addParam(FSTR("title"), FSTR("WiFi Configuration"));
+			
+			LinkedCharChunks content;
+
+			if (getRequest().method == HTTPHandler::Post)
 			{
-				debug("post\r\n");
-				HTTPHandler::ChunkString clientmode = httpHandler->getRequest().form["clientmode"];
-				HTTPHandler::ChunkString apmode = httpHandler->getRequest().form["apmode"];
-				if (clientmode.isValid() && apmode.isValid())
+				HTTPHandler::Fields::Item* clientmode = getRequest().form["clientmode"];
+				HTTPHandler::Fields::Item* apmode = getRequest().form["apmode"];
+				if (clientmode && apmode)
 					debug("enable clientmode and acess point mode\r\n");
-				else if (clientmode.isValid())
+				else if (clientmode)
 					debug("enable clientmode\r\n");
-				else if (apmode.isValid())
+				else if (apmode)
 					debug("enable access point mode\r\n");
 			}
 			
-			HTTPResponse response(httpHandler, FSTR("200 OK"));
-			response.addContent(FSTR("<!DOCTYPE html><html><head><meta charset='UTF-8'></head><body>"));		
-			response.addContent(FSTR("<h1>Wifi configuration</h1>"));
-			
-			response.addContent(FSTR("<form method='POST'>"));
+			content.addChunk(FSTR("<form method='POST'>"));
 			
 			WiFi::Mode mode = WiFi::getMode();
-			response.addContent(FSTR("<input type='checkbox' name='clientmode' value='1' "));
+			content.addChunk(FSTR("<input type='checkbox' name='clientmode' value='1' "));
 			if (mode == WiFi::Client || mode == WiFi::ClientAndAccessPoint)
-				response.addContent(FSTR("checked"));
-			response.addContent(FSTR("> Client Mode"));
+				content.addChunk(FSTR("checked"));
+			content.addChunk(FSTR("> Client Mode <br>"));
 			
-			response.addContent(FSTR("<input type='checkbox' name='apmode' value='1' "));
+			content.addChunk(FSTR("<input type='checkbox' name='apmode' value='1' "));
 			if (mode == WiFi::AccessPoint || mode == WiFi::ClientAndAccessPoint)
-				response.addContent(FSTR("checked"));
-			response.addContent(FSTR("> Access Point Mode"));
+				content.addChunk(FSTR("checked"));
+			content.addChunk(FSTR("> Access Point Mode <br>"));
 			
-			response.addContent(FSTR("<input type=\"submit\" value=\"Save\"></form>"));
-			response.addContent(FSTR("</body></html>"));
+			content.addChunk(FSTR("<input type='submit' value='Save'></form>"));
+
+			addParam(FSTR("content"), &content);
+			
+			HTTPParameterResponse::flush();
 		}
 	};
+
+
+
 	
-}
+}	// fdv namespace
 
 
 #endif

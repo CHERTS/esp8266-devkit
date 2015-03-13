@@ -31,6 +31,7 @@ struct MyHTTPHandler : public fdv::HTTPHandler
 		{
 			{FSTR("/"),	         (PageHandler)&MyHTTPHandler::get_home},
 			{FSTR("/confignet"), (PageHandler)&MyHTTPHandler::get_confignet},
+			{FSTR("/test1"),     (PageHandler)&MyHTTPHandler::get_test1},
 			{FSTR("*"),          (PageHandler)&MyHTTPHandler::get_all},
 		};
 		setRoutes(routes, sizeof(routes) / sizeof(Route));
@@ -38,18 +39,31 @@ struct MyHTTPHandler : public fdv::HTTPHandler
 	
 	void MTD_FLASHMEM get_home()
 	{
-		fdv::HTTPResponse(this, FSTR("200 OK"), FSTR("<html><head></head><body><h1>This is Home Page</h1></body></html>"));
+		getRequest().query.dump();
+		getRequest().form.dump();
+		fdv::HTTPResponse response(this, FSTR("200 OK"), FSTR("<html><head></head><body><h1>This is Home Page</h1></body></html>"));
+		response.flush();
 	}
 
 	void MTD_FLASHMEM get_confignet()
 	{
-		fdv::HTTPWifiConfigurationResponse(this);
+		fdv::HTTPWifiConfigurationResponse response(this, FSTR("base.html"));
+		response.flush();
+	}
+	
+	void MTD_FLASHMEM get_test1()
+	{
+		fdv::HTTPParameterResponse response(this, FSTR("base.html"));
+		response.addParam(FSTR("name"), FSTR("Fabrizio"));
+		response.addParam(FSTR("surname"), FSTR("Di Vittorio"));
+		response.flush();
 	}
 
 	void MTD_FLASHMEM get_all()
 	{
 		debug("get %s\r\n", fdv::Ptr<char>(t_strdup(getRequest().requestedPage)).get());		 
-		fdv::HTTPStaticFileResponse(this, getRequest().requestedPage + 1);	// +1 to bypass url slash
+		fdv::HTTPStaticFileResponse response(this, getRequest().requestedPage);
+		response.flush();
 	}			
 };
 

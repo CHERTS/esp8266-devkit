@@ -77,8 +77,8 @@ with open(outfilename, "wb") as fw:
 	# loop among files
 	for filepath in files:
 		filename = os.path.basename(filepath)
-		mimetype = mimetypes.guess_type(filepath, strict = False)[0]
-		fileext = os.path.splitext(filename)[1].lower()
+		mimetype = mimetypes.guess_type(filepath, strict = False)[0].encode('ascii','ignore')
+		fileext = os.path.splitext(filename)[1].lower()		
 		if not mimetype:
 			# try to handle additional types unknown to mimetypes.guess_type()			
 			if fileext == ".tpl":
@@ -89,7 +89,9 @@ with open(outfilename, "wb") as fw:
 		# get raw file data
 		with open(filepath, "rb") as fr:
 			filedata = fr.read()
-			
+		
+		oldfilesize = len(filedata)
+		
 		# can I remove CR, LF, Tabs?
 		if do_slimmer:			
 			if fileext in [".tpl", ".html", ".htm"]:
@@ -99,6 +101,8 @@ with open(outfilename, "wb") as fw:
 			elif fileext in [".js"]:
 				filedata = slimmer.js_slimmer(filedata)			
 
+		print "Adding {} mimetype = ({}) size = {}  reduced size = {}".format(filename, mimetype, oldfilesize, len(filedata))
+				
 		# filename length, mime tpye length, file content length
 		fw.write(struct.pack("<BBH", len(filename) + 1, len(mimetype) + 1, len(filedata)))
 				
@@ -117,6 +121,29 @@ with open(outfilename, "wb") as fw:
 outsize = os.path.getsize(outfilename)
 maxsize = int(sys.argv[3])
 print "out = {} bytes   max = {} bytes".format(outsize, maxsize)
+print ""
 if outsize > maxsize:
 	print "Error! exceeded max file size."
 	sys.exit(1)
+
+
+		
+		
+	
+		
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	

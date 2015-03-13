@@ -1,7 +1,7 @@
 Changelog:
 ----------
 
-v1.0.12 (10.03.2015):
+v1.0.12 (13.03.2015):
 + Added new examples:
   at - an example of using the library "libat" from Espressif (compiled, works correctly);
   smart_config - an example of using the library "libsmartconfig" from Espressif (compiled, works correctly);

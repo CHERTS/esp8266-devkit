@@ -35,128 +35,142 @@ namespace fdv
 
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
-// ChunkedBuffer
+// CharChunk
 
-template <typename T>
-struct ChunkedBuffer
+struct CharChunk
 {
-
-	struct Chunk
+	CharChunk* next;
+	uint32_t   items;
+	char*      data;
+	bool       freeOnDestroy;	// free "data" on destroy
+	
+	CharChunk(uint32_t capacity)
+		: next(NULL), items(0), data(new char[capacity]), freeOnDestroy(true)
 	{
-		Chunk*   next;
-		uint32_t items;
-		T*       data;
-		bool     freeOnDestroy;	// free "data" on destroy
-		
-		Chunk(uint32_t capacity)
-			: next(NULL), items(0), data(new T[capacity]), freeOnDestroy(true)
-		{
-		}
-		Chunk(T* data_, uint32_t items_, bool freeOnDestroy_)
-			: next(NULL), items(items_), data(data_), freeOnDestroy(freeOnDestroy_)
-		{
-		}
-		~Chunk()
-		{
-			if (freeOnDestroy)
-				delete[] data;
-		}
-	};
-	
-	
-	struct Iterator
+	}
+	CharChunk(char* data_, uint32_t items_, bool freeOnDestroy_)
+		: next(NULL), items(items_), data(data_), freeOnDestroy(freeOnDestroy_)
 	{
-		Iterator(Chunk* chunk = NULL)
-			: m_chunk(chunk), m_pos(0), m_absPos(0)
-		{
-		}
-		T& MTD_FLASHMEM operator*()
-		{			
-			return m_chunk->data[m_pos];
-		}
-		Iterator MTD_FLASHMEM operator++(int)
-		{
-			Iterator c = *this;
-			next();
-			return c;
-		}
-		Iterator& MTD_FLASHMEM operator++()
-		{
-			next();
-			return *this;
-		}
-		Iterator& MTD_FLASHMEM operator+=(int32_t rhs)
-		{
-			while (rhs-- > 0)
-				next();
-			return *this;
-		}
-		Iterator MTD_FLASHMEM operator+(int32_t rhs)
-		{
-			Iterator newval = *this;
-			newval += rhs;
-			return newval;
-		}
-		bool MTD_FLASHMEM operator==(Iterator const& rhs)
-		{
-			return m_chunk == rhs.m_chunk && m_pos == rhs.m_pos;
-		}
-		bool MTD_FLASHMEM operator!=(Iterator const& rhs)
-		{
-			return m_chunk != rhs.m_chunk || m_pos != rhs.m_pos;
-		}
-		T* MTD_FLASHMEM dup()
-		{
-			return t_strdup(*this);
-		}
-		uint32_t getPosition()
-		{
-			return m_absPos;
-		}
-		bool isLast()
-		{
-			return m_chunk->next == NULL && m_pos + 1 >= m_chunk->items;
-		}
-		bool isValid()
-		{
-			return m_chunk != NULL;
-		}
-	private:
-		void MTD_FLASHMEM next()
-		{
-			++m_absPos;
-			++m_pos;
-			if (m_pos == m_chunk->items)
-			{
-				m_pos = 0;
-				m_chunk = m_chunk->next;
-			}
-		}
-	private:
-		Chunk*   m_chunk;
-		uint32_t m_pos;  	// position inside this chunk
-		uint32_t m_absPos;	// absolute position (starting from beginning of ChunkedBuffer)
-	};
+	}
+	~CharChunk()
+	{
+		if (freeOnDestroy)
+			delete[] data;
+	}
+};
 
+
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+// CharChunksIterator
+
+struct CharChunksIterator
+{
+	CharChunksIterator(CharChunk* chunk = NULL)
+		: m_chunk(chunk), m_pos(0), m_absPos(0)
+	{
+	}
+	char& MTD_FLASHMEM operator*()
+	{			
+		return m_chunk->data[m_pos];
+	}
+	CharChunksIterator MTD_FLASHMEM operator++(int)
+	{
+		CharChunksIterator c = *this;
+		next();
+		return c;
+	}
+	CharChunksIterator& MTD_FLASHMEM operator++()
+	{
+		next();
+		return *this;
+	}
+	CharChunksIterator& MTD_FLASHMEM operator+=(int32_t rhs)
+	{
+		while (rhs-- > 0)
+			next();
+		return *this;
+	}
+	CharChunksIterator MTD_FLASHMEM operator+(int32_t rhs)
+	{
+		CharChunksIterator newval = *this;
+		newval += rhs;
+		return newval;
+	}
+	bool MTD_FLASHMEM operator==(CharChunksIterator const& rhs)
+	{
+		return m_chunk == rhs.m_chunk && m_pos == rhs.m_pos;
+	}
+	bool MTD_FLASHMEM operator!=(CharChunksIterator const& rhs)
+	{
+		return m_chunk != rhs.m_chunk || m_pos != rhs.m_pos;
+	}
+	uint32_t getPosition()
+	{
+		return m_absPos;
+	}
+	bool isLast()
+	{
+		return m_chunk->next == NULL && m_pos + 1 >= m_chunk->items;
+	}
+	bool isValid()
+	{
+		return m_chunk != NULL;
+	}
+private:
+	void MTD_FLASHMEM next()
+	{
+		++m_absPos;
+		++m_pos;
+		if (m_pos == m_chunk->items)
+		{
+			m_pos = 0;
+			m_chunk = m_chunk->next;
+		}
+	}
+private:
+	CharChunk* m_chunk;
+	uint32_t   m_pos;  	// position inside this chunk
+	uint32_t   m_absPos;	// absolute position (starting from beginning of LinkedCharChunks)
+};
+
+
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+// LinkedCharChunks
+//
+// This class is reference counted
+
+struct LinkedCharChunks
+{	
 	
-	ChunkedBuffer()
-		: m_chunks(NULL), m_current(NULL)
+	LinkedCharChunks()
+		: m_refCount(1), m_refCountPtr(&m_refCount), m_chunks(NULL), m_current(NULL)
 	{
 	}
 	
-	
-	~ChunkedBuffer()
+	// copy constructor
+	LinkedCharChunks(LinkedCharChunks& c)
+		: m_refCountPtr(c.m_refCountPtr), m_chunks(c.m_chunks), m_current(c.m_current)
 	{
-		clear();
+		++(*m_refCountPtr);
+	}
+	
+	
+	~LinkedCharChunks()
+	{
+		--(*m_refCountPtr);
+		if (*m_refCountPtr == 0)
+			clear();
 	}
 	
 	
 	void MTD_FLASHMEM clear()
 	{
-		Chunk* chunk = m_chunks;
+		CharChunk* chunk = m_chunks;
 		while (chunk)
 		{
-			Chunk* next = chunk->next;
+			CharChunk* next = chunk->next;
 			delete chunk;
 			chunk = next;
 		}
@@ -164,9 +178,9 @@ struct ChunkedBuffer
 	}
 	
 	
-	Chunk* MTD_FLASHMEM addChunk(uint32_t capacity)
+	CharChunk* MTD_FLASHMEM addChunk(uint32_t capacity)
 	{
-		Chunk* newChunk = new Chunk(capacity);
+		CharChunk* newChunk = new CharChunk(capacity);
 		if (m_chunks == NULL)
 			m_current = m_chunks = newChunk;
 		else
@@ -175,9 +189,9 @@ struct ChunkedBuffer
 	}
 	
 	
-	Chunk* MTD_FLASHMEM addChunk(T* data, uint32_t items, bool freeOnDestroy)
+	CharChunk* MTD_FLASHMEM addChunk(char* data, uint32_t items, bool freeOnDestroy)
 	{
-		Chunk* newChunk = new Chunk(data, items, freeOnDestroy);
+		CharChunk* newChunk = new CharChunk(data, items, freeOnDestroy);
 		if (m_chunks == NULL)
 			m_current = m_chunks = newChunk;
 		else
@@ -186,30 +200,55 @@ struct ChunkedBuffer
 	}
 	
 	
-	void MTD_FLASHMEM append(T const& value)
+	// const to non const cast
+	CharChunk* MTD_FLASHMEM addChunk(char const* data, uint32_t items, bool freeOnDestroy)
 	{
-		Chunk* chunk = addChunk(sizeof(T));
+		return addChunk((char*)data, items, freeOnDestroy);
+	}
+	
+	void MTD_FLASHMEM addChunk(char const* str, bool freeOnDestroy = false)
+	{
+		addChunk(str, f_strlen(str), freeOnDestroy);	// "items" field doesn't include ending zero
+	}
+	
+	
+	// adds all chunks of src
+	// Only data pointers are copied and they will be not freed
+	void MTD_FLASHMEM addChunks(LinkedCharChunks* src)
+	{
+		CharChunk* srcChunk = src->m_chunks;
+		while (srcChunk)
+		{
+			addChunk(srcChunk->data, srcChunk->items, false);
+			srcChunk = srcChunk->next;
+		}
+	}
+	
+	
+	void MTD_FLASHMEM append(char value)
+	{
+		CharChunk* chunk = addChunk(1);
 		chunk->data[0] = value;
 		chunk->items = 1;
 	}
 	
 	
-	Chunk* MTD_FLASHMEM getFirstChunk()
+	CharChunk* MTD_FLASHMEM getFirstChunk()
 	{
 		return m_chunks;
 	}
 	
 
-	Iterator MTD_FLASHMEM getIterator()
+	CharChunksIterator MTD_FLASHMEM getIterator()
 	{
-		return Iterator(m_chunks);
+		return CharChunksIterator(m_chunks);
 	}
 
 
 	uint32_t MTD_FLASHMEM getItemsCount()
 	{
 		uint32_t len = 0;
-		Chunk* chunk = m_chunks;
+		CharChunk* chunk = m_chunks;
 		while (chunk)
 		{
 			len += chunk->items;
@@ -219,8 +258,10 @@ struct ChunkedBuffer
 	}
 
 private:
-	Chunk* m_chunks;
-	Chunk* m_current;
+	uint32_t   m_refCount;		// used only if this is the first instance
+	uint32_t*  m_refCountPtr;	// always used (may or no may point to m_refCount)
+	CharChunk* m_chunks;
+	CharChunk* m_current;
 };
 
 
@@ -239,11 +280,25 @@ public:
 	{
 		Item*         next;
 		KeyIterator   key;
+		KeyIterator   keyEnd;
 		ValueIterator value;
+		ValueIterator valueEnd;
 		
-		Item(KeyIterator key_, ValueIterator value_)
-			: next(NULL), key(key_), value(value_)
+		Item(KeyIterator key_, KeyIterator keyEnd_, ValueIterator value_, ValueIterator valueEnd_)
+			: next(NULL), key(key_), keyEnd(keyEnd_), value(value_), valueEnd(valueEnd_)
 		{
+		}
+		Item()
+			: next(NULL), key(KeyIterator()), keyEnd(KeyIterator()), value(ValueIterator()), valueEnd(ValueIterator())
+		{
+		}
+		bool operator==(Item const& rhs)
+		{
+			return next == rhs.next && key == rhs.key && keyEnd == rhs.keyEnd && value == rhs.value && valueEnd == rhs.valueEnd;
+		}
+		bool operator!=(Item const& rhs)
+		{
+			return !(*this == rhs);
 		}
 	};
 
@@ -270,18 +325,32 @@ public:
 		m_itemsCount = 0;
 	}
 	
-	void MTD_FLASHMEM add(KeyIterator key, ValueIterator value)
+	void MTD_FLASHMEM add(KeyIterator key, KeyIterator keyEnd, ValueIterator value, ValueIterator valueEnd)
 	{
 		if (m_items)
 		{
-			m_current = m_current->next = new Item(key, value);
+			m_current = m_current->next = new Item(key, keyEnd, value, valueEnd);
 			++m_itemsCount;
 		}
 		else
 		{
-			m_current = m_items = new Item(key, value);
+			m_current = m_items = new Item(key, keyEnd, value, valueEnd);
 			++m_itemsCount;
 		}
+	}
+	
+	// key and value must terminate with a Zero
+	void MTD_FLASHMEM add(KeyIterator key, ValueIterator value)
+	{
+		add(key, key + t_strlen(key), value, value + t_strlen(value));
+	}
+	
+	// automatically embeds key and value into CharIterator, so key and value can stay in RAM or Flash
+	// key and value must terminate with a Zero
+	// Applies only when KeyIterator == ValueIterator == CharIterator
+	void MTD_FLASHMEM add(char const* key, char const* value)
+	{
+		add(CharIterator(key), CharIterator(value));
 	}
 	
 	uint32_t MTD_FLASHMEM getItemsCount()
@@ -290,31 +359,38 @@ public:
 	}
 	
 	// warn: this doesn't check "index" range!
-	Item& MTD_FLASHMEM getItem(uint32_t index)
+	Item* MTD_FLASHMEM getItem(uint32_t index)
 	{
 		Item* item = m_items;
 		for (; index > 0; --index)
 			item = item->next;
-		return *item;
+		return item;
 	}
-	
-	// warn: this doesn't check "index" range!
-	Item& MTD_FLASHMEM operator[](uint32_t index)
-	{
-		return getItem(index);
-	}
-	
+
 	// key stay in RAM or Flash
-	ValueIterator MTD_FLASHMEM operator[](char const* key)
+	Item* MTD_FLASHMEM getItem(char const* key, char const* keyEnd)
 	{
 		Item* item = m_items;
 		while (item)
 		{
-			if (t_strcmp(item->key, CharIterator(key)) == 0)
-				return item->value;
+			if (t_compare(item->key, item->keyEnd, CharIterator(key), CharIterator(keyEnd)))
+				return item;	// found
 			item = item->next;
 		}
-		return ValueIterator();
+		return NULL;	// not found
+	}
+	
+	// warn: this doesn't check "index" range!
+	Item* MTD_FLASHMEM operator[](uint32_t index)
+	{
+		return getItem(index);
+	}
+		
+	// key can stay in RAM or Flash and must terminate with zero
+	// key must terminate with zero
+	Item* MTD_FLASHMEM operator[](char const* key)
+	{
+		return getItem(key, key + f_strlen(key));
 	}
 	
 	// debug
@@ -322,11 +398,143 @@ public:
 	{
 		for (uint32_t i = 0; i != m_itemsCount; ++i)
 		{
-			APtr<char> key(getItem(i).key.dup());
-			APtr<char> value(getItem(i).value.dup());
-			debug("%s = %s\r\n", key.get(), value.get());
+			Item* item = getItem(i);			
+			for (KeyIterator k = item->key; k != item->keyEnd; ++k)
+				debug(*k);
+			debug(" = ");
+			for (KeyIterator v = item->value; v!= item->valueEnd; ++v)
+				debug(*v);
+			debug("\r\n");			
 		}
 	}		
+	
+private:
+	
+	Item*    m_items;
+	Item*    m_current;
+	uint32_t m_itemsCount;
+};
+
+
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+// ObjectDict
+
+template <typename T>
+struct ObjectDict
+{
+	struct Item
+	{
+		Item*         next;
+		char const*   key;
+		char const*   keyEnd;
+		T             value;
+		
+		Item(char const* key_, char const* keyEnd_, T value_)
+			: next(NULL), key(key_), keyEnd(keyEnd_), value(value_)
+		{
+		}
+		Item()
+			: next(NULL), key(NULL), keyEnd(NULL), value(T())
+		{
+		}
+		bool operator==(Item const& rhs)
+		{
+			return next == rhs.next && key == rhs.key && keyEnd == rhs.keyEnd && value == rhs.value;
+		}
+		bool operator!=(Item const& rhs)
+		{
+			return !(*this == rhs);
+		}
+	};
+
+	ObjectDict()
+		: m_items(NULL), m_current(NULL), m_itemsCount(0)
+	{
+	}
+	
+	~ObjectDict()
+	{
+		clear();
+	}
+	
+	void MTD_FLASHMEM clear()
+	{
+		Item* item = m_items;
+		while (item)
+		{
+			Item* next = item->next;
+			delete item;
+			item = next;
+		}
+		m_items = m_current = NULL;
+		m_itemsCount = 0;
+	}
+	
+	void MTD_FLASHMEM add(char const* key, char const* keyEnd, T value)
+	{
+		if (m_items)
+		{
+			m_current = m_current->next = new Item(key, keyEnd, value);
+			++m_itemsCount;
+		}
+		else
+		{
+			m_current = m_items = new Item(key, keyEnd, value);
+			++m_itemsCount;
+		}
+	}
+	
+	// add zero terminated string
+	void MTD_FLASHMEM add(char const* key, T value)
+	{
+		add(key, key + f_strlen(key), value);
+	}
+	
+	uint32_t MTD_FLASHMEM getItemsCount()
+	{
+		return m_itemsCount;
+	}
+	
+	// warn: this doesn't check "index" range!
+	Item* MTD_FLASHMEM getItem(uint32_t index)
+	{
+		Item* item = m_items;
+		for (; index > 0; --index)
+			item = item->next;
+		return item;
+	}
+
+	// key stay in RAM or Flash
+	Item* MTD_FLASHMEM getItem(char const* key, char const* keyEnd)
+	{
+		Item* item = m_items;
+		while (item)
+		{
+			if (t_compare(CharIterator(item->key), CharIterator(item->keyEnd), CharIterator(key), CharIterator(keyEnd)))
+				return item;	// found
+			item = item->next;
+		}
+		return NULL;	// not found
+	}
+	
+	// key stay in RAM or Flash
+	Item* MTD_FLASHMEM getItem(char const* key)
+	{
+		return getItem(key, key + f_strlen(key));
+	}
+	
+	// warn: this doesn't check "index" range!
+	Item* MTD_FLASHMEM operator[](uint32_t index)
+	{
+		return getItem(index);
+	}
+		
+	// key can stay in RAM or Flash and must terminate with zero
+	Item* MTD_FLASHMEM operator[](char const* key)
+	{
+		return getItem(key);
+	}
 	
 private:
 	
