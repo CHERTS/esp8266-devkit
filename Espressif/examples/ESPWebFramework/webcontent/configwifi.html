@@ -1,0 +1,11 @@
+{%base.html%}
+
+{%title%}
+WiFi Configuration
+
+{%content%}
+<form method='POST'>
+  <input type='checkbox' name='clientmode' value='1' {{clientmode}}> Client Mode <br>
+  <input type='checkbox' name='apmode' value='1' {{apmode}}> Access Point Mode <br>
+  <input type='submit' value='Save'>
+</form>

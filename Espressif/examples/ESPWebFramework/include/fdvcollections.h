@@ -130,8 +130,8 @@ private:
 	}
 private:
 	CharChunk* m_chunk;
-	uint32_t   m_pos;  	// position inside this chunk
-	uint32_t   m_absPos;	// absolute position (starting from beginning of LinkedCharChunks)
+	uint32_t   m_pos;  	   // position inside this chunk
+	uint32_t   m_absPos;   // absolute position (starting from beginning of LinkedCharChunks)
 };
 
 
@@ -139,29 +139,29 @@ private:
 /////////////////////////////////////////////////////////////////////////
 // LinkedCharChunks
 //
-// This class is reference counted
+// Warn: copy constructor copies only pointers. Should not used when with heap or stack buffers.
 
 struct LinkedCharChunks
 {	
 	
 	LinkedCharChunks()
-		: m_refCount(1), m_refCountPtr(&m_refCount), m_chunks(NULL), m_current(NULL)
+		: m_chunks(NULL), m_current(NULL)
 	{
 	}
 	
 	// copy constructor
+	// Only data pointers are copied and they will be not freed
 	LinkedCharChunks(LinkedCharChunks& c)
-		: m_refCountPtr(c.m_refCountPtr), m_chunks(c.m_chunks), m_current(c.m_current)
+		: m_chunks(NULL), m_current(NULL)
 	{
-		++(*m_refCountPtr);
+		clear();
+		addChunks(&c);
 	}
 	
 	
 	~LinkedCharChunks()
 	{
-		--(*m_refCountPtr);
-		if (*m_refCountPtr == 0)
-			clear();
+		clear();
 	}
 	
 	
@@ -256,10 +256,15 @@ struct LinkedCharChunks
 		}
 		return len;
 	}
+	
+	
+	void MTD_FLASHMEM dump()
+	{
+		for (CharChunksIterator i = getIterator(); i.isValid(); ++i)
+			debug(getChar(&*i));		
+	}
 
 private:
-	uint32_t   m_refCount;		// used only if this is the first instance
-	uint32_t*  m_refCountPtr;	// always used (may or no may point to m_refCount)
 	CharChunk* m_chunks;
 	CharChunk* m_current;
 };
@@ -491,6 +496,17 @@ struct ObjectDict
 		add(key, key + f_strlen(key), value);
 	}
 	
+	// add all items of source (shallow copy for keys, value copy for values)
+	void MTD_FLASHMEM add(ObjectDict<T>* source)
+	{
+		Item* srcItem = source->m_items;
+		while (srcItem)
+		{
+			add(srcItem->key, srcItem->keyEnd, srcItem->value);
+			srcItem = srcItem->next;
+		}
+	}
+	
 	uint32_t MTD_FLASHMEM getItemsCount()
 	{
 		return m_itemsCount;
@@ -534,6 +550,19 @@ struct ObjectDict
 	Item* MTD_FLASHMEM operator[](char const* key)
 	{
 		return getItem(key);
+	}
+	
+	void MTD_FLASHMEM dump()
+	{
+		Item* item = m_items;
+		while (item)
+		{
+			debugstrn(item->key, item->keyEnd - item->key);
+			debug(FSTR(" = "));
+			item->value.dump();
+			debug(FSTR("\r\n"));
+			item = item->next;
+		}
 	}
 	
 private:

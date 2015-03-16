@@ -47,15 +47,15 @@ struct MyHTTPHandler : public fdv::HTTPHandler
 
 	void MTD_FLASHMEM get_confignet()
 	{
-		fdv::HTTPWifiConfigurationResponse response(this, FSTR("base.html"));
+		fdv::HTTPWifiConfigurationResponse response(this, FSTR("configwifi.html"));
 		response.flush();
 	}
 	
 	void MTD_FLASHMEM get_test1()
 	{
-		fdv::HTTPParameterResponse response(this, FSTR("base.html"));
-		response.addParam(FSTR("name"), FSTR("Fabrizio"));
-		response.addParam(FSTR("surname"), FSTR("Di Vittorio"));
+		fdv::HTTPTemplateResponse response(this, FSTR("base.html"));
+		response.addParam(FSTR("title"), FSTR("This is the title"));
+		response.addParam(FSTR("content"), FSTR("This is the content"));
 		response.flush();
 	}
 
@@ -83,7 +83,6 @@ struct Task1 : fdv::Task
 	
 	void MTD_FLASHMEM exec()
 	{
-
 		m_serial->printf(FSTR("\n\rESPWebFramework started.\n\r"));
 		m_serial->printf(FSTR("Press h key to help.\n\r"));
 

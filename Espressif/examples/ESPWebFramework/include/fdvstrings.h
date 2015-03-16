@@ -223,6 +223,17 @@ static char* FUNC_FLASHMEM t_strdup(Iterator source)
 	return t_strcpy(new char[t_strlen(source) + 1], source);
 }
 
+// adds automatically ending zero
+template <typename Iterator>
+static char* FUNC_FLASHMEM t_strdup(Iterator sourceStart, Iterator sourceEnd)
+{
+	uint32_t len = sourceEnd - sourceStart;
+	char* str = new char[len + 1];
+	t_memcpy(str, sourceStart, len);
+	str[len] = 0;
+	return str;
+}
+
 
 
 /////////////////////////////////////////////////////////////////////////
@@ -304,6 +315,12 @@ static inline char* FUNC_FLASHMEM f_strcpy(char* destination, char const* source
 static inline char* FUNC_FLASHMEM f_strdup(char const* str)
 {
 	return t_strdup(CharIterator(str));
+}
+
+// adds automatically ending zero
+static inline char* FUNC_FLASHMEM f_strdup(char const* sourceStart, char const* sourceEnd)
+{
+	return t_strdup(CharIterator(sourceStart), CharIterator(sourceEnd));
 }
 
 

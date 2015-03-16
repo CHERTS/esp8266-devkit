@@ -98,9 +98,9 @@ namespace fdv
 		{						
 			softap_config config = {0};
 			wifi_softap_get_config(&config);
-			strcpy((char *)config.ssid, SSID);
+			f_strcpy((char *)config.ssid, SSID);
 			config.ssid_len = strlen(SSID);
-			strcpy((char *)config.password, securityKey);
+			f_strcpy((char *)config.password, securityKey);
 			config.channel = channel;
 			config.authmode = securityProtocol;
 			config.ssid_hidden = (uint8)hiddenSSID;
@@ -112,16 +112,14 @@ namespace fdv
 		static void MTD_FLASHMEM configureClient(char const* SSID, char const* securityKey)
 		{
 			station_config config = {0};
-			strcpy((char *)config.ssid, SSID);
-			strcpy((char *)config.password, securityKey);
+			f_strcpy((char *)config.ssid, SSID);
+			f_strcpy((char *)config.password, securityKey);
 			Critical critical;
 			wifi_station_disconnect();
 			wifi_station_set_config(&config);
 			wifi_station_connect();
 		}
 
-		
-				
 	};
 	
 
@@ -138,20 +136,19 @@ namespace fdv
 			AccessPointNetwork = 1
 		};
 	
-		// don't need to call configureDHCP
 		static void MTD_FLASHMEM configureStatic(Network network, char const* IP, char const* netmask, char const* gateway)
 		{
 			ip_info info;
-			info.ip.addr      = ipaddr_addr(IP);
-			info.netmask.addr = ipaddr_addr(netmask);
-			info.gw.addr      = ipaddr_addr(gateway);
+			info.ip.addr      = ipaddr_addr(Ptr<char>(f_strdup(IP)).get());
+			info.netmask.addr = ipaddr_addr(Ptr<char>(f_strdup(netmask)).get());
+			info.gw.addr      = ipaddr_addr(Ptr<char>(f_strdup(gateway)).get());
 			Critical critical;
 			if (network == ClientNetwork)
 				wifi_station_dhcpc_stop();
 			wifi_set_ip_info(network, &info);
 		}
 		
-		// applied only to ClientNetwork
+		// applies only to ClientNetwork
 		static void MTD_FLASHMEM configureDHCP(Network network)
 		{
 			if (network == ClientNetwork)
@@ -176,8 +173,8 @@ namespace fdv
 		{		
 			//udhcpd_stop();
 			dhcp_info info = {0};
-			info.start_ip      = ipaddr_addr(startIP);
-			info.end_ip        = ipaddr_addr(endIP);
+			info.start_ip      = ipaddr_addr(Ptr<char>(f_strdup(startIP)).get());
+			info.end_ip        = ipaddr_addr(Ptr<char>(f_strdup(endIP)).get());
 			info.max_leases    = maxLeases;
 			info.auto_time     = 60;
 			info.decline_time  = 60;
@@ -187,8 +184,8 @@ namespace fdv
 			dhcp_set_info(&info);
 			udhcpd_start();			
 		}
-    };
-
+    };	
+	
 
 	//////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////
@@ -813,61 +810,125 @@ namespace fdv
 	//////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////
 	// ParameterReplacer
+	// If input contains {%..%} blocks only getBlocks() should be used and getResult() contains empty data.
+	// If input contains only {{}} tags only getREsult() should be used.
 	
 	struct ParameterReplacer
 	{
 		typedef ObjectDict<LinkedCharChunks> Params;
 		
-		static void MTD_FLASHMEM replace(Params* params, char const* strStart, char const* strEnd, LinkedCharChunks* outStr)
+		ParameterReplacer(char const* strStart, char const* strEnd, Params* params)
+			: m_params(params), m_strStart(strStart), m_strEnd(strEnd)
 		{
-			char const* start = strStart;
-			while (strStart != strEnd)
-			{
-				if (getChar(strStart) == '{')
-				{
-					if (getChar(strStart + 1) == '{')
-					{
-						// flush previous content (from strstart to strStart no included) 
-						outStr->addChunk(start, strStart - start, false);
-						// found "{{", process parameter tag
-						start = strStart = processParameterTag(params, strStart, strEnd, outStr);
-						continue;
-					}
-				}
-				++strStart;
-			}
-			outStr->addChunk(start, strEnd - start, false);
+			processInput();
+		}
+		
+		LinkedCharChunks* MTD_FLASHMEM getResult()
+		{
+			return &m_result;
+		}
+		
+		Params* MTD_FLASHMEM getBlocks()
+		{
+			return &m_blocks;
+		}
+		
+		char const* MTD_FLASHMEM getTemplateFilename()
+		{
+			return m_template.get();
 		}
 		
 	private:
 		
-		static char const* MTD_FLASHMEM processParameterTag(Params* params, char const* dataptr, char const* dataend, LinkedCharChunks* outStr)
+		void MTD_FLASHMEM processInput()
+		{
+			char const* curc  = m_strStart;
+			char const* start = curc;
+			char const* curBlockKey      = NULL;
+			char const* curBlockKeyEnd   = NULL;
+			while (curc != m_strEnd)
+			{
+				char c0 = getChar(curc);
+				if (c0 == '{')
+				{
+					char c1 = getChar(curc + 1);
+					if (c1 == '{')
+					{
+						// found "{{"
+						// push previous content
+						m_result.addChunk(start, curc - start, false);
+						// process parameter tag
+						start = curc = replaceTag(curc);
+						continue;
+					}
+					else if (c1 == '%')
+					{
+						// found "{%"
+						// push previous content
+						if (curBlockKey && curBlockKeyEnd)
+						{
+							m_result.addChunk(start, curc - start, false);
+							m_blocks.add(curBlockKey, curBlockKeyEnd, m_result);
+							m_result.clear();
+						}
+						// process block tag
+						curBlockKey = extractTagStr(curc, &curBlockKeyEnd);
+						start = curc = curBlockKeyEnd + 2;	// bypass "%}"
+						// if this is the first block tag then this is the template file name
+						if (m_template.get() == NULL)
+						{
+							m_template.reset(f_strdup(curBlockKey, curBlockKeyEnd));
+							curBlockKey = NULL;
+							curBlockKeyEnd = NULL;
+						}
+						continue;
+					}
+				}
+				++curc;
+			}
+			m_result.addChunk(start, m_strEnd - start, false);
+			if (curBlockKey && curBlockKeyEnd)
+			{
+				m_blocks.add(curBlockKey, curBlockKeyEnd, m_result);
+				m_result.clear();
+			}			
+		}
+		
+		char const* MTD_FLASHMEM replaceTag(char const* curc)
 		{
 			char const* tagEnd;
-			char const* tagStart = extractTagStr(dataptr, dataend, &tagEnd);
-			Params::Item* item = params->getItem(tagStart, tagEnd);
+			char const* tagStart = extractTagStr(curc, &tagEnd);
+			Params::Item* item = m_params->getItem(tagStart, tagEnd);
 			if (item)
 			{
-				// flush parameter content
-				outStr->addChunks(&item->value);				
+				// push parameter content
+				m_result.addChunks(&item->value);				
 			}
 			return tagEnd + 2;	// bypass "}}"
 		}
 		
-		static char const* extractTagStr(char const* dataptr, char const* dataend, char const** tagEnd)
+		char const* extractTagStr(char const* curc, char const** tagEnd)
 		{
-			char const* tagStart = dataptr + 2; // by pass "{{"
+			char const* tagStart = curc + 2; // by pass "{{" or "{%"
 			*tagEnd = tagStart;
-			while (*tagEnd < dataend && getChar(*tagEnd) != '}')
+			while (*tagEnd < m_strEnd && getChar(*tagEnd) != '}' && getChar(*tagEnd) != '%')
 				++*tagEnd;
 			return tagStart;
 		}
+		
+	private:
+		Params*           m_params;
+		char const*       m_strStart;
+		char const*       m_strEnd;
+		LinkedCharChunks  m_result;
+		Params            m_blocks;
+		Ptr<char>         m_template;	// template file name (filled with the first {%...%} block)
 	};
 	
 
 	//////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////
-	// HTTPParameterResponse
+	// HTTPTemplateResponse
 	//
 	// Parameters are tagged with: 
 	//   {{parameter_name}}           
@@ -875,28 +936,63 @@ namespace fdv
 	//   {{something}}
 	// Parameters cannot stay in template file.
 	//
-	// No further spaces are allowed inside {{}} tags
+	// A template can only contain {{}} tags, which specify the blocks or parameters to replace. Example:
+	// Content of file "base.html":
+	//   <html>
+	//   <head> {{the_head}} </head>
+	//   <body> {{the_body}} </body>
+	//   </html>
+	//
+	// Specialized file can replace template blocks using {%block_name%}. Example:
+	// Content of file "home.html":
+	//   {%base.html%}                 <- first block specifies the tamplate filename
+	//   {%the_head%}                  <- start of "the_head" block
+	//   <title>Home Page</title>
+	//   {%the_body%}                  <- start of "the_body" block
+	//   <h1>Hello {{name}}</h1>       <- here the parameter "name" will be replaced with its actual value
+	//
+	// Specialized file must contain at least one {%%} tag, and may or may not contain {{}} tags (parameters).
+	// Parameter tags and block tags must have different names.
+	// The template file can contain parameters that will be replaced as they was in the specialized file.
+	//
+	// No further spaces are allowed inside {{}} and {%%} tags
 	// No syntax error checkings are done, so be careful!
+	// Only one level of inheritance is allowed (specialized file -> template file)
 	
-	struct HTTPParameterResponse : public HTTPResponse
+	struct HTTPTemplateResponse : public HTTPResponse
 	{
 		typedef ObjectDict<LinkedCharChunks> Params;
 
-		HTTPParameterResponse(HTTPHandler* httpHandler, char const* filename)
+		HTTPTemplateResponse(HTTPHandler* httpHandler, char const* filename)
 			: HTTPResponse(httpHandler, NULL), m_filename(filename)
 		{			
+		}
+		
+		void setFilename(char const* filename)
+		{
+			m_filename = filename;
 		}
 		
 		void MTD_FLASHMEM addParam(char const* key, char const* value)
 		{
 			LinkedCharChunks linkedCharChunks;
-			linkedCharChunks.addChunk(value, f_strlen(value) + 1, false);
+			linkedCharChunks.addChunk(value, f_strlen(value), false);
 			m_params.add(key, linkedCharChunks);
 		}
 		
 		void MTD_FLASHMEM addParam(char const* key, LinkedCharChunks* value)
 		{
 			m_params.add(key, *value);
+		}
+		
+		void MTD_FLASHMEM addParams(Params* params)
+		{
+			m_params.add(params);
+		}
+		
+		Params* MTD_FLASHMEM getParams()
+		{
+			return &m_params;
 		}
 		
 		virtual void MTD_FLASHMEM flush()
@@ -912,123 +1008,47 @@ namespace fdv
 			char const* mimetype;
 			void const* data;
 			uint16_t dataLength;
-			if (FlashFileSystem::find(m_filename, &mimetype, &data, &dataLength))
+			if (m_filename && FlashFileSystem::find(m_filename, &mimetype, &data, &dataLength))
 			{
 				// found
 				setStatus(FSTR("200 OK"));
 				addHeader(FSTR("Content-Type"), FSTR("text/html"));
-
-				LinkedCharChunks dataOut;
-				ParameterReplacer::replace(&m_params, (char const*)data, (char const*)data + dataLength, &dataOut);
-				addContent(&dataOut);
+				
+				// replace parameters
+				ParameterReplacer replacer((char const*)data, (char const*)data + dataLength, &m_params);
+				
+				// is this a specialized file (contains {%..%} blocks)?
+				if (replacer.getBlocks()->getItemsCount() > 0 && replacer.getTemplateFilename() != NULL)
+				{
+					// this is a specialized file, add blocks as parameters
+					addParams(replacer.getBlocks());
+					// load template file
+					if (FlashFileSystem::find(replacer.getTemplateFilename(), &mimetype, &data, &dataLength))
+					{
+						// replace parameters and blocks of template file
+						ParameterReplacer templateReplacer((char const*)data, (char const*)data + dataLength, &m_params);
+						// flush resulting content
+						addContent(templateReplacer.getResult());
+						return;
+					}
+				}
+				else
+				{
+					// just flush this file (contains only {{...}} blocks)
+					addContent(replacer.getResult());
+					return;
+				}
 			}
-			else
-			{
-				// not found
-				setStatus(FSTR("404 Not Found"));
-			}
+			// not found
+			setStatus(FSTR("404 Not Found"));
 		}
 		
 	private:
 		char const*      m_filename;
-		Params           m_params;
-		
+		Params           m_params;		
 	};
 
 
-	//////////////////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////////////////
-	// HTTPTemplateResponse
-	//
-	// Have the same functionalities of HTTPParameterResponse adding file template support.
-	// A template can only contain {{}} tags, which specify the blocks to replace. These tags do not specify parameters. Example:
-	// Content of file "base.tpl":
-	//   <html>
-	//   <head> {{the_head}} </head>
-	//   <body> {{the_body}} </body>
-	//   </html>
-	//
-	// Specialized file can replace template blocks using {%block_name%}. Example:
-	// Content of file "home.html":
-	//   {%the_head%}                  <- start of "the_head" block
-	//   <title>Home Page</title>
-	//   {%the_body%}                  <- start of "the_body" block
-	//   <h1>Hello {{name}}</h1>       <- here the parameter "name" will be replaced with its actual value
-	//
-	// Specialized file must contain at least one {%%} tag, and may not nor may contain {{}} tags (parameters).
-	// Parameter tags and block tags must have different names.
-	//
-	// No further spaces are allowed inside {{}} and {%%} tags
-	// No syntax error checkings are done, so be careful!
-	
-	struct HTTPTemplateResponse : public HTTPParameterResponse
-	{
-		HTTPTemplateResponse(HTTPHandler* httpHandler, char const* templateFilename, char const* specializedFilename)
-			: m_specializedFilename(specializedFilename), HTTPParameterResponse(httpHandler, templateFilename)
-		{
-		}
-
-		virtual void MTD_FLASHMEM flush()
-		{
-			// todo
-			HTTPResponse::flush();
-		}
-
-	private:
-		char const* m_specializedFilename;
-	
-	};
-	
-
-	//////////////////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////////////////
-	// Configuration helper web pages
-		
-	struct HTTPWifiConfigurationResponse : public HTTPParameterResponse
-	{
-		HTTPWifiConfigurationResponse(HTTPHandler* httpHandler, char const* filename)
-			: HTTPParameterResponse(httpHandler, filename)
-		{
-		}
-		
-		virtual void MTD_FLASHMEM flush()
-		{
-			addParam(FSTR("title"), FSTR("WiFi Configuration"));
-			
-			LinkedCharChunks content;
-
-			if (getRequest().method == HTTPHandler::Post)
-			{
-				HTTPHandler::Fields::Item* clientmode = getRequest().form["clientmode"];
-				HTTPHandler::Fields::Item* apmode = getRequest().form["apmode"];
-				if (clientmode && apmode)
-					debug("enable clientmode and acess point mode\r\n");
-				else if (clientmode)
-					debug("enable clientmode\r\n");
-				else if (apmode)
-					debug("enable access point mode\r\n");
-			}
-			
-			content.addChunk(FSTR("<form method='POST'>"));
-			
-			WiFi::Mode mode = WiFi::getMode();
-			content.addChunk(FSTR("<input type='checkbox' name='clientmode' value='1' "));
-			if (mode == WiFi::Client || mode == WiFi::ClientAndAccessPoint)
-				content.addChunk(FSTR("checked"));
-			content.addChunk(FSTR("> Client Mode <br>"));
-			
-			content.addChunk(FSTR("<input type='checkbox' name='apmode' value='1' "));
-			if (mode == WiFi::AccessPoint || mode == WiFi::ClientAndAccessPoint)
-				content.addChunk(FSTR("checked"));
-			content.addChunk(FSTR("> Access Point Mode <br>"));
-			
-			content.addChunk(FSTR("<input type='submit' value='Save'></form>"));
-
-			addParam(FSTR("content"), &content);
-			
-			HTTPParameterResponse::flush();
-		}
-	};
 
 
 
