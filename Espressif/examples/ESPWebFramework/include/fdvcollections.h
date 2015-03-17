@@ -97,6 +97,14 @@ struct CharChunksIterator
 		newval += rhs;
 		return newval;
 	}
+	// *this must be > rhs
+	int32_t MTD_FLASHMEM operator-(CharChunksIterator rhs)
+	{
+		int32_t dif = 0;
+		while (*this != rhs)
+			++rhs, ++dif;
+		return dif;
+	}
 	bool MTD_FLASHMEM operator==(CharChunksIterator const& rhs)
 	{
 		return m_chunk == rhs.m_chunk && m_pos == rhs.m_pos;
@@ -285,9 +293,10 @@ public:
 	{
 		Item*         next;
 		KeyIterator   key;
-		KeyIterator   keyEnd;
+		KeyIterator   keyEnd;		
 		ValueIterator value;
 		ValueIterator valueEnd;
+		Ptr<char>     valueStr;	// dynamically allocated zero terminated value string (created by operator[])
 		
 		Item(KeyIterator key_, KeyIterator keyEnd_, ValueIterator value_, ValueIterator valueEnd_)
 			: next(NULL), key(key_), keyEnd(keyEnd_), value(value_), valueEnd(valueEnd_)
@@ -392,10 +401,17 @@ public:
 	}
 		
 	// key can stay in RAM or Flash and must terminate with zero
-	// key must terminate with zero
-	Item* MTD_FLASHMEM operator[](char const* key)
+	// creates a RAM stored temporary (with the same lifetime of IterDict class) zero terminated string with the value content
+	char const* MTD_FLASHMEM operator[](char const* key)
 	{
-		return getItem(key, key + f_strlen(key));
+		Item* item = getItem(key, key + f_strlen(key));
+		if (item)
+		{
+			if (item->valueStr.get() == NULL)
+				item->valueStr.reset(t_strdup(item->value, item->valueEnd));
+			return item->valueStr.get();
+		}
+		return NULL;
 	}
 	
 	// debug

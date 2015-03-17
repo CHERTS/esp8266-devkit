@@ -226,17 +226,17 @@ namespace fdv
 		{
 			if (getRequest().method == HTTPHandler::Post)
 			{
-				HTTPHandler::Fields::Item* clientmode = getRequest().form["clientmode"];
-				HTTPHandler::Fields::Item* apmode = getRequest().form["apmode"];
+				char const* clientmode = getRequest().form["clientmode"];
+				char const* apmode     = getRequest().form["apmode"];
 				if (clientmode && apmode)
-					debug("enable clientmode and acess point mode\r\n");
+					ConfigurationManager::setWiFiMode(WiFi::ClientAndAccessPoint);
 				else if (clientmode)
-					debug("enable clientmode\r\n");
+					ConfigurationManager::setWiFiMode(WiFi::Client);
 				else if (apmode)
-					debug("enable access point mode\r\n");
+					ConfigurationManager::setWiFiMode(WiFi::AccessPoint);
 			}
 			
-			WiFi::Mode mode = WiFi::getMode();
+			WiFi::Mode mode = ConfigurationManager::getWiFiMode();
 			
 			if (mode == WiFi::Client || mode == WiFi::ClientAndAccessPoint)
 				addParam(FSTR("clientmode"), FSTR("checked"));

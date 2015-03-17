@@ -530,11 +530,11 @@ namespace fdv
 				curc = extractHeaders(curc, headerEnd, &m_request.headers);
 				
 				// look for data (maybe POST data)
-				Fields::Item* contentLengthStr = m_request.headers[FSTR("Content-Length")];
+				char const* contentLengthStr = m_request.headers[FSTR("Content-Length")];
 				if (contentLengthStr)
 				{
 					// download additional content
-					int32_t contentLength = t_strtol(contentLengthStr->value, 10);
+					int32_t contentLength = strtol(contentLengthStr, NULL, 10);
 					int32_t missingBytes = headerEnd.getPosition() + contentLength - m_receivedData.getItemsCount();
 					while (isConnected() && missingBytes > 0)
 					{
@@ -544,8 +544,8 @@ namespace fdv
 					}
 					m_receivedData.append(0);	// add additional terminating "0"
 					// check content type
-					Fields::Item* contentType = m_request.headers[FSTR("Content-Type")];
-					if (contentType && t_strstr(contentType->value, CharIterator(FSTR("application/x-www-form-urlencoded"))).isValid())
+					char const* contentType = m_request.headers[FSTR("Content-Type")];
+					if (contentType && f_strstr(contentType, FSTR("application/x-www-form-urlencoded")))
 					{
 						CharChunksIterator contentStart = m_receivedData.getIterator();	// cannot use directly headerEnd because added data
 						contentStart += headerEnd.getPosition();

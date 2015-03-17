@@ -40,9 +40,10 @@ extern "C"
 
 // used for data
 #define FLASHMEM __attribute__((aligned(4))) __attribute__((section(".irom.text")))
+#define FLASHMEM2 __attribute__((aligned(4))) __attribute__((section(".irom2.text")))
 
 // used for parameters
-#define FSTR(s) (__extension__({static const char __c[] FLASHMEM = (s); &__c[0];}))
+#define FSTR(s) (__extension__({static const char __c[] FLASHMEM2 = (s); &__c[0];}))
 
 // used for functions
 #define FUNC_FLASHMEM __attribute__((section(".irom0.text")))

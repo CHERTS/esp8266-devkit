@@ -35,10 +35,25 @@ namespace fdv
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 // reboot
+// creates a task and reboot after specified time (ms)
 
-void inline FUNC_FLASHMEM reboot()
+void inline FUNC_FLASHMEM reboot(uint32_t time)
 {
-	system_restart();
+	struct RebootTask : Task
+	{
+		RebootTask(uint32_t time) : Task(false), m_time(time) {}
+		
+		void MTD_FLASHMEM exec()
+		{
+			delay(m_time);
+			system_restart();
+			suspend();
+		}
+		
+		uint32_t m_time;
+	};
+	
+	new RebootTask(time);
 }
 
 

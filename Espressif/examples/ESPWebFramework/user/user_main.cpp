@@ -30,8 +30,8 @@ struct MyHTTPHandler : public fdv::HTTPHandler
 		static const Route routes[] =
 		{
 			{FSTR("/"),	         (PageHandler)&MyHTTPHandler::get_home},
-			{FSTR("/confignet"), (PageHandler)&MyHTTPHandler::get_confignet},
-			{FSTR("/test1"),     (PageHandler)&MyHTTPHandler::get_test1},
+			{FSTR("/confwifi"),  (PageHandler)&MyHTTPHandler::get_confwifi},
+			{FSTR("/reboot"),    (PageHandler)&MyHTTPHandler::get_reboot},
 			{FSTR("*"),          (PageHandler)&MyHTTPHandler::get_all},
 		};
 		setRoutes(routes, sizeof(routes) / sizeof(Route));
@@ -39,23 +39,22 @@ struct MyHTTPHandler : public fdv::HTTPHandler
 	
 	void MTD_FLASHMEM get_home()
 	{
-		getRequest().query.dump();
-		getRequest().form.dump();
-		fdv::HTTPResponse response(this, FSTR("200 OK"), FSTR("<html><head></head><body><h1>This is Home Page</h1></body></html>"));
+		fdv::HTTPTemplateResponse response(this, FSTR("base.html"));
+		response.addParam(FSTR("title"), FSTR("ESP8266 WebFramework"));
+		response.addParam(FSTR("content"), FSTR("Please select a menu item on the left"));
 		response.flush();
 	}
 
-	void MTD_FLASHMEM get_confignet()
+	void MTD_FLASHMEM get_confwifi()
 	{
 		fdv::HTTPWifiConfigurationResponse response(this, FSTR("configwifi.html"));
 		response.flush();
 	}
 	
-	void MTD_FLASHMEM get_test1()
+	void MTD_FLASHMEM get_reboot()
 	{
-		fdv::HTTPTemplateResponse response(this, FSTR("base.html"));
-		response.addParam(FSTR("title"), FSTR("This is the title"));
-		response.addParam(FSTR("content"), FSTR("This is the content"));
+		fdv::HTTPTemplateResponse response(this, FSTR("reboot.html"));
+		fdv::reboot(2000);	// reboot in 2s
 		response.flush();
 	}
 
@@ -69,22 +68,23 @@ struct MyHTTPHandler : public fdv::HTTPHandler
 
 
 
-struct Task1 : fdv::Task
+struct MainTask : fdv::Task
 {
 
-	Task1(fdv::Serial* serial)
-		: fdv::Task(false, 400), m_serial(serial)
+	MainTask()
+		: fdv::Task(false, 400)
 	{		
 	}
-
-	fdv::Serial* m_serial;
-	
 
 	
 	void MTD_FLASHMEM exec()
 	{
+		//fdv::DisableStdOut(); 
+		fdv::DisableWatchDog();		
+		fdv::Serial* m_serial = new fdv::HardwareSerial(115200, 128);
+
 		m_serial->printf(FSTR("\n\rESPWebFramework started.\n\r"));
-		m_serial->printf(FSTR("Press h key to help.\n\r"));
+		m_serial->printf(FSTR("Press <h> key to help.\n\r"));
 
 		while (1)
 		{
@@ -156,26 +156,6 @@ struct Task1 : fdv::Task
 };
 
 
-
-struct MainTask : fdv::Task
-{
-	MainTask()
-		: fdv::Task(false)	
-	{
-	}
-	
-	void MTD_FLASHMEM exec()
-	{
-		//fdv::DisableStdOut(); 
-		fdv::DisableWatchDog();
-		
-		fdv::HardwareSerial serial(115200, 128);
-		
-		Task1 task1(&serial);
-		
-		suspend();
-	}
-};
 
 
 extern "C" void FUNC_FLASHMEM user_init(void) 

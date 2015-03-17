@@ -1,0 +1,32 @@
+{%base.html%}
+
+{%title%}
+Reboot
+
+{%content%}
+
+<form name="redirect">
+  Restarting...<br><br>
+  <form>
+    <input type="text" size="3" name="redirect2">
+  </form>
+
+<script>
+<!--
+var targetURL="/"
+var countdownfrom=10
+var currentsecond=document.redirect.redirect2.value=countdownfrom+1
+function countredirect(){
+  if (currentsecond!=1){
+    currentsecond-=1
+    document.redirect.redirect2.value=currentsecond
+  }
+  else{
+    window.location=targetURL
+    return
+  }
+  setTimeout("countredirect()",1000)
+}
+countredirect()
+//-->
+</script>

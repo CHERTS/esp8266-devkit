@@ -100,7 +100,7 @@ $1/%.o: %.cpp
 	$(Q) $(CXX) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CXXFLAGS)  -c $$< -o $$@
 endef
 
-.PHONY: all checkdirs clean iromlibs firmware flashonefile flash flashinit rebuild flashweb
+.PHONY: all checkdirs clean iromlibs firmware flashonefile flash flashinit rebuild flashweb webcontent
 
 all: checkdirs $(TARGET_OUT)
 
@@ -147,27 +147,6 @@ $(BUILD_DIR):
 firmware:
 	$(Q) mkdir -p $@
 
-flashonefile: all
-	$(OBJCOPY) --only-section .text -O binary $(TARGET_OUT) eagle.app.v6.text.bin
-	$(OBJCOPY) --only-section .data -O binary $(TARGET_OUT) eagle.app.v6.data.bin
-	$(OBJCOPY) --only-section .rodata -O binary $(TARGET_OUT) eagle.app.v6.rodata.bin
-	$(OBJCOPY) --only-section .irom0.text -O binary $(TARGET_OUT) eagle.app.v6.irom0text.bin
-	$(TOOLS_ROOT)/utils/gen_appbin_old.exe $(TARGET_OUT) v6
-	$(TOOLS_ROOT)/utils/gen_flashbin.exe eagle.app.v6.flash.bin eagle.app.v6.irom0text.bin 0x40000
-	rm -f eagle.app.v6.data.bin
-	rm -f eagle.app.v6.flash.bin
-	rm -f eagle.app.v6.irom0text.bin
-	rm -f eagle.app.v6.rodata.bin
-	rm -f eagle.app.v6.text.bin
-	rm -f eagle.app.sym
-	mv eagle.app.flash.bin $(FW_BASE)/
-	$(vecho) "No boot needed."
-	$(vecho) "Generate eagle.app.flash.bin successully in folder $(FW_BASE)."
-	$(vecho) "eagle.app.flash.bin-------->0x00000"
-	$(Q) rm -f *.ii
-	$(Q) rm -f *.s
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x00000 $(FW_BASE)/eagle.app.flash.bin
-
 flash: all
 	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x00000 $(FW_BASE)/eagle.flash.bin 0x40000 $(FW_BASE)/eagle.irom0text.bin
 
@@ -175,9 +154,11 @@ flashinit:
 	$(vecho) "Flash init data default and blank data."
 	$(ESPTOOL) -p $(ESPPORT) write_flash 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
 
-flashweb:
-	binarydir.exe $(WEBDIR) webcontent.bin $(MAXWEBCONTENT)
+flashweb: webcontent
 	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x15000 webcontent.bin
+
+webcontent:
+	binarydir.exe $(WEBDIR) webcontent.bin $(MAXWEBCONTENT)
 
 rebuild: clean all
 
