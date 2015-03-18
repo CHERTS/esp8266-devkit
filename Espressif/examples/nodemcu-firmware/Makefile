@@ -19,7 +19,7 @@ LD := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-gcc
 NM := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-nm
 CPP = $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-cpp
 OBJCOPY = $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-objcopy
-CCFLAGS += -Os -ffunction-sections -fno-jump-tables
+CCFLAGS += -Os -ffunction-sections -fno-jump-tables -fdata-sections
 
 FIRMWAREDIR = ..//bin//
 
@@ -94,8 +94,9 @@ endef
 
 $(BINODIR)/%.bin: $(IMAGEODIR)/%.out
 	@mkdir -p $(BINODIR)
-	$(ESPTOOL-CK) -eo $< -bo $(FIRMWAREDIR)0x00000.bin -bs .text -bs .data -bs .rodata -bc -ec
-	$(ESPTOOL-CK) -eo $< -es .irom0.text $(FIRMWAREDIR)0x10000.bin -ec
+	$(ESPTOOL) elf2image $< -o $(FIRMWAREDIR)
+	#$(ESPTOOL-CK) -eo $< -bo $(FIRMWAREDIR)0x00000.bin -bs .text -bs .data -bs .rodata -bc -ec
+	#$(ESPTOOL-CK) -eo $< -es .irom0.text $(FIRMWAREDIR)0x10000.bin -ec
 
 all:	.subdirs $(OBJS) $(OLIBS) $(OIMAGES) $(OBINS) $(SPECIAL_MKTARGETS)
 
