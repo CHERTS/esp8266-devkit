@@ -31,6 +31,7 @@ struct MyHTTPHandler : public fdv::HTTPHandler
 		{
 			{FSTR("/"),	         (PageHandler)&MyHTTPHandler::get_home},
 			{FSTR("/confwifi"),  (PageHandler)&MyHTTPHandler::get_confwifi},
+			{FSTR("/confnet"),   (PageHandler)&MyHTTPHandler::get_confnet},
 			{FSTR("/reboot"),    (PageHandler)&MyHTTPHandler::get_reboot},
 			{FSTR("*"),          (PageHandler)&MyHTTPHandler::get_all},
 		};
@@ -50,17 +51,23 @@ struct MyHTTPHandler : public fdv::HTTPHandler
 		fdv::HTTPWifiConfigurationResponse response(this, FSTR("configwifi.html"));
 		response.flush();
 	}
+
+	void MTD_FLASHMEM get_confnet()
+	{
+		fdv::HTTPNetworkConfigurationResponse response(this, FSTR("confignet.html"));
+		response.flush();
+	}
 	
 	void MTD_FLASHMEM get_reboot()
 	{
 		fdv::HTTPTemplateResponse response(this, FSTR("reboot.html"));
-		fdv::reboot(2000);	// reboot in 2s
+		fdv::reboot(4000);	// reboot in 4s
 		response.flush();
 	}
 
 	void MTD_FLASHMEM get_all()
 	{
-		debug("get %s\r\n", fdv::Ptr<char>(t_strdup(getRequest().requestedPage)).get());		 
+		//debug("get %s\r\n", fdv::APtr<char>(t_strdup(getRequest().requestedPage)).get());		 
 		fdv::HTTPStaticFileResponse response(this, getRequest().requestedPage);
 		response.flush();
 	}			
@@ -86,6 +93,11 @@ struct MainTask : fdv::Task
 		m_serial->printf(FSTR("\n\rESPWebFramework started.\n\r"));
 		m_serial->printf(FSTR("Press <h> key to help.\n\r"));
 
+		fdv::ConfigurationManager::apply();
+
+		new fdv::TCPServer<MyHTTPHandler, 2, 512>(80);
+		
+		// just as serial emergency console!
 		while (1)
 		{
 			if (m_serial->waitForData())
@@ -104,7 +116,6 @@ struct MainTask : fdv::Task
 						m_serial->printf(FSTR("2    = start DHCP server\r\n"));
 						m_serial->printf(FSTR("3    = start Client mode static IP\r\n"));
 						m_serial->printf(FSTR("4    = start Client mode dynamic IP\r\n"));
-						m_serial->printf(FSTR("5    = open TCP server port 80\r\n"));
 						break;
 					case 'r':
 						system_restart();

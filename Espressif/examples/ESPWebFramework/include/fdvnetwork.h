@@ -139,9 +139,9 @@ namespace fdv
 		static void MTD_FLASHMEM configureStatic(Network network, char const* IP, char const* netmask, char const* gateway)
 		{
 			ip_info info;
-			info.ip.addr      = ipaddr_addr(Ptr<char>(f_strdup(IP)).get());
-			info.netmask.addr = ipaddr_addr(Ptr<char>(f_strdup(netmask)).get());
-			info.gw.addr      = ipaddr_addr(Ptr<char>(f_strdup(gateway)).get());
+			info.ip.addr      = ipaddr_addr(APtr<char>(f_strdup(IP)).get());
+			info.netmask.addr = ipaddr_addr(APtr<char>(f_strdup(netmask)).get());
+			info.gw.addr      = ipaddr_addr(APtr<char>(f_strdup(gateway)).get());
 			Critical critical;
 			if (network == ClientNetwork)
 				wifi_station_dhcpc_stop();
@@ -173,8 +173,8 @@ namespace fdv
 		{		
 			//udhcpd_stop();
 			dhcp_info info = {0};
-			info.start_ip      = ipaddr_addr(Ptr<char>(f_strdup(startIP)).get());
-			info.end_ip        = ipaddr_addr(Ptr<char>(f_strdup(endIP)).get());
+			info.start_ip      = ipaddr_addr(APtr<char>(f_strdup(startIP)).get());
+			info.end_ip        = ipaddr_addr(APtr<char>(f_strdup(endIP)).get());
 			info.max_leases    = maxLeases;
 			info.auto_time     = 60;
 			info.decline_time  = 60;
@@ -320,7 +320,7 @@ namespace fdv
 			if (isStoredInFlash(buffer))
 			{
 				// copy from Flash, send in chunks of CHUNKSIZE bytes
-				Ptr<uint8_t> rambuf(new uint8_t[length]);
+				APtr<uint8_t> rambuf(new uint8_t[length]);
 				uint8_t const* src = (uint8_t const*)buffer;
 				while (bytesSent < length)
 				{
@@ -742,7 +742,7 @@ namespace fdv
 			for (uint32_t i = 0; i != m_headers.getItemsCount(); ++i)
 			{
 				Fields::Item* item = m_headers[i];
-				m_httpHandler->writeFmt(FSTR("%s: %s\r\n"), Ptr<char>(t_strdup(item->key)).get(), Ptr<char>(t_strdup(item->value)).get());
+				m_httpHandler->writeFmt(FSTR("%s: %s\r\n"), APtr<char>(t_strdup(item->key)).get(), APtr<char>(t_strdup(item->value)).get());
 			}
 			// content length header
 			m_httpHandler->writeFmt(FSTR("Content-Length: %d\r\n\r\n"), m_content.getItemsCount());
@@ -803,7 +803,7 @@ namespace fdv
 		
 	private:
 	
-		Ptr<char> m_filename;
+		APtr<char> m_filename;
 	};
 
 
@@ -922,7 +922,7 @@ namespace fdv
 		char const*       m_strEnd;
 		LinkedCharChunks  m_result;
 		Params            m_blocks;
-		Ptr<char>         m_template;	// template file name (filled with the first {%...%} block)
+		APtr<char>        m_template;	// template file name (filled with the first {%...%} block)
 	};
 	
 

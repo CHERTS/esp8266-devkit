@@ -142,6 +142,11 @@ public:
 	{
 	}
 	
+	APtr()
+		: m_ptr(NULL)
+	{
+	}
+	
 	~APtr()
 	{
 		delete[] m_ptr;

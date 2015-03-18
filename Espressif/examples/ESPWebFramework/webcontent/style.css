@@ -24,7 +24,7 @@ footer, header, hgroup, menu, nav, section {
 display: block;
 }
 body {
-line-height: 1;
+line-height: 25px;
 }
 ol, ul {
 list-style: none;
@@ -102,7 +102,14 @@ h6 { font-size: .75em; }
 }
 
 #content {
-    background: #FFFFFF;
+    /*background: #FFFFFF;*/
+    border-radius: 10px;
+    border: 1px solid #dbdbdb;
+    margin: 5px;
+}
+
+#subcontent {
+    background: #E0E0E0;
     border-radius: 10px;
     border: 1px solid #ebebeb;
     margin: 5px;

@@ -4,8 +4,79 @@
 WiFi Configuration
 
 {%content%}
+
+
+<script type="text/javascript">
+<!--
+function showDiv(chk_id, div_id) {
+  var chbox = document.getElementById(chk_id);
+  var vis = "none";
+  if (chbox.checked) {
+    vis = "block";
+  }
+  document.getElementById(div_id).style.display = vis;
+}
+
+function showDivs() {
+  showDiv('ch_clientmode', 'div_clientmode');
+  showDiv('ch_apmode', 'div_apmode');
+}
+
+window.onload = showDivs;
+//-->
+</script>
+
+
 <form method='POST'>
-  <input type='checkbox' name='clientmode' value='1' {{clientmode}}> Client Mode <br>
-  <input type='checkbox' name='apmode' value='1' {{apmode}}> Access Point Mode <br>
+
+  <p><h2>WiFi Mode</h2></p>
+  <div id="subcontent">			
+	<input id="ch_clientmode" type='checkbox' name='clientmode' value='1' {{clientmode}} onclick="showDivs()"> Client Mode <br>
+	<input id="ch_apmode" type='checkbox' name='apmode' value='1' {{apmode}} onclick="showDivs()"> Access Point Mode <br>
+  </div>
+
+  <div id="div_clientmode">
+    <p><h2>Client Mode WiFi Configuration</h2></p>
+    <div id="subcontent">			
+  	  SSID: <input type='text' name='CLSSID' value='{{CLSSID}}'> <br>
+	  Password: <input type='text' name='CLPSW' value='{{CLPSW}}'> <br>
+    </div>
+  </div>
+  
+  <div id="div_apmode">
+    <p><h2>Access Point Mode WiFi Configuration</h2></p>
+    <div id="subcontent">			
+  	  SSID: <input type='text' name='APSSID' value='{{APSSID}}'> <br>
+	  Password: <input type='text' name='APPSW' value='{{APPSW}}'> <br>
+	  Channel: 
+		<select name="APCH">
+		  <option value="1" {{APCH1}}>1</option>
+		  <option value="2" {{APCH2}}>2</option>
+		  <option value="3" {{APCH3}}>3</option>
+		  <option value="4" {{APCH4}}>4</option>
+		  <option value="5" {{APCH5}}>5</option>
+		  <option value="6" {{APCH6}}>6</option>
+		  <option value="7" {{APCH7}}>7</option>
+		  <option value="8" {{APCH8}}>8</option>
+		  <option value="9" {{APCH9}}>9</option>
+		  <option value="10" {{APCH10}}>10</option>
+		  <option value="11" {{APCH11}}>11</option>
+		  <option value="12" {{APCH12}}>12</option>
+		  <option value="13" {{APCH13}}>13</option>
+		</select>
+		<br>
+	  Security protocol:
+		<select name="APSEC">
+		  <option value="0" {{APSEC0}}>Open</option>
+		  <option value="1" {{APSEC1}}>WEP</option>
+		  <option value="2" {{APSEC2}}>WPA PSK</option>
+		  <option value="3" {{APSEC3}}>WPA2 PSK</option>
+		  <option value="4" {{APSEC4}}>WPA_WPA2_PSK</option>
+		</select>
+		<br>
+	  Hidden SSID: <input type='checkbox' name='APHSSID' value='1' {{APHSSID}}> <br>
+    </div>
+  </div>
+  
   <input type='submit' value='Save'>
 </form>

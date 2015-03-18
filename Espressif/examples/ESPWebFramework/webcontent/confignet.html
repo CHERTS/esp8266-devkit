@@ -1,0 +1,64 @@
+{%base.html%}
+
+{%title%}
+Network Configuration
+
+{%content%}
+
+
+<script type="text/javascript">
+<!--
+function showDiv(chk_id, div_id) {
+  var chbox = document.getElementById(chk_id);
+  var vis = "none";
+  if (chbox.checked) {
+    vis = "block";
+  }
+  document.getElementById(div_id).style.display = vis;
+}
+
+function showDivs() {
+  showDiv('ch_staticip', 'div_staticip');
+  showDiv('ch_dhcpd', 'div_dhcpd');
+}
+
+window.onload = showDivs;
+//-->
+</script>
+
+
+<form method='POST'>
+
+  <div style="display: {{DISP_CLIPCONF}}">
+    <p><h2>Client Mode IP Configuration</h2></p>
+    <div id="subcontent">
+      <input id="ch_staticip" type='checkbox' name='staticIP' value='1' {{staticIP}} onclick="showDivs()"> Static IP <br>	
+	  <div id="div_staticip">
+	    IP: <input type='text' name='CLIP' value='{{CLIP}}'> <br>
+		Netmask: <input type='text' name='CLMSK' value='{{CLMSK}}'> <br>
+		Gateway: <input type='text' name='CLGTW' value='{{CLGTW}}'> <br>
+	  </div>
+    </div>
+  </div>
+
+  <div style="display: {{DISP_APIPCONF}}">
+    <p><h2>Access Point Mode IP Configuration</h2></p>
+    <div id="subcontent">
+	    IP: <input type='text' name='APIP' value='{{APIP}}'> <br>
+		Netmask: <input type='text' name='APMSK' value='{{APMSK}}'> <br>
+		Gateway: <input type='text' name='APGTW' value='{{APGTW}}'> <br>
+    </div>
+  </div>
+  
+  <p><h2>DHCP Server Configuration</h2></p>
+  <div id="subcontent">
+    <input id="ch_dhcpd" type='checkbox' name='DHCPD' value='1' {{DHCPD}} onclick="showDivs()"> Enable DHCP Server <br>	
+    <div id="div_dhcpd">
+      Start IP: <input type='text' name='startIP' value='{{startIP}}'> <br>
+	  End IP: <input type='text' name='endIP' value='{{endIP}}'> <br>
+	  Max Leases: <input type='text' name='maxLeases' value='{{maxLeases}}'> <br>
+    </div>
+  </div>
+  
+  <input type='submit' value='Save'>
+</form>

@@ -296,7 +296,7 @@ public:
 		KeyIterator   keyEnd;		
 		ValueIterator value;
 		ValueIterator valueEnd;
-		Ptr<char>     valueStr;	// dynamically allocated zero terminated value string (created by operator[])
+		APtr<char>    valueStr;	// dynamically allocated zero terminated value string (created by operator[])
 		
 		Item(KeyIterator key_, KeyIterator keyEnd_, ValueIterator value_, ValueIterator valueEnd_)
 			: next(NULL), key(key_), keyEnd(keyEnd_), value(value_), valueEnd(valueEnd_)

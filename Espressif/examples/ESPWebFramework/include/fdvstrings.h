@@ -408,6 +408,29 @@ static inline bool FUNC_FLASHMEM isdigit(char c)
 
 
 
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+// f_printf
+// allocates a string. You should free it using delete[]
+static inline char* FUNC_FLASHMEM f_printf(char const *fmt, ...)
+{
+	va_list args;
+	
+	va_start(args, fmt);
+	uint16_t len = vsprintf(NULL, fmt, args);
+	va_end(args);
+
+	char* buf = new char[len + 1];
+	
+	va_start(args, fmt);
+	vsprintf(buf, fmt, args);
+	va_end(args);
+
+	return buf;
+}
+
+
+
 
 
 
