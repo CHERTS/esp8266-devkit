@@ -6,9 +6,9 @@
 #include <osapi.h>
 #include <os_type.h>
 #include <gpio.h>
+#include "user_config.h"
 
 #define DELAY 1000 /* milliseconds */
-#define ICACHE_IRAM_ATTR __attribute__((section(".text")))
 
 // =============================================================================================
 // C includes and declarations
