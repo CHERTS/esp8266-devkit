@@ -22,7 +22,8 @@ ESPTOOL		?= $(TOOLS_ROOT)/utils/esptool.exe
 ESPPORT		?= COM2
 
 WEBDIR = ./webcontent/
-MAXWEBCONTENT = 176128
+WEBCONTENTADDRS = 0x17000
+MAXWEBCONTENT = 167936
 
 # name for the target project
 TARGET		= app
@@ -37,7 +38,7 @@ LIBS		= gcc hal phy pp net80211 wpa main freertos lwip udhcp
 
 # compiler flags using during compilation of source files
 CFLAGS		= -g -save-temps -Os -Wpointer-arith -Wundef -Werror -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
-CXXFLAGS	= $(CFLAGS) -fno-rtti -fno-exceptions -fno-threadsafe-statics
+CXXFLAGS	= $(CFLAGS) -fno-rtti -fno-exceptions -fno-threadsafe-statics -fno-use-cxa-atexit
 
 # linker flags used to generate the main object file
 LDFLAGS		= -nostdlib -Wl,--no-check-sections -u call_user_start -Wl,-static
@@ -114,8 +115,16 @@ iromlibs:
 $(TARGET_OUT): $(APP_AR)
 	$(vecho) "LD $@"
 	$(Q) $(LD) -L$(SDK_LIBDIR) $(LD_SCRIPT) $(LDFLAGS) -Wl,--start-group $(LIBS) $(APP_AR) -Wl,--end-group -o $@
+	$(vecho) "------------------------------------------------------------------------------"
 	$(vecho) "Section info:"
 	$(Q) $(OBJDUMP) -h -j .data -j .rodata -j .bss -j .text -j .irom0.text $@
+	$(vecho) "------------------------------------------------------------------------------"
+	$(vecho) "Section info:"
+	$(Q) $(TOOLS_ROOT)/utils/memanalyzer.exe $(OBJDUMP).exe $@
+	$(vecho) "------------------------------------------------------------------------------"
+	$(vecho) "Map content..."
+	$(Q) $(OBJDUMP) -t -j .text $@ >_text_content.map
+	$(Q) $(OBJDUMP) -t -j .irom0.text $@ >_irom0_text_content.map
 	$(vecho) "Run objcopy, please wait..."
 	$(Q) $(OBJCOPY) --only-section .text -O binary $@ eagle.app.v6.text.bin
 	$(Q) $(OBJCOPY) --only-section .data -O binary $@ eagle.app.v6.data.bin
@@ -155,7 +164,7 @@ flashinit:
 	$(ESPTOOL) -p $(ESPPORT) write_flash 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
 
 flashweb: webcontent
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x15000 webcontent.bin
+	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash $(WEBCONTENTADDRS) webcontent.bin
 
 webcontent:
 	binarydir.exe $(WEBDIR) webcontent.bin $(MAXWEBCONTENT)
@@ -169,6 +178,8 @@ clean:
 	$(Q) rm -f *.sym
 	$(Q) rm -f *.ii
 	$(Q) rm -f *.s
+	$(Q) rm -f *.expand
+	$(Q) rm -f *.map
 	$(Q) rm -f webcontent.bin
 	$(Q) rm -rf $(BUILD_DIR)
 	$(Q) rm -rf $(BUILD_BASE)

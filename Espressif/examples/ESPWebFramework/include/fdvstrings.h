@@ -47,7 +47,7 @@ namespace fdv
 // If str or substr is in RAM or Flash use CharIterator
 // If str or substr is in Chunk use ChunkBuffer<...>::Iterator
 template <typename IteratorSTR, typename IteratorSUBSTR>
-static IteratorSTR FUNC_FLASHMEM t_strstr(IteratorSTR str, IteratorSUBSTR substr)
+IteratorSTR t_strstr(IteratorSTR str, IteratorSUBSTR substr)
 {
 	IteratorSTR string(str);
 	IteratorSUBSTR b(substr);
@@ -78,7 +78,7 @@ static IteratorSTR FUNC_FLASHMEM t_strstr(IteratorSTR str, IteratorSUBSTR substr
 // If str or substr is in RAM or Flash use CharIterator
 // If str or substr is in Chunk use ChunkBuffer<...>::Iterator
 template <typename IteratorSTR, typename IteratorSUBSTR>
-static IteratorSTR FUNC_FLASHMEM t_strstr(IteratorSTR str, IteratorSTR strEnd, IteratorSUBSTR substr)
+IteratorSTR t_strstr(IteratorSTR str, IteratorSTR strEnd, IteratorSUBSTR substr)
 {
 	IteratorSUBSTR b(substr);
 	if (*b == 0)
@@ -107,7 +107,7 @@ static IteratorSTR FUNC_FLASHMEM t_strstr(IteratorSTR str, IteratorSTR strEnd, I
 // If s1 or s2 is in RAM or Flash use CharIterator
 // If s1 or s2 is in Chunk use ChunkBuffer<...>::Iterator
 template <typename IteratorS1, typename IteratorS2>
-static int32 FUNC_FLASHMEM t_strcmp(IteratorS1 s1, IteratorS2 s2)
+int32 t_strcmp(IteratorS1 s1, IteratorS2 s2)
 {
 	while(*s1 && (*s1 == *s2))
 		++s1, ++s2;
@@ -119,7 +119,7 @@ static int32 FUNC_FLASHMEM t_strcmp(IteratorS1 s1, IteratorS2 s2)
 /////////////////////////////////////////////////////////////////////////
 // t_compare
 template <typename IteratorS1, typename IteratorS2>
-static bool FUNC_FLASHMEM t_compare(IteratorS1 s1, IteratorS1 s1End, IteratorS2 s2, IteratorS2 s2End)
+bool t_compare(IteratorS1 s1, IteratorS1 s1End, IteratorS2 s2, IteratorS2 s2End)
 {
 	while(s1 != s1End && s2 != s2End && *s1 == *s2)
 		++s1, ++s2;
@@ -128,7 +128,7 @@ static bool FUNC_FLASHMEM t_compare(IteratorS1 s1, IteratorS1 s1End, IteratorS2 
 
 // s1 must be zero terminated
 template <typename IteratorS1, typename IteratorS2>
-static bool FUNC_FLASHMEM t_compare(IteratorS1 s1, IteratorS2 s2, IteratorS2 s2End)
+bool t_compare(IteratorS1 s1, IteratorS2 s2, IteratorS2 s2End)
 {
 	while(*s1 && s2 != s2End && *s1 == *s2)
 		++s1, ++s2;
@@ -142,7 +142,7 @@ static bool FUNC_FLASHMEM t_compare(IteratorS1 s1, IteratorS2 s2, IteratorS2 s2E
 // If s1 or s2 is in RAM or Flash use CharIterator
 // If s1 or s2 is in Chunk use ChunkBuffer<...>::Iterator
 template <typename IteratorS1, typename IteratorS2>
-static int32 FUNC_FLASHMEM t_memcmp(IteratorS1 s1, IteratorS2 s2, uint32_t length)
+int32 t_memcmp(IteratorS1 s1, IteratorS2 s2, uint32_t length)
 {
 	while(length--)
 	{
@@ -160,7 +160,7 @@ static int32 FUNC_FLASHMEM t_memcmp(IteratorS1 s1, IteratorS2 s2, uint32_t lengt
 // If source is in RAM or Flash use CharIterator
 // If source is in Chunk use ChunkBuffer<...>::Iterator
 template <typename Iterator>
-static char* FUNC_FLASHMEM t_strcpy(char* destination, Iterator source)
+char* t_strcpy(char* destination, Iterator source)
 {
 	char* dest = destination;
 	while (*dest++ = *source++);
@@ -174,7 +174,7 @@ static char* FUNC_FLASHMEM t_strcpy(char* destination, Iterator source)
 // If source is in RAM or Flash use ByteIterator
 // If source is in Chunk use ChunkBuffer<...>::Iterator
 template <typename Iterator>
-static void* FUNC_FLASHMEM t_memcpy(void* destination, Iterator source, uint32_t length)
+void* t_memcpy(void* destination, Iterator source, uint32_t length)
 {
 	uint8_t* dest = (uint8_t*)destination;
 	while(length--)
@@ -189,7 +189,7 @@ static void* FUNC_FLASHMEM t_memcpy(void* destination, Iterator source, uint32_t
 // If str is in RAM or Flash use CharIterator
 // If str is in Chunk use ChunkBuffer<...>::Iterator
 template <typename Iterator>
-static uint32_t FUNC_FLASHMEM t_strlen(Iterator str)
+uint32_t t_strlen(Iterator str)
 {
 	uint32_t len = 0;
 	for (; *str; ++str, ++len);
@@ -203,7 +203,7 @@ static uint32_t FUNC_FLASHMEM t_strlen(Iterator str)
 // If str is in RAM or Flash use CharIterator
 // If str is in Chunk use ChunkBuffer<...>::Iterator
 template <typename Iterator>
-static uint32_t FUNC_FLASHMEM t_strnlen(Iterator str, uint32_t maxlen)
+uint32_t t_strnlen(Iterator str, uint32_t maxlen)
 {
 	uint32_t len = 0;
 	for (; len != maxlen && *str; ++str, ++len);
@@ -218,14 +218,14 @@ static uint32_t FUNC_FLASHMEM t_strnlen(Iterator str, uint32_t maxlen)
 // If source is in Chunk use ChunkBuffer<...>::Iterator
 // use delete[] to free memory
 template <typename Iterator>
-static char* FUNC_FLASHMEM t_strdup(Iterator source)
+char* t_strdup(Iterator source)
 {
 	return t_strcpy(new char[t_strlen(source) + 1], source);
 }
 
 // adds automatically ending zero
 template <typename Iterator>
-static char* FUNC_FLASHMEM t_strdup(Iterator sourceStart, Iterator sourceEnd)
+char* t_strdup(Iterator sourceStart, Iterator sourceEnd)
 {
 	uint32_t len = sourceEnd - sourceStart;
 	char* str = new char[len + 1];
@@ -243,7 +243,7 @@ static char* FUNC_FLASHMEM t_strdup(Iterator sourceStart, Iterator sourceEnd)
 // If source is in Chunk use ChunkBuffer<...>::Iterator
 // use delete[] to free memory
 template <typename Iterator>
-static void* FUNC_FLASHMEM t_memdup(Iterator source, uint32_t length)
+void* t_memdup(Iterator source, uint32_t length)
 {
 	return t_memcpy(new uint8_t[length], source, length);
 }
@@ -253,7 +253,7 @@ static void* FUNC_FLASHMEM t_memdup(Iterator source, uint32_t length)
 /////////////////////////////////////////////////////////////////////////
 // t_strtol
 template <typename Iterator>
-static int32_t FUNC_FLASHMEM t_strtol(Iterator str, int32_t base)
+int32_t t_strtol(Iterator str, int32_t base)
 {
 	APtr<char> tempbuf(t_strdup(str));
 	return strtol(tempbuf.get(), NULL, base);
@@ -281,17 +281,17 @@ static int32_t FUNC_FLASHMEM t_strtol(Iterator str, int32_t base)
 ///////////////////////////////////////////////////////////////////////////////////////
 // f_strlen
 // str can be stored in Flash or/and in RAM
-static inline uint32_t FUNC_FLASHMEM f_strlen(char const* str)
+inline uint32_t f_strlen(char const* str)
 {
 	return t_strlen(CharIterator(str));
 }
 
-
+	
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
 // f_strnlen
 // str can be stored in Flash or/and in RAM
-static inline uint32_t FUNC_FLASHMEM f_strnlen(char const* str, uint32_t maxlen)
+inline uint32_t f_strnlen(char const* str, uint32_t maxlen)
 {
 	return t_strnlen(CharIterator(str), maxlen);
 }
@@ -301,7 +301,7 @@ static inline uint32_t FUNC_FLASHMEM f_strnlen(char const* str, uint32_t maxlen)
 ///////////////////////////////////////////////////////////////////////////////////////
 // f_strcpy
 // source can be stored in Flash or/and in RAM
-static inline char* FUNC_FLASHMEM f_strcpy(char* destination, char const* source)
+inline char* f_strcpy(char* destination, char const* source)
 {
 	return t_strcpy(destination, CharIterator(source));
 }
@@ -312,13 +312,13 @@ static inline char* FUNC_FLASHMEM f_strcpy(char* destination, char const* source
 // f_strdup
 // use delete[] to free memory
 // str can be stored in Flash or/and in RAM
-static inline char* FUNC_FLASHMEM f_strdup(char const* str)
+inline char* f_strdup(char const* str)
 {
 	return t_strdup(CharIterator(str));
 }
 
 // adds automatically ending zero
-static inline char* FUNC_FLASHMEM f_strdup(char const* sourceStart, char const* sourceEnd)
+inline char* f_strdup(char const* sourceStart, char const* sourceEnd)
 {
 	return t_strdup(CharIterator(sourceStart), CharIterator(sourceEnd));
 }
@@ -329,7 +329,7 @@ static inline char* FUNC_FLASHMEM f_strdup(char const* sourceStart, char const* 
 // f_memdup
 // use delete[] to free memory
 // str can be stored in Flash or/and in RAM
-static inline void* FUNC_FLASHMEM f_memdup(void const* buffer, uint32_t length)
+inline void* f_memdup(void const* buffer, uint32_t length)
 {
 	return t_memdup(ByteIterator((uint8_t const*)buffer), length);
 }
@@ -339,7 +339,7 @@ static inline void* FUNC_FLASHMEM f_memdup(void const* buffer, uint32_t length)
 ///////////////////////////////////////////////////////////////////////////////////////
 // f_strcmp
 // both s1 and s2 can be stored in Flash or/and in RAM
-static inline int32_t FUNC_FLASHMEM f_strcmp(char const* s1, char const* s2)
+inline int32_t f_strcmp(char const* s1, char const* s2)
 {
 	return t_strcmp(CharIterator(s1), CharIterator(s2));
 }
@@ -349,7 +349,7 @@ static inline int32_t FUNC_FLASHMEM f_strcmp(char const* s1, char const* s2)
 ///////////////////////////////////////////////////////////////////////////////////////
 // f_memcmp
 // both s1 and s2 can be stored in Flash or/and in RAM
-static inline int32_t FUNC_FLASHMEM f_memcmp(void const* s1, void const* s2, uint32_t length)
+inline int32_t f_memcmp(void const* s1, void const* s2, uint32_t length)
 {
 	return t_memcmp(ByteIterator((uint8_t const*)s1), ByteIterator((uint8_t const*)s2), length);
 }
@@ -359,7 +359,7 @@ static inline int32_t FUNC_FLASHMEM f_memcmp(void const* s1, void const* s2, uin
 ///////////////////////////////////////////////////////////////////////////////////////
 // f_memcpy
 // source can be stored in Flash or/and in RAM
-static void* FUNC_FLASHMEM f_memcpy(void* destination, void const* source, uint32_t length)
+inline void* f_memcpy(void* destination, void const* source, uint32_t length)
 {
 	return t_memcpy(destination, ByteIterator((uint8_t const*)source), length);
 }
@@ -369,12 +369,12 @@ static void* FUNC_FLASHMEM f_memcpy(void* destination, void const* source, uint3
 ///////////////////////////////////////////////////////////////////////////////////////
 // f_strstr
 // both str and substr can be stored in Flash or/and RAM
-static inline char const* FUNC_FLASHMEM f_strstr(char const* str, char const* substr)
+inline char const* f_strstr(char const* str, char const* substr)
 {
 	return t_strstr(CharIterator(str), CharIterator(substr)).get();
 }
 
-static inline char const* FUNC_FLASHMEM f_strstr(char const* str, char const* strEnd, char const* substr)
+inline char const* f_strstr(char const* str, char const* strEnd, char const* substr)
 {
 	return t_strstr(CharIterator(str), CharIterator(strEnd), CharIterator(substr)).get();
 }
@@ -383,7 +383,7 @@ static inline char const* FUNC_FLASHMEM f_strstr(char const* str, char const* st
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 // isspace
-static inline bool FUNC_FLASHMEM isspace(char c)
+inline bool isspace(char c)
 {
 	return (c == ' ' || c == '\t' || c == '\n' || c == '\v' || c == '\f' || c == '\r');
 }
@@ -392,7 +392,7 @@ static inline bool FUNC_FLASHMEM isspace(char c)
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 // isalpha
-static inline bool FUNC_FLASHMEM isalpha(char c)
+inline bool isalpha(char c)
 {
 	return ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'));
 }
@@ -401,34 +401,62 @@ static inline bool FUNC_FLASHMEM isalpha(char c)
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 // isdigit
-static inline bool FUNC_FLASHMEM isdigit(char c)
+inline bool isdigit(char c)
 {
-	return (c >= '0' && c <= '9');
+    return (c >= '0' && c <= '9');
 }
 
+
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+// isxdigit
+inline bool isxdigit(char c)
+{
+    return isdigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+}
+
+
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+// isupper
+inline bool isupper(char c)
+{
+    return c >= 'A' && c <= 'Z';
+}
+
+
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+// islower
+inline bool islower(char c)
+{
+    return c >= 'a' && c <= 'z';
+}
+
+
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+// hexDigitToInt
+// assume x is a valid hex digit
+inline uint32_t hexDigitToInt(char x)
+{
+    return isdigit(x)? x - '0' : (islower(x)? x - 'a' + 10 : x - 'A' + 10);
+}
 
 
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 // f_printf
 // allocates a string. You should free it using delete[]
-static inline char* FUNC_FLASHMEM f_printf(char const *fmt, ...)
-{
-	va_list args;
-	
-	va_start(args, fmt);
-	uint16_t len = vsprintf(NULL, fmt, args);
-	va_end(args);
+char* f_printf(char const *fmt, ...);
 
-	char* buf = new char[len + 1];
-	
-	va_start(args, fmt);
-	vsprintf(buf, fmt, args);
-	va_end(args);
 
-	return buf;
-}
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+// inplaceURLDecode
+// str can stay only in RAM
 
+char* inplaceURLDecode(char* str);
 
 
 

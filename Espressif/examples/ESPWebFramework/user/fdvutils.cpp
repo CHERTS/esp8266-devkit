@@ -42,15 +42,15 @@ void *__dso_handle;
 namespace fdv
 {
 
-void* MTD_FLASHMEM Memory::malloc(uint32_t size)
-{
-	return mem_malloc(size);
-}
+	void* STC_FLASHMEM Memory::malloc(uint32_t size)
+	{
+		return mem_malloc(size);
+	}
 
-void MTD_FLASHMEM Memory::free(void* ptr)
-{
-	mem_free(ptr);
-}
+	void STC_FLASHMEM Memory::free(void* ptr)
+	{
+		mem_free(ptr);
+	}
 
 }
 
@@ -97,8 +97,40 @@ void FUNC_FLASHMEM __cxa_deleted_virtual(void)
 }
 
 
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+// reboot
+// creates a task and reboot after specified time (ms)
+
+namespace fdv
+{
+
+	struct RebootTask : Task
+	{
+		RebootTask(uint32_t time) 
+			: Task(false, 400), m_time(time)
+		{
+		}
+		
+		void MTD_FLASHMEM exec()
+		{
+			delay(m_time);
+			EnableWatchDog();
+			taskENTER_CRITICAL();
+			taskDISABLE_INTERRUPTS();
+			while(1);	// reset using watchdog
+		}
+		
+		uint32_t m_time;
+	};
+
+
+	void FUNC_FLASHMEM reboot(uint32_t time)
+	{	
+		new RebootTask(time);
+	}
+
+}
 
 
 
-////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////

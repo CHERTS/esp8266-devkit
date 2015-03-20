@@ -5,28 +5,23 @@ Reboot
 
 {%content%}
 
-<form name="redirect">
-  Restarting...<br><br>
-  <form>
-    <input type="text" size="3" name="redirect2">
-  </form>
+<p>Restarting...<span id="cnt"></span> <p>
+<p>If reset doesn't occur, turn the device off and then back on again to reset it.</p>
 
 <script>
 <!--
-var targetURL="/"
-var countdownfrom=15
-var currentsecond=document.redirect.redirect2.value=countdownfrom+1
-function countredirect(){
-  if (currentsecond!=1){
-    currentsecond-=1
-    document.redirect.redirect2.value=currentsecond
+var sec = 25
+function cdown() {
+  if (sec != 1) {
+    sec -= 1
+	document.getElementById('cnt').innerHTML = sec
   }
   else{
-    window.location=targetURL
+    window.location = "/"
     return
   }
-  setTimeout("countredirect()",1000)
+  setTimeout("cdown()", 1000)
 }
-countredirect()
+cdown()
 //-->
 </script>

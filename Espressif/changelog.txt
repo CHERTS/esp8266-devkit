@@ -1,6 +1,10 @@
 Changelog:
 ----------
 
+v1.0.13 (18.04.2015):
+* Updated examples:
+  ESPWebFramework;
+
 v1.0.12 (18.03.2015):
 + Added new examples:
   at - an example of using the library "libat" from Espressif (compiled, works correctly);

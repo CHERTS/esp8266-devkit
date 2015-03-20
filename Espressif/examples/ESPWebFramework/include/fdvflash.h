@@ -31,7 +31,7 @@
 
 // Flash from 0x0 to 0x8000      mapped to 0x40100000, len = 0x8000 (32KBytes)    - ".text"
 // Flash from 0x40000 to 0x7C000 mapped to 0x40240000, len = 0x3C000 (240KBytes)  - ".irom0.text"
-// Other content (settings, web files) may be written starting from 0x14000, with maximum (0x2C000) 180KBytes (usable in blocks of 4K)
+
 
 static uint32_t const FLASH_MAP_START = 0x40200000;
 
@@ -44,7 +44,7 @@ namespace fdv
 	///////////////////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////////////
 	// isStoredInFlash
-	static inline bool FUNC_FLASHMEM isStoredInFlash(void const* ptr)
+	inline bool isStoredInFlash(void const* ptr)
 	{
 		return (uint32_t)ptr >= 0x40200000 && (uint32_t)ptr < 0x40300000;
 	}
@@ -56,16 +56,7 @@ namespace fdv
 	// flash mapped "text" is readable as 4 byte aligned blocks
 	// works with both RAM and Flash stored data
 	// str must be 32 bit aligned
-	static inline char FUNC_FLASHMEM getChar(char const* str, uint32_t index)
-	{
-		if (isStoredInFlash(str))
-		{
-			uint32_t u32 = ((uint32_t const*)str)[index >> 2];
-			return ((char const*)&u32)[index & 0x3];
-		}
-		else
-			return str[index];
-	}
+	char getChar(char const* str, uint32_t index);
 
 
 	///////////////////////////////////////////////////////////////////////////////////////
@@ -75,18 +66,7 @@ namespace fdv
 	// works with both RAM and Flash stored data
 	// Returns first char of str
 	// str may Not be 32 bit aligned
-	static inline char FUNC_FLASHMEM getChar(char const* str)
-	{
-		if (isStoredInFlash(str))
-		{
-			uint32_t index = (uint32_t)str & 0x3;
-			str = (char const*)((uint32_t)str & 0xFFFFFFFC);  // align str
-			uint32_t u32 = *((uint32_t const*)str);
-			return ((char const*)&u32)[index];
-		}
-		else
-			return *str;
-	}		
+	char getChar(char const* str);
 
 
 	///////////////////////////////////////////////////////////////////////////////////////
@@ -94,7 +74,7 @@ namespace fdv
 	// getByte
 	// like getChar but for uint8_t
 	// buffer can be unaligned
-	static inline uint8_t FUNC_FLASHMEM getByte(void const* buffer)
+	inline uint8_t getByte(void const* buffer)
 	{
 		return (uint8_t)getChar((char const*)buffer);
 	}
@@ -106,11 +86,7 @@ namespace fdv
 	// like getByte but for uint16_t
 	// buffer can be unaligned
 	// read as little-endian
-	static inline uint16_t FUNC_FLASHMEM getWord(void const* buffer)
-	{
-		char const* pc = (char const*)buffer;
-		return (uint8_t)getChar(pc) | ((uint8_t)getChar(pc + 1) << 8);
-	}
+	uint16_t getWord(void const* buffer);
 
 
 	///////////////////////////////////////////////////////////////////////////////////////
@@ -119,11 +95,7 @@ namespace fdv
 	// like getWord but for uint32_t
 	// buffer can be unaligned
 	// read as little-endian
-	static inline uint32_t FUNC_FLASHMEM getDWord(void const* buffer)
-	{
-		char const* pc = (char const*)buffer;
-		return (uint8_t)getChar(pc) | ((uint8_t)getChar(pc + 1) << 8) | ((uint8_t)getChar(pc + 2) << 16) | ((uint8_t)getChar(pc + 3) << 24);
-	}
+	uint32_t getDWord(void const* buffer);
 	
 	
 	//////////////////////////////////////////////////////////////////////

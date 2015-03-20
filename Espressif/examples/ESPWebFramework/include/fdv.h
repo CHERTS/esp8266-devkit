@@ -51,6 +51,8 @@ extern "C"
 // used for methods
 #define MTD_FLASHMEM __attribute__((section(".irom1.text")))
 
+// used for static methods
+#define STC_FLASHMEM __attribute__((section(".irom3.text")))
 
 #include "fdvprintf.h"
 #include "fdvdebug.h"

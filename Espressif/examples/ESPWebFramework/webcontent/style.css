@@ -24,7 +24,7 @@ footer, header, hgroup, menu, nav, section {
 display: block;
 }
 body {
-line-height: 25px;
+line-height: 15px;
 }
 ol, ul {
 list-style: none;
@@ -51,8 +51,16 @@ body {
 	background-image: url("/bkg.gif")
 }
 
+input {
+    font-size:14px;
+}
+
 p {
     padding: 10px;
+}
+
+br {
+  line-height:22px;
 }
 
 h1 { font-size: 2em; }
@@ -64,39 +72,39 @@ h6 { font-size: .75em; }
 
 #wrapper {
     margin: 0 auto;
-    width: 1000px;
+    width: 800px;
 }
 
 #headerwrap {
-    width: 1000px;
+    width: 800px;
     float: left;
     margin: 0 auto;
 }
 
 #header {
-    height: 75px;
-    background: #FF6633;
+    height: 60px;
+    background: #FF9966;
     border-radius: 10px;
     border: 1px solid #eb521f;
     margin: 5px;
 }
 
 #navigationwrap {
-    width: 1000px;
+    width: 800px;
     float: left;
     margin: 0 auto;
 }
 
 #navigation {
     height: 40px;
-    background: #FFCC33;
+    background: #FFEE55;
     border-radius: 10px;
     border: 1px solid #ebb81f;
     margin: 5px;
 }
 
 #contentwrap {
-    width: 850px;
+    width: 650px;
     float: left;
     margin: 0 auto;
 }
@@ -129,17 +137,54 @@ h6 { font-size: .75em; }
 }
 
 #footerwrap {
-    width: 1000px;
+    width: 800px;
     float: left;
     margin: 0 auto;
     clear: both;
 }
 
 #footer {
-    height: 40px;
-    background: #33FF66;
+    height: 70px;
+    background: #77FFAA;
     border-radius: 10px;
     border: 1px solid #1feb52;
     margin: 5px;
+	text-align: center;	
 }
 
+.link_button {
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    border-radius: 4px;
+    border: solid 1px #20538D;
+    text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.4);
+    -webkit-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 1px 1px rgba(0, 0, 0, 0.2);
+    -moz-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 1px 1px rgba(0, 0, 0, 0.2);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 1px 1px rgba(0, 0, 0, 0.2);
+    background: #4479BA;
+    color: #FFF;
+    padding: 3px 3px;
+    text-decoration: none;	
+	max-width: 70px;
+	width: 100%;
+	display: inline-block;
+	text-align: center;	
+}
+
+input[type=submit]{
+	-webkit-box-shadow:rgba(0,0,0,0.0.1) 0 1px 0 0;
+	-moz-box-shadow:rgba(0,0,0,0.0.1) 0 1px 0 0;
+	box-shadow:rgba(0,0,0,0.0.1) 0 1px 0 0;
+	background-color:#E0E0E0;
+	border:1px solid #29447E;
+	font-size:12px;
+	font-weight:700;
+	padding:2px 6px;
+	height:28px;
+	width:70px;
+	color:#0;
+	border-radius:5px;
+	-moz-border-radius:5px;
+	-webkit-border-radius:5px;
+	margin: 5px;
+}

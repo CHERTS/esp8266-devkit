@@ -32,7 +32,9 @@ struct MyHTTPHandler : public fdv::HTTPHandler
 			{FSTR("/"),	         (PageHandler)&MyHTTPHandler::get_home},
 			{FSTR("/confwifi"),  (PageHandler)&MyHTTPHandler::get_confwifi},
 			{FSTR("/confnet"),   (PageHandler)&MyHTTPHandler::get_confnet},
+			{FSTR("/confuart"),  (PageHandler)&MyHTTPHandler::get_confuart},
 			{FSTR("/reboot"),    (PageHandler)&MyHTTPHandler::get_reboot},
+			{FSTR("/restore"),   (PageHandler)&MyHTTPHandler::get_restore},
 			{FSTR("*"),          (PageHandler)&MyHTTPHandler::get_all},
 		};
 		setRoutes(routes, sizeof(routes) / sizeof(Route));
@@ -40,6 +42,7 @@ struct MyHTTPHandler : public fdv::HTTPHandler
 	
 	void MTD_FLASHMEM get_home()
 	{
+		//debug("get_home()\r\n");
 		fdv::HTTPTemplateResponse response(this, FSTR("base.html"));
 		response.addParam(FSTR("title"), FSTR("ESP8266 WebFramework"));
 		response.addParam(FSTR("content"), FSTR("Please select a menu item on the left"));
@@ -57,14 +60,34 @@ struct MyHTTPHandler : public fdv::HTTPHandler
 		fdv::HTTPNetworkConfigurationResponse response(this, FSTR("confignet.html"));
 		response.flush();
 	}
+
+	void MTD_FLASHMEM get_confuart()
+	{
+		fdv::HTTPUARTConfigurationResponse response(this, FSTR("configuart.html"));
+		response.flush();
+	}
 	
 	void MTD_FLASHMEM get_reboot()
 	{
 		fdv::HTTPTemplateResponse response(this, FSTR("reboot.html"));
-		fdv::reboot(4000);	// reboot in 4s
+		fdv::reboot(3000);	// reboot in 3s
 		response.flush();
 	}
 
+	void MTD_FLASHMEM get_restore()
+	{
+		if (getRequest().method == HTTPHandler::Get)
+		{
+			fdv::HTTPTemplateResponse response(this, FSTR("restore.html"));
+			response.flush();
+		}
+		else
+		{
+			fdv::ConfigurationManager::restore();
+			get_reboot();
+		}
+	}
+	
 	void MTD_FLASHMEM get_all()
 	{
 		//debug("get %s\r\n", fdv::APtr<char>(t_strdup(getRequest().requestedPage)).get());		 
@@ -79,7 +102,7 @@ struct MainTask : fdv::Task
 {
 
 	MainTask()
-		: fdv::Task(false, 400)
+		: fdv::Task(false, 512)
 	{		
 	}
 
@@ -88,15 +111,15 @@ struct MainTask : fdv::Task
 	{
 		//fdv::DisableStdOut(); 
 		fdv::DisableWatchDog();		
-		fdv::Serial* m_serial = new fdv::HardwareSerial(115200, 128);
-
-		m_serial->printf(FSTR("\n\rESPWebFramework started.\n\r"));
-		m_serial->printf(FSTR("Press <h> key to help.\n\r"));
+		fdv::Serial* m_serial = fdv::HardwareSerial::getSerial(0);
 
 		fdv::ConfigurationManager::apply();
 
 		new fdv::TCPServer<MyHTTPHandler, 2, 512>(80);
-		
+
+		m_serial->printf(FSTR("\n\rESPWebFramework started.\n\r"));
+		m_serial->printf(FSTR("Press <h> key to help.\n\r"));
+
 		// just as serial emergency console!
 		while (1)
 		{
@@ -118,7 +141,8 @@ struct MainTask : fdv::Task
 						m_serial->printf(FSTR("4    = start Client mode dynamic IP\r\n"));
 						break;
 					case 'r':
-						system_restart();
+						//system_restart();
+						fdv::reboot(500);
 						break;
 					case '0':
 						fdv::FlashDictionary::eraseContent();
@@ -128,13 +152,13 @@ struct MainTask : fdv::Task
 						// Access point
 						fdv::WiFi::setMode(fdv::WiFi::AccessPoint);
 						fdv::WiFi::configureAccessPoint("MyESP", "myesp111", 9);
-						fdv::IP::configureStatic(fdv::IP::AccessPointNetwork, "192.168.5.1", "255.255.255.0", "192.168.5.1");						
+						fdv::IP::configureStatic(fdv::IP::AccessPointNetwork, "192.168.4.1", "255.255.255.0", "192.168.4.1");						
 						m_serial->printf(FSTR("Reboot and enable DHCP server (2)\r\n"));
 						m_serial->printf(FSTR("Ok\r\n"));
 						break;
 					case '2':
 						// Enable DHCP server
-						fdv::IP::configureStatic(fdv::IP::AccessPointNetwork, "192.168.5.1", "255.255.255.0", "192.168.5.1");						
+						fdv::IP::configureStatic(fdv::IP::AccessPointNetwork, "192.168.4.1", "255.255.255.0", "192.168.4.1");						
 						fdv::DHCPServer::configure("192.168.5.100", "192.168.5.110", 10);
 						m_serial->printf(FSTR("Ok\r\n"));
 						break;
@@ -151,14 +175,7 @@ struct MainTask : fdv::Task
 						fdv::WiFi::configureClient("OSPITI", "P31415926");
 						fdv::IP::configureDHCP(fdv::IP::ClientNetwork);
 						m_serial->printf(FSTR("Ok\r\n"));
-						break;
-					case '5':
-					{
-						new fdv::TCPServer<MyHTTPHandler, 2, 512>(80);
-						m_serial->printf(FSTR("Ok\r\n"));
-						break;
-					}
-					
+						break;					
 				}
 			}
 		}		

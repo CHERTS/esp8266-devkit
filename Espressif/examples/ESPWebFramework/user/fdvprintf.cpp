@@ -66,7 +66,7 @@ struct Str
 		: m_buffer(buffer), m_length(0)
 	{
 	}
-	char* operator ++(int)
+	char* operator++(int)
 	{
 		if (m_buffer)
 			return &m_buffer[m_length++];

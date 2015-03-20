@@ -56,6 +56,72 @@ namespace fdv
 	}
 	
 	
+	//////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////
+	// Serial
+
+
+	uint16_t MTD_FLASHMEM Serial::read(uint8_t* buffer, uint16_t bufferLen)
+	{
+		uint16_t ret = 0;
+		for (int16_t c; bufferLen > 0 && (c = read()) > -1; --bufferLen, ++ret)
+		{
+			*buffer++ = c;
+		}
+		return ret;
+	}			
+	
+
+	void MTD_FLASHMEM Serial::writeNewLine()
+	{
+		write(0x0D);
+		write(0x0A);	
+	}
+	
+	
+	void MTD_FLASHMEM Serial::write(uint8_t const* buffer, uint16_t bufferLen)
+	{
+		for (;bufferLen > 0; --bufferLen)
+			write(*buffer++);
+	}
+	
+	
+	void MTD_FLASHMEM Serial::write(char const* str)
+	{
+		while (*str)
+			write(*str++);
+	}
+	
+
+	void MTD_FLASHMEM Serial::writeln(char const* str)
+	{
+		write(str);
+		writeNewLine();
+	}
+	
+	
+	// buf can stay in RAM or Flash
+	// "strings" of args can stay in RAM or Flash
+	uint16_t MTD_FLASHMEM Serial::printf(char const *fmt, ...)
+	{
+		va_list args;
+		
+		va_start(args, fmt);
+		uint16_t len = vsprintf(NULL, fmt, args);
+		va_end(args);
+
+		char buf[len + 1];
+		
+		va_start(args, fmt);
+		vsprintf(buf, fmt, args);
+		va_end(args);
+		
+		write(buf);
+
+		return len;
+	}
+	
+	
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
 	// HardwareSerial
@@ -64,6 +130,58 @@ namespace fdv
 	HardwareSerial* HardwareSerial::s_serials[1] = {0};
 	
 
+	HardwareSerial* MTD_FLASHMEM HardwareSerial::getSerial(uint32_t uart)
+	{
+		if (s_serials[uart] == NULL)
+			s_serials[uart] = new HardwareSerial;
+		return s_serials[uart];
+	}
+	
+	
+	// call only from ISR
+	void MTD_FLASHMEM HardwareSerial::put(uint8_t value)
+	{
+		m_queue.sendFromISR(value);
+	}
+	
+	
+	int16_t MTD_FLASHMEM HardwareSerial::peek()
+	{
+		uint8_t ret;
+		if (m_queue.peek(&ret, 0))
+			return ret;
+		return -1;
+	}
+	
+	
+	int16_t MTD_FLASHMEM HardwareSerial::read()
+	{
+		uint8_t ret;
+		if (m_queue.receive(&ret, 0))
+			return ret;
+		return -1;				
+	}
+	
+	
+	uint16_t MTD_FLASHMEM HardwareSerial::available()
+	{
+		return m_queue.available();
+	}
+	
+	
+	void MTD_FLASHMEM HardwareSerial::flush()
+	{
+		m_queue.clear();
+	}
+	
+	
+	bool MTD_FLASHMEM HardwareSerial::waitForData(uint32_t timeOutMs)
+	{
+		uint8_t b;
+		return m_queue.peek(&b, timeOutMs);
+	}
+	
+	
 	void HardwareSerial_rx_handler()
 	{
 		uint32_t uart_intr_status = READ_PERI_REG(UART_INT_ST(0));
@@ -138,7 +256,7 @@ namespace fdv
 	}
 	
 
-	// Serial
+	// HardwareSerial
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
 	

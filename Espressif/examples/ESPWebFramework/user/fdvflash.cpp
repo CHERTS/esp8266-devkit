@@ -27,6 +27,44 @@
 namespace fdv
 {
 
+	char FUNC_FLASHMEM getChar(char const* str, uint32_t index)
+	{
+		if (isStoredInFlash(str))
+		{
+			uint32_t u32 = ((uint32_t const*)str)[index >> 2];
+			return ((char const*)&u32)[index & 0x3];
+		}
+		else
+			return str[index];
+	}
+
+	
+	char FUNC_FLASHMEM getChar(char const* str)
+	{
+		if (isStoredInFlash(str))
+		{
+			uint32_t index = (uint32_t)str & 0x3;
+			str = (char const*)((uint32_t)str & 0xFFFFFFFC);  // align str
+			uint32_t u32 = *((uint32_t const*)str);
+			return ((char const*)&u32)[index];
+		}
+		else
+			return *str;
+	}		
+	
+	
+	uint16_t FUNC_FLASHMEM getWord(void const* buffer)
+	{
+		char const* pc = (char const*)buffer;
+		return (uint8_t)getChar(pc) | ((uint8_t)getChar(pc + 1) << 8);
+	}
+	
+	
+	uint32_t FUNC_FLASHMEM getDWord(void const* buffer)
+	{
+		char const* pc = (char const*)buffer;
+		return (uint8_t)getChar(pc) | ((uint8_t)getChar(pc + 1) << 8) | ((uint8_t)getChar(pc + 2) << 16) | ((uint8_t)getChar(pc + 3) << 24);
+	}
 	
 	
 }

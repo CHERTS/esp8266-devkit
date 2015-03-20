@@ -192,11 +192,13 @@ namespace fdv
 	// TCPServer
 	
 	template <typename ConnectionHandler_T, uint16_t MaxThreads_V, uint16_t ThreadsStackDepth_V>
-	struct TCPServer
+	class TCPServer
 	{
 		
 		static uint32_t const ACCEPTWAITTIMEOUTMS = 20000;
 		static uint32_t const SOCKETQUEUESIZE     = 1;	// can queue only one socket (nothing to do with working threads)
+		
+	public:
 		
 		TCPServer(uint16_t port)
 			: m_socketQueue(SOCKETQUEUESIZE)
@@ -268,7 +270,7 @@ namespace fdv
 		{
 		}
 		
-		void setSocketQueue(Queue<int>* socketQueue)
+		void MTD_FLASHMEM setSocketQueue(Queue<int>* socketQueue)
 		{
 			m_socketQueue = socketQueue;
 		}
@@ -480,7 +482,7 @@ namespace fdv
 		
 		
 		bool MTD_FLASHMEM processRequest()
-		{
+		{			
 			// look for 0x0D 0x0A 0x0D 0x0A
 			CharChunksIterator headerEnd = t_strstr(m_receivedData.getIterator(), CharChunksIterator(), CharIterator(FSTR("\x0D\x0A\x0D\x0A")));
 			if (headerEnd.isValid())
@@ -567,6 +569,7 @@ namespace fdv
 		
 		CharChunksIterator extractURLEncodedFields(CharChunksIterator begin, CharChunksIterator end, Fields* fields)
 		{
+			fields->setUrlDecode(true);
 			CharChunksIterator curc = begin;
 			CharChunksIterator key = curc;
 			CharChunksIterator value;
@@ -840,81 +843,9 @@ namespace fdv
 		
 	private:
 		
-		void MTD_FLASHMEM processInput()
-		{
-			char const* curc  = m_strStart;
-			char const* start = curc;
-			char const* curBlockKey      = NULL;
-			char const* curBlockKeyEnd   = NULL;
-			while (curc != m_strEnd)
-			{
-				char c0 = getChar(curc);
-				if (c0 == '{')
-				{
-					char c1 = getChar(curc + 1);
-					if (c1 == '{')
-					{
-						// found "{{"
-						// push previous content
-						m_result.addChunk(start, curc - start, false);
-						// process parameter tag
-						start = curc = replaceTag(curc);
-						continue;
-					}
-					else if (c1 == '%')
-					{
-						// found "{%"
-						// push previous content
-						if (curBlockKey && curBlockKeyEnd)
-						{
-							m_result.addChunk(start, curc - start, false);
-							m_blocks.add(curBlockKey, curBlockKeyEnd, m_result);
-							m_result.clear();
-						}
-						// process block tag
-						curBlockKey = extractTagStr(curc, &curBlockKeyEnd);
-						start = curc = curBlockKeyEnd + 2;	// bypass "%}"
-						// if this is the first block tag then this is the template file name
-						if (m_template.get() == NULL)
-						{
-							m_template.reset(f_strdup(curBlockKey, curBlockKeyEnd));
-							curBlockKey = NULL;
-							curBlockKeyEnd = NULL;
-						}
-						continue;
-					}
-				}
-				++curc;
-			}
-			m_result.addChunk(start, m_strEnd - start, false);
-			if (curBlockKey && curBlockKeyEnd)
-			{
-				m_blocks.add(curBlockKey, curBlockKeyEnd, m_result);
-				m_result.clear();
-			}			
-		}
-		
-		char const* MTD_FLASHMEM replaceTag(char const* curc)
-		{
-			char const* tagEnd;
-			char const* tagStart = extractTagStr(curc, &tagEnd);
-			Params::Item* item = m_params->getItem(tagStart, tagEnd);
-			if (item)
-			{
-				// push parameter content
-				m_result.addChunks(&item->value);				
-			}
-			return tagEnd + 2;	// bypass "}}"
-		}
-		
-		char const* extractTagStr(char const* curc, char const** tagEnd)
-		{
-			char const* tagStart = curc + 2; // by pass "{{" or "{%"
-			*tagEnd = tagStart;
-			while (*tagEnd < m_strEnd && getChar(*tagEnd) != '}' && getChar(*tagEnd) != '%')
-				++*tagEnd;
-			return tagStart;
-		}
+		void processInput();
+		char const* replaceTag(char const* curc);
+		char const* extractTagStr(char const* curc, char const** tagEnd);
 		
 	private:
 		Params*           m_params;

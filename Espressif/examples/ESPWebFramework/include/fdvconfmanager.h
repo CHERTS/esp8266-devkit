@@ -112,6 +112,11 @@ namespace fdv
 					DHCPServer::configure(startIP, endIP, maxLeases);
 			}
 		}
+				
+		static void MTD_FLASHMEM restore()
+		{
+			FlashDictionary::eraseContent();
+		}
 		
 		
 		//// WiFi settings
@@ -195,7 +200,7 @@ namespace fdv
 		
 		static void MTD_FLASHMEM getAccessPointIPParams(char const** IP, char const** netmask, char const** gateway)
 		{
-			*IP       = FlashDictionary::getString(STR_APIP, FSTR("192.168.5.1"));
+			*IP       = FlashDictionary::getString(STR_APIP, FSTR("192.168.4.1"));
 			*netmask  = FlashDictionary::getString(STR_APNETMSK, FSTR("255.255.255.0"));
 			*gateway  = FlashDictionary::getString(STR_APGTW, FSTR(""));
 		}
@@ -213,9 +218,9 @@ namespace fdv
 		
 		static void MTD_FLASHMEM getDHCPServerParams(bool* enabled, char const** startIP, char const** endIP, uint32_t* maxLeases)
 		{
-			*enabled   = FlashDictionary::getBool(STR_DHCPDEN, false);
-			*startIP   = FlashDictionary::getString(STR_DHCPDIP1, FSTR("192.168.5.100"));
-			*endIP     = FlashDictionary::getString(STR_DHCPDIP2, FSTR("192.168.5.110"));
+			*enabled   = FlashDictionary::getBool(STR_DHCPDEN, true);
+			*startIP   = FlashDictionary::getString(STR_DHCPDIP1, FSTR("192.168.4.100"));
+			*endIP     = FlashDictionary::getString(STR_DHCPDIP2, FSTR("192.168.4.110"));
 			*maxLeases = FlashDictionary::getInt(STR_DHCPDMXL, 10);
 		}
 		
@@ -367,6 +372,29 @@ namespace fdv
 			APtr<char> maxLeasesStr(f_printf(FSTR("%d"), maxLeases));
 			addParam(FSTR("maxLeases"), maxLeasesStr.get());
 			
+			HTTPTemplateResponse::flush();
+		}
+		
+	};
+
+
+	//////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+	// HTTPUARTConfigurationResponse
+
+	struct HTTPUARTConfigurationResponse : public HTTPTemplateResponse
+	{
+		HTTPUARTConfigurationResponse(HTTPHandler* httpHandler, char const* filename)
+			: HTTPTemplateResponse(httpHandler, filename)
+		{
+		}
+		
+		virtual void MTD_FLASHMEM flush()
+		{
+			if (getRequest().method == HTTPHandler::Post)
+			{
+			}
+						
 			HTTPTemplateResponse::flush();
 		}
 		

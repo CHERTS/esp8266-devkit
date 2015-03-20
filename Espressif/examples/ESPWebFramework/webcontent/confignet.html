@@ -30,7 +30,7 @@ window.onload = showDivs;
 <form method='POST'>
 
   <div style="display: {{DISP_CLIPCONF}}">
-    <p><h2>Client Mode IP Configuration</h2></p>
+    <p><h3>Client Mode IP Configuration</h3></p>
     <div id="subcontent">
       <input id="ch_staticip" type='checkbox' name='staticIP' value='1' {{staticIP}} onclick="showDivs()"> Static IP <br>	
 	  <div id="div_staticip">
@@ -42,7 +42,7 @@ window.onload = showDivs;
   </div>
 
   <div style="display: {{DISP_APIPCONF}}">
-    <p><h2>Access Point Mode IP Configuration</h2></p>
+    <p><h3>Access Point Mode IP Configuration</h3></p>
     <div id="subcontent">
 	    IP: <input type='text' name='APIP' value='{{APIP}}'> <br>
 		Netmask: <input type='text' name='APMSK' value='{{APMSK}}'> <br>
@@ -50,7 +50,7 @@ window.onload = showDivs;
     </div>
   </div>
   
-  <p><h2>DHCP Server Configuration</h2></p>
+  <p><h3>DHCP Server Configuration</h3></p>
   <div id="subcontent">
     <input id="ch_dhcpd" type='checkbox' name='DHCPD' value='1' {{DHCPD}} onclick="showDivs()"> Enable DHCP Server <br>	
     <div id="div_dhcpd">

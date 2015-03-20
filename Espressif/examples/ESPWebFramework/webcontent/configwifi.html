@@ -29,14 +29,14 @@ window.onload = showDivs;
 
 <form method='POST'>
 
-  <p><h2>WiFi Mode</h2></p>
+  <p><h3>WiFi Mode</h3></p>
   <div id="subcontent">			
 	<input id="ch_clientmode" type='checkbox' name='clientmode' value='1' {{clientmode}} onclick="showDivs()"> Client Mode <br>
 	<input id="ch_apmode" type='checkbox' name='apmode' value='1' {{apmode}} onclick="showDivs()"> Access Point Mode <br>
   </div>
 
   <div id="div_clientmode">
-    <p><h2>Client Mode WiFi Configuration</h2></p>
+    <p><h3>Client Mode WiFi Configuration</h3></p>
     <div id="subcontent">			
   	  SSID: <input type='text' name='CLSSID' value='{{CLSSID}}'> <br>
 	  Password: <input type='text' name='CLPSW' value='{{CLPSW}}'> <br>
@@ -44,7 +44,7 @@ window.onload = showDivs;
   </div>
   
   <div id="div_apmode">
-    <p><h2>Access Point Mode WiFi Configuration</h2></p>
+    <p><h3>Access Point Mode WiFi Configuration</h3></p>
     <div id="subcontent">			
   	  SSID: <input type='text' name='APSSID' value='{{APSSID}}'> <br>
 	  Password: <input type='text' name='APPSW' value='{{APPSW}}'> <br>

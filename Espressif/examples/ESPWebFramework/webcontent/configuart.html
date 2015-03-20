@@ -1,0 +1,29 @@
+{%base.html%}
+
+{%title%}
+UART Configuration
+
+{%content%}
+
+
+<form method='POST'>
+
+  <p><h3>UART Configuration</h3></p>
+  <div id="subcontent">			
+    Baud Rate: <input type='text' name='baud' value='{{baud}}'> <br>
+	<input type='checkbox' name='debugout' value='1' {{debugout}}> <span title="Services and system output should not be enabled together">Enable system output (printf)</span> <br>
+  </div>
+
+  <p><h3>UART Services</h3></p>
+  <div id="subcontent">			
+	<fieldset>
+	  <input type='radio' name='serv' value='none' {{serv_none}}> None <br>
+	  <input type='radio' name='serv' value='emcons' {{serv_emcons}}> Emergency Console <br>
+	  <input type='radio' name='serv' value='esptoard' {{serv_esptoard}}> ESP8266 controls Arduino Board (not yet implemented)<br>
+	  <input type='radio' name='serv' value='ardtoesp' {{serv_ardtoesp}}> Arduino Board controls ESP8266 (not yet implemented) <br>
+	</fieldset>
+  </div>
+
+  
+  <input type='submit' value='Save'>
+</form>
