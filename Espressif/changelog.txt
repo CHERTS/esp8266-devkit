@@ -2,6 +2,11 @@ Changelog:
 ----------
 
 v1.0.13 (18.04.2015):
++ Added new examples:
+  hello_world_cpp_irom - An example of firmware in C++ with a modified Makefile and linker script eagle.app.v6.cpp.irom.ld. In this example, all the functions and methods by default go to irom, and only marked ICACHE_IRAM_ATTR - go to iram (Author: Sermus);
++ Added new utility:
+  "utils\MemUsage.exe" - GUI utility for easy display information on the distribution of memory between sections firmware, utility is used to analyze xtensa-lx106-elf-objdump.exe (Author: Sermus);
+  "utils\MemAnalyzer.exe" - CLI utility for easy display information on the distribution of memory between the sections of the firmware, it can be used in the Makefile (see example hello_world_cpp_irom), is used to analyze the utility xtensa-lx106-elf-objdump.exe (Author: Sermus);
 * Updated examples:
   ESPWebFramework;
 
