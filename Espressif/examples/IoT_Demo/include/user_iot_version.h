@@ -5,12 +5,12 @@
 
 #define IOT_VERSION_MAJOR		1U
 #define IOT_VERSION_MINOR		0U
-#define IOT_VERSION_REVISION	1U
+#define IOT_VERSION_REVISION	2U
 
 #define VERSION_NUM   (IOT_VERSION_MAJOR * 1000 + IOT_VERSION_MINOR * 100 + IOT_VERSION_REVISION)
 
-#define VERSION_TYPE      "b"
-//#define VERSION_TYPE   	  "v"
+//#define VERSION_TYPE      "b"
+#define VERSION_TYPE   	  "v"
 
 #if LIGHT_DEVICE
 #define device_type       45772

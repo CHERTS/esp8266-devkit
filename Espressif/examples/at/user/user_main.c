@@ -1,3 +1,14 @@
+/******************************************************************************
+ * Copyright 2013-2014 Espressif Systems (Wuxi)
+ *
+ * FileName: user_main.c
+ *
+ * Description: entry file of user application
+ *
+ * Modification history:
+ *     2015/1/23, v1.0 create this file.
+*******************************************************************************/
+
 #include "osapi.h"
 #include "at_custom.h"
 #include "user_interface.h"
@@ -84,13 +95,19 @@ at_exeCmdTest(uint8_t id)
     at_response_ok();
 }
 
+extern void at_exeCmdCiupdate(uint8_t id);
 at_funcationType at_custom_cmd[] = {
-    "+TEST", 5, at_testCmdTest, at_queryCmdTest, at_setupCmdTest, at_exeCmdTest
+    {"+TEST", 5, at_testCmdTest, at_queryCmdTest, at_setupCmdTest, at_exeCmdTest},
+    {"+CIUPDATE", 9,       NULL,            NULL,            NULL, at_exeCmdCiupdate}
 };
 
 void user_init(void)
 {
+    char buf[64] = {0};
+    at_customLinkMax = 5;
     at_init();
+    os_sprintf(buf,"compile time:%s %s",__DATE__,__TIME__);
+    at_set_custom_info(buf);
     at_port_print("\r\nready\r\n");
-    at_cmd_array_regist(&at_custom_cmd[0], 1);
+    at_cmd_array_regist(&at_custom_cmd[0], sizeof(at_custom_cmd)/sizeof(at_custom_cmd[0]));
 }

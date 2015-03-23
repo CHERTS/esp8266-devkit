@@ -4,11 +4,13 @@
 v1.0.13 (18.04.2015):
 + Добавлены новые примеры:
   hello_world_cpp_irom - Пример прошивки на С++ с модифицированным Makefile и скриптом линковщика eagle.app.v6.cpp.irom.ld. В данном примере все функции и методы по-умолчанию идут в irom, и только помеченные ICACHE_IRAM_ATTR - идут в iram (Автор: Sermus);
-+ Added new utility:
-  "utils\MemUsage.exe" - GUI утилита для удобного вывода информации по распределению памяти между секциями прошивки, для анализа используется утилита xtensa-lx106-elf-objdump.exe (исходники https://github.com/Sermus/ESP8266_memory_analyzer);
++ Добавлены новые утилиты:
   "utils\MemAnalyzer.exe" - CLI утилита для удобного вывода информации по распределению памяти между секциями прошивки, её можно использовать в Makefile (см. пример hello_world_cpp_irom), для анализа используется утилита xtensa-lx106-elf-objdump.exe (исходники https://github.com/Sermus/ESP8266_memory_analyzer);
-* Обновлены примеры:
-  ESPWebFramework;
+* Обновлена SDK до версии 1.0.0 (папка ESP8266_SDK);
+* Старая версия SDK 0.9.5 перенесена в папку ESP8266_SDK_095, она необходима для сборки прошивки "examples\nodemcu-firmware";
+* Все сторонние библиотеки, заголовочные файлы (lwip и др.) и дополнительные скрипты линковщика (eagle.app.v6.cpp.ld, eagle.app.v6.cpp.irom.ld и др.) перенесены в каталог C:\Espressif\extra;
+* Обновлена документация, добавлен файл "docs\ESP8266_IoT_SDK_Programming Guide_v1.0.0.pdf";
+* Обновлены все примеры. В Makefile добавлены опции для утилиты esptool.exe, теперь можно прошивать плат ESP c различными чипами flash-памяти.
 
 v1.0.12 (18.03.2015):
 + Добавлены новые примеры:

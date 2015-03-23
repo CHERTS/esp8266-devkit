@@ -120,7 +120,7 @@ checkdirs: $(BUILD_DIR) $(FW_BASE)
 $(BUILD_DIR):
 	$(Q) mkdir -p $@
 
-firmware:
+$(FW_BASE):
 	$(Q) mkdir -p $@
 
 flash: all

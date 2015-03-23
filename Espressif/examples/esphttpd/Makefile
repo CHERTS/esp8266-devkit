@@ -70,29 +70,36 @@ endif
 
 ifeq ($(SPI_SPEED), 26.7)
     freqdiv = 1
+	flashimageoptions = -ff 26m
 else
     ifeq ($(SPI_SPEED), 20)
         freqdiv = 2
+        flashimageoptions = -ff 20m
     else
         ifeq ($(SPI_SPEED), 80)
             freqdiv = 15
+			flashimageoptions = -ff 80m
         else
             freqdiv = 0
+			flashimageoptions = -ff 40m
         endif
     endif
 endif
 
-
 ifeq ($(SPI_MODE), QOUT)
     mode = 1
+	flashimageoptions += -fm qout
 else
     ifeq ($(SPI_MODE), DIO)
         mode = 2
+		flashimageoptions += -fm dio
     else
         ifeq ($(SPI_MODE), DOUT)
             mode = 3
+			flashimageoptions += -fm dout
         else
             mode = 0
+			flashimageoptions += -fm qio
         endif
     endif
 endif
@@ -101,21 +108,26 @@ endif
 ifeq ($(SPI_SIZE), 256)
     size = 1
     flash = 256
+	flashimageoptions += -fs 2m
 else
     ifeq ($(SPI_SIZE), 1024)
         size = 2
         flash = 1024
+		flashimageoptions += -fs 8m
     else
         ifeq ($(SPI_SIZE), 2048)
             size = 3
             flash = 1024
+			flashimageoptions += -fs 16m
         else
             ifeq ($(SPI_SIZE), 4096)
                 size = 4
                 flash = 1024
+				flashimageoptions += -fs 32m
             else
                 size = 0
                 flash = 512
+				flashimageoptions += -fs 4m
             endif
         endif
     endif
@@ -231,6 +243,13 @@ all: checkdirs $(TARGET_OUT)
 $(TARGET_OUT): $(APP_AR)
 	$(vecho) "LD $@"
 	$(Q) $(LD) -L$(SDK_LIBDIR) $(LD_SCRIPT) $(LDFLAGS) -Wl,--start-group $(LIBS) $(APP_AR) -Wl,--end-group -o $@
+	$(vecho) "------------------------------------------------------------------------------"
+	$(vecho) "Section info:"
+	$(Q) $(OBJDUMP) -h -j .data -j .rodata -j .bss -j .text -j .irom0.text $@
+	$(vecho) "------------------------------------------------------------------------------"
+	$(vecho) "Section info:"
+	$(Q) $(SDK_TOOLS)/memanalyzer.exe $(OBJDUMP).exe $@
+	$(vecho) "------------------------------------------------------------------------------"
 	$(vecho) "Run objcopy, please wait..."
 	$(Q) $(OBJCOPY) --only-section .text -O binary $@ eagle.app.v6.text.bin
 	$(Q) $(OBJCOPY) --only-section .data -O binary $@ eagle.app.v6.data.bin
@@ -272,7 +291,7 @@ checkdirs: $(BUILD_DIR) $(FW_BASE)
 $(BUILD_DIR):
 	$(Q) mkdir -p $@
 
-firmware:
+$(FW_BASE):
 	$(Q) mkdir -p $@
 	$(Q) mkdir -p $@/upgrade
 
@@ -301,7 +320,7 @@ flashonefile: all webpages.espfs
 ifeq ($(esptoolmode), new)
 	$(ESPTOOL) -cp $(ESPPORT) -cd ck -cb 256000 -ca 0x00000 -cf $(FW_BASE)/eagle.app.flash.bin -v
 else
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x00000 $(FW_BASE)/eagle.app.flash.bin
+	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash $(flashimageoptions) 0x00000 $(FW_BASE)/eagle.app.flash.bin
 endif
 
 flashboot: all
@@ -310,7 +329,7 @@ ifeq ($(boot), new)
 ifeq ($(esptoolmode), new)
 	$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x00000 -cf $(SDK_BASE)/bin/boot_v1.2.bin -v
 else
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x00000 $(SDK_BASE)/bin/boot_v1.2.bin
+	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash $(flashimageoptions) 0x00000 $(SDK_BASE)/bin/boot_v1.2.bin
 endif
 endif
 ifeq ($(boot), old)
@@ -318,7 +337,7 @@ ifeq ($(boot), old)
 ifeq ($(esptoolmode), new)
 	$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x00000 -cf $(SDK_BASE)/bin/boot_v1.1.bin -v
 else
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x00000 $(SDK_BASE)/bin/boot_v1.1.bin
+	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash $(flashimageoptions) 0x00000 $(SDK_BASE)/bin/boot_v1.1.bin
 endif
 endif
 ifeq ($(boot), none)
@@ -331,7 +350,7 @@ ifeq ($(esptoolmode), new)
 	$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x00000 -cf $(FW_BASE)/eagle.flash.bin -v
 	$(ESPTOOL) -cp $(ESPPORT) -cd ck -cb 256000 -ca 0x40000 -cf $(FW_BASE)/eagle.irom0text.bin -v
 else
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x00000 $(FW_BASE)/eagle.flash.bin 0x40000 $(FW_BASE)/eagle.irom0text.bin
+	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash $(flashimageoptions) 0x00000 $(FW_BASE)/eagle.flash.bin 0x40000 $(FW_BASE)/eagle.irom0text.bin
 endif
 else
 ifeq ($(boot), none)
@@ -339,33 +358,40 @@ ifeq ($(boot), none)
 		$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x00000 -cf $(FW_BASE)/eagle.flash.bin -v
 		$(ESPTOOL) -cp $(ESPPORT) -cd ck -cb 256000 -ca 0x40000 -cf $(FW_BASE)/eagle.irom0text.bin -v
 	else
-		$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x00000 $(FW_BASE)/eagle.flash.bin 0x40000 $(FW_BASE)/eagle.irom0text.bin
+		$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash $(flashimageoptions) 0x00000 $(FW_BASE)/eagle.flash.bin 0x40000 $(FW_BASE)/eagle.irom0text.bin
 	endif
 else
 ifeq ($(esptoolmode), new)
 	$(ESPTOOL) -cp $(ESPPORT) -cd ck -cb 256000 -ca $(addr) -cf $(FW_BASE)/upgrade/$(BIN_NAME).bin -v
 else
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash $(addr) $(FW_BASE)/upgrade/$(BIN_NAME).bin
+	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash $(flashimageoptions) $(addr) $(FW_BASE)/upgrade/$(BIN_NAME).bin
 endif
 endif
 endif
 ifeq ($(esptoolmode), new)
+	$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x79000 -cf $(SDK_BASE)/bin/clear_eep.bin -v
 	$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x7c000 -cf $(SDK_BASE)/bin/esp_init_data_default.bin -v
 	$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x7e000 -cf $(SDK_BASE)/bin/blank.bin -v
 else
-	$(ESPTOOL) -p $(ESPPORT) write_flash 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
+	$(ESPTOOL) -p $(ESPPORT) write_flash $(flashimageoptions) 0x79000 $(SDK_BASE)/bin/clear_eep.bin 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
 endif
 
 flashinit:
-	$(vecho) "Flash init data default and blank data."
+	$(vecho) "Flash init data:"
+	$(vecho) "Clear old settings (EEP area):"
+	$(vecho) "clear_eep.bin-------->0x79000"
+	$(vecho) "Default config (Clear SDK settings):"
+	$(vecho) "blank.bin-------->0x7E000"
+	$(vecho) "esp_init_data_default.bin-------->0x7C000"
 ifeq ($(esptoolmode), new)
+	$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x79000 -cf $(SDK_BASE)/bin/clear_eep.bin -v
 	$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x7c000 -cf $(SDK_BASE)/bin/esp_init_data_default.bin -v
 	$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x7e000 -cf $(SDK_BASE)/bin/blank.bin -v
 else
-	$(ESPTOOL) -p $(ESPPORT) write_flash 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
+	$(ESPTOOL) -p $(ESPPORT) write_flash $(flashimageoptions) 0x79000 $(SDK_BASE)/bin/clear_eep.bin 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
 endif
 
-webpages.espfs: firmware cleanwebpages
+webpages.espfs: $(FW_BASE) cleanwebpages
 	cd html; find | ../mkespfsimage/mkespfsimage.exe > ../$(FW_BASE)/webpages.espfs; cd ..
 
 htmlflash: webpages.espfs
@@ -373,7 +399,7 @@ htmlflash: webpages.espfs
 ifeq ($(esptoolmode), new)
 	$(ESPTOOL) -cp $(ESPPORT) -cd ck -cb 256000 -ca 0x12000 -cf $(FW_BASE)/webpages.espfs -v
 else
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x12000 $(FW_BASE)/webpages.espfs
+	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash $(flashimageoptions) 0x12000 $(FW_BASE)/webpages.espfs
 endif
 
 rebuild: clean all

@@ -1,4 +1,5 @@
 #include "user_buttons.h"
+#include "gpio.h"
 
 // About volatile -> http://www.pic24.ru/doku.php/osa/articles/volatile_for_chainiks
 extern volatile uint32_t PIN_IN;
@@ -34,7 +35,7 @@ button_push(uint8 debounce)
 void ICACHE_FLASH_ATTR
 rotary_debounce(uint8 direction)
 {
-    gpio_pin_intr_state_set(GPIO_ID_PIN(12), GPIO_PIN_INTR_ANYEGDE);
+    gpio_pin_intr_state_set(GPIO_ID_PIN(12), GPIO_PIN_INTR_ANYEDGE);
 
     if (direction == 1)
     {
@@ -118,7 +119,7 @@ buttons_init()
     GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(0));
 
     //re-enable gpio0 interrupt
-    gpio_pin_intr_state_set(GPIO_ID_PIN(12), GPIO_PIN_INTR_ANYEGDE);
+    gpio_pin_intr_state_set(GPIO_ID_PIN(12), GPIO_PIN_INTR_ANYEDGE);
 
     //Global re-enable interrupts
     ETS_GPIO_INTR_ENABLE();

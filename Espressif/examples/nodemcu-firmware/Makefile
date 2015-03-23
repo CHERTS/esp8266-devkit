@@ -10,7 +10,79 @@
 XTENSA_TOOLS_ROOT ?= c:/Espressif/xtensa-lx106-elf/bin
 
 # base directory of the ESP8266 SDK package, absolute
-SDK_BASE	?= c:/Espressif/ESP8266_SDK
+SDK_BASE	?= c:/Espressif/ESP8266_SDK_095
+
+# SPI_SPEED = 20MHz, 26.7MHz, 40MHz, 80MHz
+SPI_SPEED?=40
+# SPI_MODE: QIO, QOUT, DIO, DOUT
+SPI_MODE?=QIO
+# SPI_SIZE: 256KB, 512KB, 1024KB, 2048KB, 4096KB
+SPI_SIZE?=512
+
+ifeq ($(SPI_SPEED), 26.7)
+    freqdiv = 1
+	flashimageoptions = -ff 26m
+else
+    ifeq ($(SPI_SPEED), 20)
+        freqdiv = 2
+        flashimageoptions = -ff 20m
+    else
+        ifeq ($(SPI_SPEED), 80)
+            freqdiv = 15
+			flashimageoptions = -ff 80m
+        else
+            freqdiv = 0
+			flashimageoptions = -ff 40m
+        endif
+    endif
+endif
+
+ifeq ($(SPI_MODE), QOUT)
+    mode = 1
+	flashimageoptions += -fm qout
+else
+    ifeq ($(SPI_MODE), DIO)
+        mode = 2
+		flashimageoptions += -fm dio
+    else
+        ifeq ($(SPI_MODE), DOUT)
+            mode = 3
+			flashimageoptions += -fm dout
+        else
+            mode = 0
+			flashimageoptions += -fm qio
+        endif
+    endif
+endif
+
+# flash larger than 1024KB only use 1024KB to storage user1.bin and user2.bin
+ifeq ($(SPI_SIZE), 256)
+    size = 1
+    flash = 256
+	flashimageoptions += -fs 2m
+else
+    ifeq ($(SPI_SIZE), 1024)
+        size = 2
+        flash = 1024
+		flashimageoptions += -fs 8m
+    else
+        ifeq ($(SPI_SIZE), 2048)
+            size = 3
+            flash = 1024
+			flashimageoptions += -fs 16m
+        else
+            ifeq ($(SPI_SIZE), 4096)
+                size = 4
+                flash = 1024
+				flashimageoptions += -fs 32m
+            else
+                size = 0
+                flash = 512
+				flashimageoptions += -fs 4m
+            endif
+        endif
+    endif
+endif
 
 # select which tools to use as compiler, librarian and linker
 CC := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-gcc
@@ -95,8 +167,6 @@ endef
 $(BINODIR)/%.bin: $(IMAGEODIR)/%.out
 	@mkdir -p $(BINODIR)
 	$(ESPTOOL) elf2image $< -o $(FIRMWAREDIR)
-	#$(ESPTOOL-CK) -eo $< -bo $(FIRMWAREDIR)0x00000.bin -bs .text -bs .data -bs .rodata -bc -ec
-	#$(ESPTOOL-CK) -eo $< -es .irom0.text $(FIRMWAREDIR)0x10000.bin -ec
 
 all:	.subdirs $(OBJS) $(OLIBS) $(OIMAGES) $(OBINS) $(SPECIAL_MKTARGETS)
 
@@ -115,8 +185,8 @@ progr: all
 ifndef PDIR
 	$(MAKE) -C ./app flash
 else
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x00000 $(FIRMWAREDIR)0x00000.bin 0x10000 $(FIRMWAREDIR)0x10000.bin
-	$(ESPTOOL) -p $(ESPPORT) write_flash 0x7c000 $(FIRMWAREDIR)esp_init_data_default.bin 0x7e000 $(FIRMWAREDIR)blank.bin
+	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash $(flashimageoptions) 0x00000 $(FIRMWAREDIR)0x00000.bin 0x10000 $(FIRMWAREDIR)0x10000.bin
+	$(ESPTOOL) -p $(ESPPORT) write_flash $(flashimageoptions) 0x7c000 $(FIRMWAREDIR)esp_init_data_default.bin 0x7e000 $(FIRMWAREDIR)blank.bin
 endif
 
 luainit:
@@ -179,5 +249,3 @@ $(foreach lib,$(GEN_LIBS),$(eval $(call MakeLibrary,$(basename $(lib)))))
 $(foreach image,$(GEN_IMAGES),$(eval $(call MakeImage,$(basename $(image)))))
 
 INCLUDES := $(INCLUDES) -I $(PDIR)include -I $(PDIR)include/$(TARGET)
-#PDIR := ../$(PDIR)
-#sinclude $(PDIR)Makefile

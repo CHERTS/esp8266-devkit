@@ -4,8 +4,8 @@
 #define PWM_CHANNEL 3
 
 struct pwm_single_param {
-	uint16 gpio_set;
-	uint16 gpio_clear;
+    uint16 gpio_set;
+    uint16 gpio_clear;
     uint16 h_time;
 };
 
@@ -39,4 +39,5 @@ uint8 pwm_get_duty(uint8 channel);
 void pwm_set_freq(uint16 freq);
 uint16 pwm_get_freq(void);
 #endif
+
 

@@ -743,7 +743,7 @@ user_esp_platform_upgrade_rsp(void *arg)
         ESP_DBG("user_esp_platform_upgarde_successfully\n");
         action = "device_upgrade_success";
         os_sprintf(pbuf, UPGRADE_FRAME, devkey, action, server->pre_version, server->upgrade_version);
-        ESP_DBG("%s", pbuf);
+        ESP_DBG("%s\n",pbuf);
 
 #ifdef CLIENT_SSL_ENABLE
         espconn_secure_sent(pespconn, pbuf, os_strlen(pbuf));
@@ -759,7 +759,7 @@ user_esp_platform_upgrade_rsp(void *arg)
         ESP_DBG("user_esp_platform_upgrade_failed\n");
         action = "device_upgrade_failed";
         os_sprintf(pbuf, UPGRADE_FRAME, devkey, action,server->pre_version, server->upgrade_version);
-        ESP_DBG("%s", pbuf);
+        ESP_DBG("%s\n",pbuf);
 
 #ifdef CLIENT_SSL_ENABLE
         espconn_secure_sent(pespconn, pbuf, os_strlen(pbuf));
@@ -819,7 +819,7 @@ user_esp_platform_upgrade_begin(struct espconn *pespconn, struct upgrade_server_
     os_sprintf(server->url, "GET /v1/device/rom/?action=download_rom&version=%s&filename=%s HTTP/1.0\r\nHost: "IPSTR":%d\r\n"pheadbuffer"",
                server->upgrade_version, user_bin, IP2STR(server->ip),
                server->port, devkey);
-    ESP_DBG("%s", server->url);
+    ESP_DBG("%s\n",server->url);
 
 #ifdef UPGRADE_SSL_ENABLE
 

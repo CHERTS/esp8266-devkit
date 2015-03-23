@@ -33,6 +33,7 @@ typedef struct
   void (*at_exeCmd)(uint8_t id);
 }at_funcationType;
 
+extern uint8 at_customLinkMax;
 /**
   * @brief  Response "OK" to uart.
   * @param  None
@@ -82,4 +83,33 @@ void at_init(void);
   * @retval None
   */
 void at_port_print(const char *str);
+/**
+  * @brief  print custom information when AT+GMR
+  * @param  string
+  * @retval None
+  */
+void at_set_custom_info(char* info);
+/**
+  * @brief  if current at command is processing,you can call at_enter_special_state,
+  *         then if other comamnd coming,it will return busy.
+  * @param  None
+  * @retval None
+  */
+void at_enter_special_state(void);
+/**
+  * @brief  
+  * @param  None
+  * @retval None
+  */
+void at_leave_special_state(void);
+/**
+  * @brief  get at version
+  * @param  None
+  * @retval at version
+  *         bit24~31: at main version
+  *         bit23~16: at sub version
+  *         bit15~8 : at test version
+  *         bit7~0  : customized version
+  */
+uint32 at_get_version(void);
 #endif

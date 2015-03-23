@@ -18,19 +18,15 @@ LOCAL void ICACHE_FLASH_ATTR info_cb(void *arg)
 {
 	char temp[80];
 	ets_uart_printf("System info:\r\n");
-	os_sprintf(temp, "Time=%ld\r\n", system_get_time());
+	os_sprintf(temp, "SDK version: %s\r\n", system_get_sdk_version());
 	ets_uart_printf(temp);
-	os_sprintf(temp, "Chip id=0x%x\r\n", system_get_chip_id());
+	os_sprintf(temp, "Time = %ld\r\n", system_get_time());
 	ets_uart_printf(temp);
-	os_sprintf(temp, "Free heap size=%d\r\n", system_get_free_heap_size());
+	os_sprintf(temp, "Chip id = 0x%x\r\n", system_get_chip_id());
 	ets_uart_printf(temp);
-	ets_uart_printf("Mem info:\r\n");
-	// enable some system messages
-	system_set_os_print(1);
-	system_print_meminfo();
-	// disable some system messages
-	system_set_os_print(0);
-	ets_uart_printf("\r\n");
+	os_sprintf(temp, "Free heap size = %d\r\n", system_get_free_heap_size());
+	ets_uart_printf(temp);
+	ets_uart_printf("==========================================\r\n");
 }
 
 void user_init(void)
@@ -38,6 +34,7 @@ void user_init(void)
 	// Configure the UART
 	uart_init(BIT_RATE_115200, BIT_RATE_115200);
 	// Set up a timer to send the message
+	os_printf("\r\n");
 	// os_timer_disarm(ETSTimer *ptimer)
 	os_timer_disarm(&info_timer);
 	// os_timer_setfn(ETSTimer *ptimer, ETSTimerFunc *pfunction, void *parg)

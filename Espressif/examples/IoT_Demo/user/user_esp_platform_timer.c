@@ -212,7 +212,7 @@ user_esp_platform_device_action(struct wait_param *pwait_action)
 
 #if PLUG_DEVICE
     for (i = 0; i < action_number && pwait_action->action[i][0] != '0'; i++) {
-        ESP_DBG("%s", pwait_action->action[i]);
+        ESP_DBG("%s\n",pwait_action->action[i]);
 
         if (os_strcmp(pwait_action->action[i], "on_switch", 9) == 0) {
             user_plug_set_status(0x01);

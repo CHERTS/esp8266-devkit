@@ -15,6 +15,9 @@ XTENSA_TOOLS_ROOT ?= c:/Espressif/xtensa-lx106-elf/bin
 # base directory of the ESP8266 SDK package, absolute
 SDK_BASE	?= c:/Espressif/ESP8266_SDK
 
+# Extra libs, include and ld file
+EXTRA_BASE	?= c:/Espressif/extra
+
 # esptool path and port
 SDK_TOOLS	?= c:/Espressif/utils
 ESPTOOL		?= $(SDK_TOOLS)/esptool.exe
@@ -57,14 +60,18 @@ endif
 
 ifeq ($(SPI_SPEED), 26.7)
     freqdiv = 1
+	flashimageoptions = -ff 26m
 else
     ifeq ($(SPI_SPEED), 20)
         freqdiv = 2
+        flashimageoptions = -ff 20m
     else
         ifeq ($(SPI_SPEED), 80)
             freqdiv = 15
+			flashimageoptions = -ff 80m
         else
             freqdiv = 0
+			flashimageoptions = -ff 40m
         endif
     endif
 endif
@@ -72,14 +79,18 @@ endif
 
 ifeq ($(SPI_MODE), QOUT)
     mode = 1
+	flashimageoptions += -fm qout
 else
     ifeq ($(SPI_MODE), DIO)
         mode = 2
+		flashimageoptions += -fm dio
     else
         ifeq ($(SPI_MODE), DOUT)
             mode = 3
+			flashimageoptions += -fm dout
         else
             mode = 0
+			flashimageoptions += -fm qio
         endif
     endif
 endif
@@ -88,21 +99,26 @@ endif
 ifeq ($(SPI_SIZE), 256)
     size = 1
     flash = 256
+	flashimageoptions += -fs 2m
 else
     ifeq ($(SPI_SIZE), 1024)
         size = 2
         flash = 1024
+		flashimageoptions += -fs 8m
     else
         ifeq ($(SPI_SIZE), 2048)
             size = 3
             flash = 1024
+			flashimageoptions += -fs 16m
         else
             ifeq ($(SPI_SIZE), 4096)
                 size = 4
                 flash = 1024
+				flashimageoptions += -fs 32m
             else
                 size = 0
                 flash = 512
+				flashimageoptions += -fs 4m
             endif
         endif
     endif
@@ -133,7 +149,7 @@ TARGET		= app
 
 # which modules (subdirectories) of the project to include in compiling
 MODULES		= driver user
-EXTRA_INCDIR    = include $(SDK_BASE)/../include
+EXTRA_INCDIR    = include $(EXTRA_BASE)/include
 
 # libraries used in this project, mainly provided by the SDK
 LIBS		= c gcc hal phy pp net80211 lwip wpa main
@@ -184,7 +200,7 @@ LIBS		:= $(addprefix -l,$(LIBS))
 APP_AR		:= $(addprefix $(BUILD_BASE)/,$(TARGET)_app.a)
 TARGET_OUT	:= $(addprefix $(BUILD_BASE)/,$(TARGET).out)
 
-LD_SCRIPT	:= $(addprefix -T$(SDK_BASE)/$(SDK_LDDIR)/,$(LD_SCRIPT))
+LD_SCRIPT	:= $(addprefix -T$(EXTRA_BASE)/$(SDK_LDDIR)/,$(LD_SCRIPT))
 
 INCDIR	:= $(addprefix -I,$(SRC_DIR))
 EXTRA_INCDIR	:= $(addprefix -I,$(EXTRA_INCDIR))
@@ -234,11 +250,11 @@ $(TARGET_OUT): $(APP_AR)
 	$(vecho) "Run gen_appbin.exe"
 ifeq ($(app), 0)
 	$(Q) $(SDK_TOOLS)/gen_appbin.exe $@ 0 $(mode) $(freqdiv) $(size)
-	$(Q) mv eagle.app.flash.bin firmware/eagle.flash.bin
-	$(Q) mv eagle.app.v6.irom0text.bin firmware/eagle.irom0text.bin
+	$(Q) mv eagle.app.flash.bin $(FW_BASE)/eagle.flash.bin
+	$(Q) mv eagle.app.v6.irom0text.bin $(FW_BASE)/eagle.irom0text.bin
 	$(Q) rm eagle.app.v6.*
 	$(vecho) "No boot needed."
-	$(vecho) "Generate eagle.flash.bin and eagle.irom0text.bin successully in folder firmware."
+	$(vecho) "Generate eagle.flash.bin and eagle.irom0text.bin successully in folder $(FW_BASE)."
 	$(vecho) "eagle.flash.bin-------->0x00000"
 	$(vecho) "eagle.irom0text.bin---->0x40000"
 else
@@ -249,9 +265,9 @@ else
 		$(Q) $(SDK_TOOLS)/gen_appbin.exe $@ 1 $(mode) $(freqdiv) $(size)
 		$(vecho) "Support boot_v1.1 and +"
     endif
-	$(Q) mv eagle.app.flash.bin firmware/upgrade/$(BIN_NAME).bin
+	$(Q) mv eagle.app.flash.bin $(FW_BASE)/upgrade/$(BIN_NAME).bin
 	$(Q) rm eagle.app.v6.*
-	$(vecho) "Generate $(BIN_NAME).bin successully in folder firmware/upgrade."
+	$(vecho) "Generate $(BIN_NAME).bin successully in folder $(FW_BASE)/upgrade."
 	$(vecho) "boot_v1.x.bin------->0x00000"
 	$(vecho) "$(BIN_NAME).bin--->$(addr)"
 endif
@@ -266,7 +282,7 @@ checkdirs: $(BUILD_DIR) $(FW_BASE)
 $(BUILD_DIR):
 	$(Q) mkdir -p $@
 
-firmware:
+$(FW_BASE):
 	$(Q) mkdir -p $@
 	$(Q) mkdir -p $@/upgrade
 
@@ -283,20 +299,20 @@ flashonefile: all
 	rm -f eagle.app.v6.rodata.bin
 	rm -f eagle.app.v6.text.bin
 	rm -f eagle.app.sym
-	mv eagle.app.flash.bin firmware/
+	mv eagle.app.flash.bin $(FW_BASE)/
 	$(vecho) "No boot needed."
-	$(vecho) "Generate eagle.app.flash.bin successully in folder firmware."
+	$(vecho) "Generate eagle.app.flash.bin successully in folder $(FW_BASE)."
 	$(vecho) "eagle.app.flash.bin-------->0x00000"
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x00000 firmware/eagle.app.flash.bin
+	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash $(flashimageoptions) 0x00000 $(FW_BASE)/eagle.app.flash.bin
 
 flashboot: all flashinit
 ifeq ($(boot), new)
 	$(vecho) "Flash boot_v1.2 and +"
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x00000 $(SDK_BASE)/bin/boot_v1.2.bin
+	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash $(flashimageoptions) 0x00000 $(SDK_BASE)/bin/boot_v1.2.bin
 endif
 ifeq ($(boot), old)
 	$(vecho) "Flash boot_v1.1 and +"
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x00000 $(SDK_BASE)/bin/boot_v1.1.bin
+	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash $(flashimageoptions) 0x00000 $(SDK_BASE)/bin/boot_v1.1.bin
 endif
 ifeq ($(boot), none)
 	$(vecho) "No boot needed."
@@ -304,18 +320,18 @@ endif
 
 flash: all
 ifeq ($(app), 0) 
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x00000 firmware/eagle.flash.bin 0x40000 firmware/eagle.irom0text.bin
+	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash $(flashimageoptions) 0x00000 $(FW_BASE)/eagle.flash.bin 0x40000 $(FW_BASE)/eagle.irom0text.bin
 else
 ifeq ($(boot), none)
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x00000 firmware/eagle.flash.bin 0x40000 firmware/eagle.irom0text.bin
+	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash $(flashimageoptions) 0x00000 $(FW_BASE)/eagle.flash.bin 0x40000 $(FW_BASE)/eagle.irom0text.bin
 else
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash $(addr) firmware/upgrade/$(BIN_NAME).bin
+	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash $(flashimageoptions) $(addr) $(FW_BASE)/upgrade/$(BIN_NAME).bin
 endif
 endif
 
 flashinit:
 	$(vecho) "Flash init data default and blank data."
-	$(ESPTOOL) -p $(ESPPORT) write_flash 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
+	$(ESPTOOL) -p $(ESPPORT) write_flash $(flashimageoptions) 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
 
 rebuild: clean all
 
