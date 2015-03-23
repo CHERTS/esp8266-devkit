@@ -1,6 +1,6 @@
 ﻿;InnoSetupVersion=5.5.0
-#define DevKitVersion "1.0.12"
-#define DevKitSDKVersion "0.9.5"
+#define DevKitVersion "2.0.0"
+#define DevKitSDKVersion "1.0.0"
 #define DevKitAppName "Unofficial Development Kit for Espressif ESP8266"
 #define DevKitAppURL "http://www.programs74.ru"
 #define DevKitAppPublisher "Mikhail Grigorev"
@@ -39,9 +39,11 @@ Source: "Espressif\xtensa-lx106-elf\*"; DestDir: "{app}\xtensa-lx106-elf"; Flags
 Source: "Espressif\docs\*"; DestDir: "{app}\docs"; Flags: ignoreversion createallsubdirs recursesubdirs
 Source: "Espressif\utils\*"; DestDir: "{app}\utils"; Flags: ignoreversion createallsubdirs recursesubdirs
 Source: "Espressif\examples\*"; DestDir: "{app}\examples"; Flags: ignoreversion createallsubdirs recursesubdirs
+Source: "Espressif\extra\*"; DestDir: "{app}\extra"; Flags: ignoreversion createallsubdirs recursesubdirs
 Source: "Espressif\ESP8266_RTOS_SDK\*"; DestDir: "{app}\ESP8266_RTOS_SDK"; Flags: ignoreversion createallsubdirs recursesubdirs
 Source: "Espressif\ESP8266_SDK\*"; DestDir: "{app}\ESP8266_SDK"; Flags: ignoreversion createallsubdirs recursesubdirs
 Source: "Espressif\ESP8266_SDK_094\*"; DestDir: "{app}\ESP8266_SDK_094"; Flags: ignoreversion createallsubdirs recursesubdirs
+Source: "Espressif\ESP8266_SDK_095\*"; DestDir: "{app}\ESP8266_SDK_095"; Flags: ignoreversion createallsubdirs recursesubdirs
 Source: "Espressif\Espressif web site.url"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Espressif\DevKit web site.url"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Espressif\changelog.txt"; DestDir: "{app}"; Flags: ignoreversion; Languages: english turkish
@@ -56,9 +58,11 @@ Name: "{app}\xtensa-lx106-elf"
 Name: "{app}\docs"
 Name: "{app}\utils"
 Name: "{app}\examples"
+Name: "{app}\extra"
 Name: "{app}\ESP8266_RTOS_SDK"
 Name: "{app}\ESP8266_SDK"
 Name: "{app}\ESP8266_SDK_094"
+Name: "{app}\ESP8266_SDK_095"
 
 [Registry]
 Root: "HKCU"; Subkey: "Software\Terminal\TmacroForm"; ValueType: string; ValueName: "macro1E_Text"; ValueData: "%SCRS""C:\Espressif\utils\esp-reboot.tsc"""
@@ -89,9 +93,11 @@ Type: filesandordirs; Name: "{app}\xtensa-lx106-elf\*"
 Type: filesandordirs; Name: "{app}\docs\*"
 Type: filesandordirs; Name: "{app}\utils\*"
 Type: filesandordirs; Name: "{app}\examples\*"
+Type: filesandordirs; Name: "{app}\extra\*"
 Type: filesandordirs; Name: "{app}\ESP8266_RTOS_SDK\*"
 Type: filesandordirs; Name: "{app}\ESP8266_SDK\*"
 Type: filesandordirs; Name: "{app}\ESP8266_SDK_094\*"
+Type: filesandordirs; Name: "{app}\ESP8266_SDK_095\*"
 Type: files; Name: "{app}\DevKit web site.url"
 Type: files; Name: "{app}\Espressif web site.url"
 Type: files; Name: "{app}\changelog.txt"; Languages: english turkish

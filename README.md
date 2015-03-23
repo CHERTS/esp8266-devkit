@@ -6,7 +6,7 @@ Unofficial Development Kit for Espressif ESP8266
 <b>В состав комплекта входят следующие компоненты и инструменты:</b><br>
 
 1. Неофициальный компилятор GCC для SoC Xtensa LX106.<br>
-2. Оффициальный Espressif ESP8266 SDK v0.9.5<br>
+2. Оффициальный Espressif ESP8266 SDK v1.0.0<br>
 3. Набор документации на SoC ESP8266.<br>
 4. Большой набор примеров прошивок в исходных кодах на языке Си.<br>
 5. Набор вспомогательных утилит для работы с платами на основе ESP8266.<br>
@@ -22,7 +22,7 @@ Unofficial Development Kit for Espressif ESP8266
 <b>The kit includes the following components and tools:</b><br>
 
 1. Unofficial GCC compiler for SoC Xtensa LX106.<br>
-2. Official Espressif ESP8266 SDK v0.9.5<br>
+2. Official Espressif ESP8266 SDK v1.0.0<br>
 3. Documentation for SoC ESP8266.<br>
 4. Examples in the firmware source code in C language.<br>
 5. Additional tools for working with boards based on the ESP8266.<br>
