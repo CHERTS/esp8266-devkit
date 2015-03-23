@@ -36,7 +36,7 @@ extern uint8_t pin_num[GPIO_PIN_NUM];
 
 // GPIO_PIN_INTR_NEGEDGE - down
 // GPIO_PIN_INTR_POSEDGE - up
-// GPIO_PIN_INTR_ANYEGDE - both
+// GPIO_PIN_INTR_ANYEDGE - both
 // GPIO_PIN_INTR_LOLEVEL - low level
 // GPIO_PIN_INTR_HILEVEL - high level
 // GPIO_PIN_INTR_DISABLE - disable interrupt
@@ -45,7 +45,7 @@ const char *gpio_type_desc[] =
 	    "GPIO_PIN_INTR_DISABLE (DISABLE INTERRUPT)",
 	    "GPIO_PIN_INTR_POSEDGE (UP)",
 	    "GPIO_PIN_INTR_NEGEDGE (DOWN)",
-	    "GPIO_PIN_INTR_ANYEGDE (BOTH)",
+	    "GPIO_PIN_INTR_ANYEDGE (BOTH)",
 	    "GPIO_PIN_INTR_LOLEVEL (LOW LEVEL)",
 	    "GPIO_PIN_INTR_HILEVEL (HIGH LEVEL)"
 };
