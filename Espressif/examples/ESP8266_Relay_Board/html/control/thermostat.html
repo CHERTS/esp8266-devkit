@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html><head><title>Thermostat control</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+<div id="statusView" style=""></div>  
+<div class="block">
+	<button id="toggle" style="float:right">OFF</button>
+    <div class="zone-title">Zone name</div>
+    <hr>
+    <div style="text-align:center">
+        <p>SET POINT:</p>
+        <table style="width:100%; text-align:center">
+            <tr>
+                <td>
+                    <button id="zone-setpoint-dec">-</button>
+                </td>
+                <td>
+                    <div class="zone-setpoint"></div>
+                </td>
+                <td>
+                    <button id="zone-setpoint-inc">+</button>
+                </td>
+            </tr>
+        </table>
+		<p>Temperature: <span class="zone-temperature"></span>
+		<span style="display:none" class="humidity">, Humidity: <span id="zone-humidity"></span></span></p>
+    </div>
+    <button id="manual_thermostat" class="btn-small btn-left thermostatmode">Manual</button>
+    <button id="scheduled_thermostat" class="btn-small btn-right thermostatmode">Schedule</button>
+    <button id="heating_thermostat" class="btn-small btn-left thermostatopmode" style="margin-left:10px" >Heating</button>
+    <button id="cooling_thermostat" class="btn-small btn-right thermostatopmode">Cooling</button>
+    <div style="font-size:28px">Schedule</div>
+	<div id="datetime"></div>
+    <hr>
+    <div id="slider-segment-blank">
+        <div id="slider-segment-block" style="display:none">START:
+            <input type="text" id="slider-segment-start" style="margin-right:4px" />END:
+            <input type="text" id="slider-segment-end" style="margin-right:4px" />SET:
+            <input type="text" id="slider-segment-temperature" /><span id="unit"></span>
+            <button id="slider-segment-ok" style="float:right">OK</button>
+        </div>
+        <div id="slider-segment-block-movepos" style="display:none">TIME:
+            <input type="text" id="slider-segment-time" />
+            <button id="slider-segment-movepos-ok" style="float:right">OK</button>
+        </div>
+    </div>
+    <div id="console"></div>
+    <div class="slider" day="mon"></div>
+    <div class="slider" day="tue"></div>
+    <div class="slider" day="wed"></div>
+    <div class="slider" day="thu"></div>
+    <div class="slider" day="fri"></div>
+    <div class="slider" day="sat"></div>
+    <div class="slider" day="sun"></div>
+    <div id="timemarker"></div>
+    <div style="padding-top:10px">
+        <button id="mode-split" class="btn-small btn-left editmode">Split</button>
+        <button id="mode-merge" class="btn-small btn-center editmode">Merge</button>
+        <button id="mode-move" class="btn-small btn-right editmode">Move</button>
+    </div>
+    <p style="display:none">Average schedule temperature: <span id="average_temperature"></span>&deg;C</p>
+    <p style="display:none">Schedule JSON: <span class="schedule_json"></span>
+
+    </p>	
+
+  </div></div>
+  <script src="http://code.jquery.com/jquery-1.9.0.min.js"></script>
+  <script>window.jQuery || document.write('<script src="jquery-1.9.0.min.js"><\/script>')</script>
+  <script type="text/javascript" src="thermostat.js"></script>
+</body>
+</html>

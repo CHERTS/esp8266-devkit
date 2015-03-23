@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html><head><title>Relay control</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+<div id="statusView" style=""></div>  
+<div class="block">
+	<button id="toggle" style="float:right">OFF</button>
+    <div class="zone-title">Zone name</div>
+    <hr>
+        <button id="relay1" style="float:right">OFF</button>
+        <div style="font-size:32px" id="relay1name">Relay 1</div>
+        <br/>
+        
+        <button id="manual_thermostat" class="btn-small btn-left thermostatmode">Manual</button>
+    <button id="scheduled_thermostat" class="btn-small btn-right thermostatmode">Schedule</button>
+    <div style="font-size:24px">Schedule</div>
+	<div id="datetime"></div>
+    <hr>
+    <div id="slider-segment-blank">
+        <div id="slider-segment-block" style="display:none">START:
+            <input type="text" id="slider-segment-start" style="margin-right:4px" />END:
+            <input type="text" id="slider-segment-end" style="margin-right:4px" />STATE:
+     
+        <input type="radio" name="state" id="slider-segment-state1">
+        <label for="lider-segment-state1">On</label>
+        <input type="radio" name="state" id="slider-segment-state2" value="off">
+        <label for="lider-segment-state2">Off</label>          
+            
+            <button id="slider-segment-ok" style="float:right">OK</button>
+        </div>
+        <div id="slider-segment-block-movepos" style="display:none">TIME:
+            <input type="text" id="slider-segment-time" />
+            <button id="slider-segment-movepos-ok" style="float:right">OK</button>
+        </div>
+    </div>
+    <div id="console"></div>
+    <div class="slider" day="mon"></div>
+    <div class="slider" day="tue"></div>
+    <div class="slider" day="wed"></div>
+    <div class="slider" day="thu"></div>
+    <div class="slider" day="fri"></div>
+    <div class="slider" day="sat"></div>
+    <div class="slider" day="sun"></div>
+    <div id="timemarker"></div>
+    <div style="padding-top:10px">
+        <button id="mode-split" class="btn-small btn-left editmode">Split</button>
+        <button id="mode-merge" class="btn-small btn-center editmode">Merge</button>
+        <button id="mode-move" class="btn-small btn-right editmode">Move</button>
+    </div>
+	
+
+
+  <script src="http://code.jquery.com/jquery-1.9.0.min.js"></script>
+  <script>window.jQuery || document.write('<script src="jquery-1.9.0.min.js"><\/script>')</script>
+  <script type="text/javascript" src="thermostat.js"></script>
+</body>
+</html>

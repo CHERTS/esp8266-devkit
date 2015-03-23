@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html><head><title>PWM control</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link rel="stylesheet" type="text/css" href="style.css">
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.11.3/themes/smoothness/jquery-ui.css">
+  <script src="//code.jquery.com/jquery-1.10.2.js"></script>
+  <script src="//code.jquery.com/ui/1.11.3/jquery-ui.js"></script>
+
+</head>
+<body>
+	<div id="statusView" style=""></div>
+    <div class="block">
+		<div class="zone-title">
+        <p>PWM Control</p></div>
+		<hr/>
+		<div id="slider"></div>
+		<p>Temperature set to <span id="slider-value"></span>&deg;C</p>
+    
+</div>
+
+
+<script type="text/javascript">
+$("#slider").slider(
+{
+            value:18,
+            min: 18,
+            max: 28,
+            step: 1,
+            slide: function( event, ui ) {
+                $( "#slider-value" ).html( ui.value );
+            },
+            change: function( event, ui ) {
+				save("duty",ui.value);
+            }
+
+}
+);
+
+$( "#slider-value" ).html(  $('#slider').slider('value') );
+
+
+// function for checking if the page is visible or not
+// (if not visible it will stop updating data)
+function checkVisibility() {
+    $(window).bind("focus", function(event) {
+        visibleFlag = 1;
+    });
+
+    $(window).bind("blur", function(event) {
+        visibleFlag = 0;
+    });
+}
+
+function setStatus(msg,dur,pri){	 // show msg on status bar
+		if(statusMsg == true){return};
+		statusMsg= true;
+		if(pri>0){
+			$("#statusView").toggleClass("statusViewAlert",true);
+			$("#statusView").toggleClass("statusView",false);
+		} else {
+			$("#statusView").toggleClass("statusView",true);
+			$("#statusView").toggleClass("statusViewAlert",false);
+		}
+		$("#statusView").show();
+		$("#statusView").html(msg);
+		dur = dur*1000;
+		if(dur >0){
+			setTimeout(function(){$("#statusView").hide(200);$("#statusView").html(""); statusMsg= false},dur)
+		}
+	}
+	
+function save(param, payload) {
+    $.ajax({
+        type: 'GET',
+        url: "pwm.cgi?" + param + "=" + payload,
+        async: true,
+		timeout: 5000,
+		success: function (data) {
+			statusMsg = false;
+			if(!connected) setStatus("Connected",2,0); 
+			connected=true;
+		},
+		error: function (data) {
+			if(connected) setStatus("No connection to server!",0,1);
+			connected=false;
+		}
+    });
+}
+
+</script>
+
+</body>
+</html>
+
+

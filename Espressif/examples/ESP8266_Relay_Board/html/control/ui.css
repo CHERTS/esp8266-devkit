@@ -1,0 +1,16 @@
+.ui-li .ui-btn-inner a.ui-link-inherit, .ui-li-static.ui-li {
+    display: block !important;
+    padding: 0.9em 75px 0.9em 15px !important;
+}
+div.ui-slider-switch {
+    position: absolute !important;
+    right: 10px !important;
+    width: 30% !important;
+}
+.inputvalue {
+    position: absolute !important;
+    right: 20px !important;
+    width: 40% !important;
+    text-align:right;
+    color:coral;
+}

@@ -1,0 +1,162 @@
+body {
+    font-family:"Ubuntu Light";
+    color:#333
+}
+
+.zone-title {
+    font-size:42px
+}
+
+.zone-setpoint {
+    font-size:62px
+}
+
+.block { 
+    margin: 0px auto; 
+    max-width:392px; 
+    padding:20px; 
+    margin-top:50px;
+    box-shadow: 0px 1px 10px rgba(0, 0, 0, 0.1);
+    text-align:left;
+}
+
+#toggle {
+    font-size:22px;
+    color:#fff;
+    background-color:#555;
+    border-radius: 12px;
+    border:0;
+    padding:10px;
+    cursor:pointer;
+    text-decoration:none;
+}
+
+#relay1 {
+    font-size:22px;
+    color:#fff;
+    background-color:#555;
+    border-radius: 12px;
+    border:0;
+    padding:10px;
+    cursor:pointer;
+    text-decoration:none;
+}
+#relay2 {
+    font-size:22px;
+    color:#fff;
+    background-color:#555;
+    border-radius: 12px;
+    border:0;
+    padding:10px;
+    cursor:pointer;
+    text-decoration:none;
+}
+
+#relay3 {
+    font-size:22px;
+    color:#fff;
+    background-color:#555;
+    border-radius: 12px;
+    border:0;
+    padding:10px;
+    cursor:pointer;
+    text-decoration:none;
+}
+
+.statusView {width: 100% !important;  margin:0px; position: relative !important; height:28px; padding:10px 0 0 0; background-color:#E9E9E9; font-weight:bold; -webkit-border-radius: 0.7em !important; border-radius: 0.7em; display:none; text-align:center; }
+.statusViewAlert {width: 100% !important;  margin:0px; position: relative !important; height:28px; padding:10px 0 0 0; background-color:#F8B584 !important; font-weight:bold; -webkit-border-radius: 0.7em !important; border-radius: 0.7em; display:none; text-align:center; }
+
+.btn-small {
+    font-size:14px;
+    color:#fff;
+    background-color:#555;
+    cursor:pointer;
+    text-decoration:none;
+    border:0;
+    margin-right:-3px;
+    padding-top:1px;
+    padding-bottom:1px;
+}
+
+.btn-left {
+    border-top-left-radius: 5px;
+    border-bottom-left-radius: 5px;
+}
+
+.btn-right {
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+}
+
+.btn-center {
+    border-radius: 0px;
+}
+
+.slider {
+    position: relative;
+    width:100%;
+    background-color:#fff;
+    height:35px;
+    margin-top:10px;
+}
+
+.slider-segment {
+    position: absolute;
+    background-color:#ff9600;
+    height:100%;
+    border-left: 2px solid #fff;
+    border-radius: 5px;
+}
+
+.slider-label {
+    position: absolute;
+    color:#fff;
+    margin-top:5px;
+    margin-left:8px;
+    font-weight:bold;
+    text-shadow: 1px 1px rgba(200,200,200,0.5);
+    font-size:14px;
+    pointer-events: none;
+}
+
+.slider-button {
+    position: absolute;
+    top:0px;
+    width:35px;
+    height:100%;
+    margin-left:-10px;
+    margin-top:2px;
+    cursor:pointer; 
+}
+
+#slider-segment-temperature {
+    width:35px;
+}
+
+input[type=text] {
+    width:36px;
+    border:0px;
+    border-bottom: 1px solid #000;
+    font-size:14px;
+    color:#333;
+    text-align:right;
+}
+
+#slider-segment-blank {
+    height:35px;
+    font-size:14px;
+}
+
+#timemarker {
+    position:absolute;
+    background-color:rgba(0,0,0,0.2);
+    width:2px;
+    height:35px;
+    
+    margin-top:0px;
+    margin-left:-1px;
+    border-top-left-radius: 5px;
+    border-bottom-left-radius: 5px;
+    pointer-events: none;
+    border-left: 1px solid #fff;
+}

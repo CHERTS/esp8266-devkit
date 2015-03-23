@@ -1,0 +1,17 @@
+
+body {
+	background-color: #404040;
+	font-family: sans-serif;
+}
+
+#main {
+	background-color: #A7C0C0;
+	-moz-border-radius: 5px;
+	-webkit-border-radius: 5px;
+	border-radius: 5px;
+	border: 2px solid #000000;
+	width: auto;
+	margin: 0 auto;
+	padding: 20px
+}
+
