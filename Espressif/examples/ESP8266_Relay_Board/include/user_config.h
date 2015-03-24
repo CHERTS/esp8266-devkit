@@ -41,7 +41,7 @@
 #define NTP_TZ  	  2
 
 #define MQTT_ENABLE			0
-#define MQTT_HOST			"19.168.1.1=6" //host name or IP "192.168.11.1"
+#define MQTT_HOST			"192.168.1.6" //host name or IP "192.168.11.1"
 #define MQTT_PORT			1883
 #define MQTT_KEEPALIVE		120	 /*seconds*/
 #define MQTT_DEVID			"ESP_%08X"

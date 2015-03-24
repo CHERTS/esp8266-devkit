@@ -108,9 +108,9 @@ uint32_t relay_latching_enable;
 uint32_t relay_1_state;
 uint32_t relay_2_state;
 uint32_t relay_3_state;
-uint8_t relay1name[16];
-uint8_t relay2name[16];
-uint8_t relay3name[16];
+uint8_t relay1name[24];
+uint8_t relay2name[24];
+uint8_t relay3name[24];
 	
 uint32_t thermostat1state;
 uint32_t thermostat1manualsetpoint;
