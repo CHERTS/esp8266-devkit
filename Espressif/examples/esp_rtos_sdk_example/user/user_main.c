@@ -67,7 +67,7 @@ void task2(void *pvParameters)
         printf("C > send success\n");
         free(pbuf);
 
-        char *recv_buf = (char *)zalloc(128);
+        char *recv_buf = (char *)zalloc(129);
         while ((recbytes = read(sta_socket , recv_buf, 128)) > 0) {
         	recv_buf[recbytes] = 0;
             printf("C > read data success %d!\nC > %s\n", recbytes, recv_buf);
