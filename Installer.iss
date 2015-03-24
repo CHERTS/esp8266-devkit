@@ -112,7 +112,7 @@ Name: "turkish"; MessagesFile: "compiler:Languages\Turkish.isl"
 ;BeveledLabel=Espressif ESP8266 Developer Kit
 english.WelcomeLabel2=Now on your PC will be installed {#DevKitAppName}. The DevKit includes a unofficial compiler for SoC Xtensa LX106 and ESP8266 SDK v{#DevKitSDKVersion}, utilities and examples of writing firmware.
 russian.WelcomeLabel2=Сейчас на Ваш компьютер будет установлен {#DevKitAppName}. В состав комплекта входят неофициальный компилятор для SoC Xtensa LX106, ESP8266 SDK v{#DevKitSDKVersion}, набор утилит и примеры написания прошивок.
-turkish.WelcomeLabel2=Bu kurulum paketi ile bilgisayarınıza {#DevKitAppName} yükllenecek . Bu paket SoC Xtensa LX106 için derleyici, ESP8266 SDK v{#DevKitSDKVersion} ve yardımcı örnekler içerir.
+turkish.WelcomeLabel2=Bu kurulum paketi ile bilgisayarınıza {#DevKitAppName} yüklenecek . Bu paket SoC Xtensa LX106 için derleyici, ESP8266 SDK v{#DevKitSDKVersion} ve yardımcı örnekler içerir.
 
 [CustomMessages]
 english.UninstallProgram=Uninstall %1
@@ -120,7 +120,7 @@ russian.UninstallProgram=Удалить %1
 turkish.UninstallProgram=Kaldır %1
 english.DONATE=Dear users, support this project and it will continue to develop:
 russian.DONATE=Уважаемые пользователи, поддержите проект и благодаря Вам он сможет развиваться дальше:
-turkish.DONATE=Sevgili kullanıcılar, çalışmayı beğendiyseniz lütfen bağışta yaparak çalışmamın gelişimine katkıda bulunun.:
+turkish.DONATE=Sevgili kullanıcılar, çalışmayı beğendiyseniz lütfen bağış yaparak çalışmamın gelişimine katkıda bulunun.:
 
 [Code]
 const
