@@ -127,7 +127,7 @@ void task3(void *pvParameters)
 
                 printf("S > Client from %s %d\n", inet_ntoa(client_addr.sin_addr), htons(client_addr.sin_port));
 
-                char *recv_buf = (char *)zalloc(128);
+                char *recv_buf = (char *)zalloc(129);
                 while ((recbytes = read(client_sock , recv_buf, 128)) > 0) {
                 	recv_buf[recbytes] = 0;
                     printf("S > read data success %d!\nS > %s\n", recbytes, recv_buf);
