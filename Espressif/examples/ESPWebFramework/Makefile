@@ -25,6 +25,78 @@ WEBDIR = ./webcontent/
 WEBCONTENTADDRS = 0x17000
 MAXWEBCONTENT = 167936
 
+# SPI_SPEED = 20MHz, 26.7MHz, 40MHz, 80MHz
+SPI_SPEED?=40
+# SPI_MODE: QIO, QOUT, DIO, DOUT
+SPI_MODE?=QIO
+# SPI_SIZE: 256KB, 512KB, 1024KB, 2048KB, 4096KB
+SPI_SIZE?=512
+
+ifeq ($(SPI_SPEED), 26.7)
+    freqdiv = 1
+	flashimageoptions = -ff 26m
+else
+    ifeq ($(SPI_SPEED), 20)
+        freqdiv = 2
+        flashimageoptions = -ff 20m
+    else
+        ifeq ($(SPI_SPEED), 80)
+            freqdiv = 15
+			flashimageoptions = -ff 80m
+        else
+            freqdiv = 0
+			flashimageoptions = -ff 40m
+        endif
+    endif
+endif
+
+ifeq ($(SPI_MODE), QOUT)
+    mode = 1
+	flashimageoptions += -fm qout
+else
+    ifeq ($(SPI_MODE), DIO)
+        mode = 2
+		flashimageoptions += -fm dio
+    else
+        ifeq ($(SPI_MODE), DOUT)
+            mode = 3
+			flashimageoptions += -fm dout
+        else
+            mode = 0
+			flashimageoptions += -fm qio
+        endif
+    endif
+endif
+
+# flash larger than 1024KB only use 1024KB to storage user1.bin and user2.bin
+ifeq ($(SPI_SIZE), 256)
+    size = 1
+    flash = 256
+	flashimageoptions += -fs 2m
+else
+    ifeq ($(SPI_SIZE), 1024)
+        size = 2
+        flash = 1024
+		flashimageoptions += -fs 8m
+    else
+        ifeq ($(SPI_SIZE), 2048)
+            size = 3
+            flash = 1024
+			flashimageoptions += -fs 16m
+        else
+            ifeq ($(SPI_SIZE), 4096)
+                size = 4
+                flash = 1024
+				flashimageoptions += -fs 32m
+            else
+                size = 0
+                flash = 512
+				flashimageoptions += -fs 4m
+            endif
+        endif
+    endif
+endif
+
 # name for the target project
 TARGET		= app
 
@@ -157,14 +229,19 @@ firmware:
 	$(Q) mkdir -p $@
 
 flash: all
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x00000 $(FW_BASE)/eagle.flash.bin 0x40000 $(FW_BASE)/eagle.irom0text.bin
+	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash $(flashimageoptions) 0x00000 $(FW_BASE)/eagle.flash.bin 0x40000 $(FW_BASE)/eagle.irom0text.bin
 
 flashinit:
-	$(vecho) "Flash init data default and blank data."
-	$(ESPTOOL) -p $(ESPPORT) write_flash 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
+	$(vecho) "Flash init data:"
+	$(vecho) "Clear old settings (EEP area):"
+	$(vecho) "clear_eep.bin-------->0x79000"
+	$(vecho) "Default config (Clear SDK settings):"
+	$(vecho) "blank.bin-------->0x7E000"
+	$(vecho) "esp_init_data_default.bin-------->0x7C000"
+	$(ESPTOOL) -p $(ESPPORT) write_flash $(flashimageoptions) 0x79000 $(SDK_BASE)/bin/clear_eep.bin 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
 
 flashweb: webcontent
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash $(WEBCONTENTADDRS) webcontent.bin
+	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash $(flashimageoptions) $(WEBCONTENTADDRS) webcontent.bin
 
 webcontent:
 	binarydir.exe $(WEBDIR) webcontent.bin $(MAXWEBCONTENT)

@@ -72,6 +72,11 @@ namespace fdv
 			vTaskSuspend(m_handle);
 		}
 		
+		void MTD_FLASHMEM terminate()
+		{
+			vTaskDelete(m_handle);
+		}
+		
 		void MTD_FLASHMEM resume()
 		{
 			if (m_handle)
@@ -85,8 +90,8 @@ namespace fdv
 			vTaskDelay(ms / portTICK_RATE_MS);
 		}
 		
-		// task free stack (in bytes)
-		static uint32_t MTD_FLASHMEM getFreeStack()
+		// task min touched free stack (in bytes)
+		static uint32_t MTD_FLASHMEM getMinFreeStack()
 		{
 			return uxTaskGetStackHighWaterMark(NULL) * 4;
 		}
@@ -165,6 +170,35 @@ namespace fdv
 	private:
 		T* m_object;
 	};
+
+
+	/////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////
+	// asyncExec
+	// creates a temporary task to execute the specified function
+	//
+	// Example:
+	//   void myfunc()
+	//   {
+	//      ...
+	//   }
+	//
+	//   asyncExec<myfunc>();
+	
+	
+	template <void (*FP)()>
+	void asyncExec_(void* params)
+	{		
+		FP();
+		vTaskDelete(NULL);
+	}
+	
+	template <void (*FP)()>
+	void asyncExec(uint32_t stackDepth = 256, uint32_t priority = 2)
+	{
+		xTaskHandle handle;
+		xTaskCreate(asyncExec_<FP>, (const signed char*)"", stackDepth, NULL, priority, &handle);
+	}
 	
 	
 }

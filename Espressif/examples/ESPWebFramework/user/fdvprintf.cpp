@@ -733,4 +733,21 @@ repeat:
 }
 
 
+uint16_t FUNC_FLASHMEM sprintf(char* str, char const *fmt, ...)
+{
+	va_list args;
+	
+	va_start(args, fmt);
+	uint16_t len = vsprintf(NULL, fmt, args);
+	va_end(args);
+
+	va_start(args, fmt);
+	vsprintf(str, fmt, args);
+	va_end(args);
+
+	return len;
+}
+
+
+
 }	// end of fdv namespace

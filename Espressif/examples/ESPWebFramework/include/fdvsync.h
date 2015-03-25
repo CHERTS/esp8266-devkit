@@ -339,6 +339,12 @@ namespace fdv
 			{
 				return xQueueSend(m_handle, &item, msTimeOut / portTICK_RATE_MS);
 			}
+			
+			bool send(uint32_t msTimeOut = portMAX_DELAY)
+			{
+				T dummyItem;
+				return send(dummyItem, msTimeOut);
+			}
 
 			bool sendFromISR(T& item)
 			{
@@ -349,6 +355,12 @@ namespace fdv
 			bool receive(T* item, uint32_t msTimeOut = portMAX_DELAY)
 			{
 				return xQueueReceive(m_handle, item, msTimeOut / portTICK_RATE_MS);
+			}
+			
+			bool receive(uint32_t msTimeOut = portMAX_DELAY)
+			{
+				T dummyItem;
+				return receive(&dummyItem, msTimeOut);
 			}
 			
 			bool peek(T* item, uint32_t msTimeOut = portMAX_DELAY)

@@ -64,6 +64,7 @@ extern "C"
 #include "fdvcollections.h"
 #include "fdvserial.h"
 #include "fdvnetwork.h"
+#include "fdvserialserv.h"
 #include "fdvconfmanager.h"
 
 

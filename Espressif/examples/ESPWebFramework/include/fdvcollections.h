@@ -41,15 +41,16 @@ struct CharChunk
 {
 	CharChunk* next;
 	uint32_t   items;
+	uint32_t   capacity;
 	char*      data;
 	bool       freeOnDestroy;	// free "data" on destroy
 	
-	CharChunk(uint32_t capacity)
-		: next(NULL), items(0), data(new char[capacity]), freeOnDestroy(true)
+	CharChunk(uint32_t capacity_)
+		: next(NULL), items(0), capacity(capacity_), data(new char[capacity_]), freeOnDestroy(true)
 	{
 	}
 	CharChunk(char* data_, uint32_t items_, bool freeOnDestroy_)
-		: next(NULL), items(items_), data(data_), freeOnDestroy(freeOnDestroy_)
+		: next(NULL), items(items_), capacity(items_), data(data_), freeOnDestroy(freeOnDestroy_)
 	{
 	}
 	~CharChunk()
@@ -128,7 +129,7 @@ struct LinkedCharChunks
 	CharChunk* addChunk(char const* data, uint32_t items, bool freeOnDestroy);
 	void addChunk(char const* str, bool freeOnDestroy = false);
 	void addChunks(LinkedCharChunks* src);
-	void append(char value);
+	void append(char value, uint32_t newChunkSize = 1);
 	CharChunk* getFirstChunk();
 	CharChunksIterator getIterator();
 	uint32_t getItemsCount();
@@ -396,6 +397,14 @@ struct ObjectDict
 		}
 	}
 	
+	// add an empty item, returning pointer to the created object value
+	T* add(char const* key)
+	{
+		T value;
+		add(key, value);
+		return &(getItem(key)->value);
+	}
+	
 	uint32_t getItemsCount()
 	{
 		return m_itemsCount;
@@ -501,6 +510,9 @@ struct FlashDictionary
 	// requires 4K free heap to execute!
 	static void MTD_FLASHMEM setValue(char const* key, void const* value, uint32_t valueLength)
 	{
+		if (!value)
+			return;
+		
 		// find key or a free space
 		uint8_t const* keyPosPtr = (uint8_t const*)findKey(key);
 
@@ -570,7 +582,8 @@ struct FlashDictionary
 		
 	static void MTD_FLASHMEM setString(char const* key, char const* value)
 	{
-		setValue(key, value, f_strlen(value) + 1);
+		if (value)
+			setValue(key, value, f_strlen(value) + 1);
 	}
 	
 	// always returns a Flash stored string (if not found return what contained in defaultValue)
@@ -619,7 +632,7 @@ struct FlashDictionary
 		while (true)
 		{
 			uint8_t keylen = getByte(curpos);	// keylen doesn't include ending zero
-			if (keylen == 0xFF || f_strcmp((char const*)(curpos + 1), key) == 0)
+			if (keylen == 0xFF || (key && f_strcmp((char const*)(curpos + 1), key) == 0))
 				return curpos;	// return start of free space or start of key->value block
 			// goto next block
 			curpos += 1 + keylen + 1;		// 1 (keylen field) + keylen + 1 (ending zero)
@@ -631,6 +644,11 @@ struct FlashDictionary
 	{
 		// already aligned, can be read directly from Flash
 		return *((uint32_t const*)(FLASH_MAP_START + FLASH_DICTIONARY_POS)) == MAGIC;
+	}
+	
+	static uint32_t MTD_FLASHMEM getUsedSpace()
+	{
+		return (uint32_t)findKey(NULL) - (FLASH_MAP_START + FLASH_DICTIONARY_POS);
 	}
 	
 };

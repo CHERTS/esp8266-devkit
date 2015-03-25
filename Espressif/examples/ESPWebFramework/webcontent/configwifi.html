@@ -7,23 +7,12 @@ WiFi Configuration
 
 
 <script type="text/javascript">
-<!--
-function showDiv(chk_id, div_id) {
-  var chbox = document.getElementById(chk_id);
-  var vis = "none";
-  if (chbox.checked) {
-    vis = "block";
+  function enableFields() {
+    document.getElementById('clientmode_fields').disabled = !document.getElementById("ch_clientmode").checked;
+    document.getElementById('apmode_fields').disabled = !document.getElementById("ch_apmode").checked;
   }
-  document.getElementById(div_id).style.display = vis;
-}
 
-function showDivs() {
-  showDiv('ch_clientmode', 'div_clientmode');
-  showDiv('ch_apmode', 'div_apmode');
-}
-
-window.onload = showDivs;
-//-->
+  window.onload = enableFields;
 </script>
 
 
@@ -31,23 +20,23 @@ window.onload = showDivs;
 
   <p><h3>WiFi Mode</h3></p>
   <div id="subcontent">			
-	<input id="ch_clientmode" type='checkbox' name='clientmode' value='1' {{clientmode}} onclick="showDivs()"> Client Mode <br>
-	<input id="ch_apmode" type='checkbox' name='apmode' value='1' {{apmode}} onclick="showDivs()"> Access Point Mode <br>
+	<input id="ch_clientmode" type='checkbox' name='clientmode' value='1' {{clientmode}} onclick="enableFields()"> Client Mode <br>
+	<input id="ch_apmode" type='checkbox' name='apmode' value='1' {{apmode}} onclick="enableFields()"> Access Point Mode <br>
   </div>
 
-  <div id="div_clientmode">
+  <fieldset id="clientmode_fields">
     <p><h3>Client Mode WiFi Configuration</h3></p>
     <div id="subcontent">			
   	  SSID: <input type='text' name='CLSSID' value='{{CLSSID}}'> <br>
 	  Password: <input type='text' name='CLPSW' value='{{CLPSW}}'> <br>
     </div>
-  </div>
+  </fieldset>
   
-  <div id="div_apmode">
+  <fieldset id="apmode_fields">
     <p><h3>Access Point Mode WiFi Configuration</h3></p>
     <div id="subcontent">			
   	  SSID: <input type='text' name='APSSID' value='{{APSSID}}'> <br>
-	  Password: <input type='text' name='APPSW' value='{{APPSW}}'> <br>
+	  Password: <input type='text' name='APPSW' value='{{APPSW}}'> (minimum length 8 characters)<br>
 	  Channel: 
 		<select name="APCH">
 		  <option value="1" {{APCH1}}>1</option>
@@ -76,7 +65,9 @@ window.onload = showDivs;
 		<br>
 	  Hidden SSID: <input type='checkbox' name='APHSSID' value='1' {{APHSSID}}> <br>
     </div>
-  </div>
+  </fieldset>
   
   <input type='submit' value='Save'>
+  
+  <br><br><p>System needs to be rebooted for the changes to take effect</p>
 </form>

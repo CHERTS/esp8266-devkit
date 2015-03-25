@@ -60,45 +60,42 @@ namespace fdv
 	static char const STR_DHCPDIP1[] FLASHMEM = "DHCPDIP1";
 	static char const STR_DHCPDIP2[] FLASHMEM = "DHCPDIP2";
 	static char const STR_DHCPDMXL[] FLASHMEM = "DHCPDMXL";
+	static char const STR_WEBPORT[] FLASHMEM  = "WEBPORT";
+	static char const STR_BAUD[] FLASHMEM     = "BAUD";
+	static char const STR_SYSOUT[] FLASHMEM   = "SYSOUT";
+	static char const STR_UARTSRV[] FLASHMEM  = "UARTSRV";
 	
+
 	
 	class ConfigurationManager
-	{
+	{		
 		
-	public:
-		
-		static void MTD_FLASHMEM apply()
+		template <typename HTTPCustomServer_T>
+		static void MTD_FLASHMEM applyDelayed()
 		{
-			// WiFi Mode
-			WiFi::setMode(getWiFiMode());
+			if (getWiFiMode() == WiFi::AccessPoint || getWiFiMode() == WiFi::ClientAndAccessPoint)
+			{
+				// Access Point IP
+				char const* IP;
+				char const* netmask;
+				char const* gateway;
+				getAccessPointIPParams(&IP, &netmask, &gateway);
+				IP::configureStatic(WiFi::AccessPointNetwork, IP, netmask, gateway);
+			}
 			
-			// Access point parameters
-			char const* SSID;
-			char const* securityKey;
-			uint8_t channel;
-			WiFi::SecurityProtocol securityProtocol;
-			bool hiddenSSID;
-			getAccessPointParams(&SSID, &securityKey, &channel, &securityProtocol, &hiddenSSID);
-			WiFi::configureAccessPoint(SSID, securityKey, channel, securityProtocol, hiddenSSID);
-			
-			// Client parameters
-			getClientParams(&SSID, &securityKey);
-			WiFi::configureClient(SSID, securityKey);
-			
-			// Client IP
-			bool staticIP;
-			char const* IP;
-			char const* netmask;
-			char const* gateway;
-			getClientIPParams(&staticIP, &IP, &netmask, &gateway);
-			if (staticIP)
-				IP::configureStatic(IP::ClientNetwork, IP, netmask, gateway);
-			else
-				IP::configureDHCP(IP::ClientNetwork);
-			
-			// Access Point IP
-			getAccessPointIPParams(&IP, &netmask, &gateway);
-			IP::configureStatic(IP::AccessPointNetwork, IP, netmask, gateway);
+			if (getWiFiMode() == WiFi::Client || getWiFiMode() == WiFi::ClientAndAccessPoint)
+			{			
+				// Client IP
+				bool staticIP;
+				char const* IP;
+				char const* netmask;
+				char const* gateway;
+				getClientIPParams(&staticIP, &IP, &netmask, &gateway);
+				if (staticIP)
+					IP::configureStatic(WiFi::ClientNetwork, IP, netmask, gateway);
+				else
+					IP::configureDHCP(WiFi::ClientNetwork);
+			}
 			
 			// DCHP Server
 			if (getWiFiMode() == WiFi::AccessPoint || getWiFiMode() == WiFi::ClientAndAccessPoint)
@@ -111,11 +108,68 @@ namespace fdv
 				if (enabled)
 					DHCPServer::configure(startIP, endIP, maxLeases);
 			}
+			
+			// Web Server
+			uint16_t webPort;
+			getWebServerParams(&webPort);
+			new HTTPCustomServer_T(webPort);
 		}
-				
+	
+	public:
+		
+		template <typename HTTPCustomServer_T>
+		static void MTD_FLASHMEM apply()
+		{
+			// UART and serial services
+			uint32_t baudRate;
+			bool enableSystemOutput;
+			SerialService serialService;
+			getUARTParams(&baudRate, &enableSystemOutput, &serialService);
+			HardwareSerial::getSerial(0)->reconfig(baudRate);
+			if (!enableSystemOutput)
+				DisableStdOut();
+		    switch (serialService)
+			{
+				case SerialService_Console:
+					new SerialConsole;
+					break;
+				case SerialService_BinaryProtocol:
+					// todo
+					break;
+			}
+
+			// WiFi Mode
+			WiFi::setMode(getWiFiMode());
+										
+			if (getWiFiMode() == WiFi::AccessPoint || getWiFiMode() == WiFi::ClientAndAccessPoint)
+			{
+				// Access point parameters
+				char const* SSID;
+				char const* securityKey;
+				uint8_t channel;
+				WiFi::SecurityProtocol securityProtocol;
+				bool hiddenSSID;
+				getAccessPointParams(&SSID, &securityKey, &channel, &securityProtocol, &hiddenSSID);
+				WiFi::configureAccessPoint(SSID, securityKey, channel, securityProtocol, hiddenSSID);
+			}
+			
+			if (getWiFiMode() == WiFi::Client || getWiFiMode() == WiFi::ClientAndAccessPoint)
+			{			
+				// Client parameters
+				char const* SSID;
+				char const* securityKey;
+				getClientParams(&SSID, &securityKey);
+				WiFi::configureClient(SSID, securityKey);
+			}
+
+			asyncExec< applyDelayed<HTTPCustomServer_T> >(512);
+		}
+
+	
 		static void MTD_FLASHMEM restore()
 		{
 			FlashDictionary::eraseContent();
+			system_restore();
 		}
 		
 		
@@ -145,10 +199,14 @@ namespace fdv
 		
 		static void MTD_FLASHMEM getAccessPointParams(char const** SSID, char const** securityKey, uint8_t* channel, WiFi::SecurityProtocol* securityProtocol, bool* hiddenSSID)
 		{
-			*SSID             = FlashDictionary::getString(STR_APSSID, FSTR("MyESP"));
-			*securityKey      = FlashDictionary::getString(STR_APSECKEY, FSTR("myesp111"));
+			static char defaultSSID[10];
+			uint8_t mac[16];
+			WiFi::getMACAddress(WiFi::AccessPointNetwork, mac);			
+			sprintf(defaultSSID, FSTR("ESP%02X%02X%02X%02X%02X%02X"), mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+			*SSID             = FlashDictionary::getString(STR_APSSID, defaultSSID);
+			*securityKey      = FlashDictionary::getString(STR_APSECKEY, FSTR(""));
 			*channel          = FlashDictionary::getInt(STR_APCH, 9);
-			*securityProtocol = (WiFi::SecurityProtocol)FlashDictionary::getInt(STR_APSP, (int32_t)WiFi::WPA2_PSK);
+			*securityProtocol = (WiFi::SecurityProtocol)FlashDictionary::getInt(STR_APSP, (int32_t)WiFi::Open);
 			*hiddenSSID       = FlashDictionary::getBool(STR_APHSSID, false);
 		}
 		
@@ -208,12 +266,15 @@ namespace fdv
 		
 		//// DHCP server parameters
 		
-		static void MTD_FLASHMEM setDHCPServerParams(bool enabled, char const* startIP, char const* endIP, uint32_t maxLeases)
+		static void MTD_FLASHMEM setDHCPServerParams(bool enabled, char const* startIP = NULL, char const* endIP = NULL, uint32_t maxLeases = 0)
 		{
 			FlashDictionary::setBool(STR_DHCPDEN, enabled);
-			FlashDictionary::setString(STR_DHCPDIP1, startIP);
-			FlashDictionary::setString(STR_DHCPDIP2, endIP);
-			FlashDictionary::setInt(STR_DHCPDMXL, maxLeases);
+			if (startIP && endIP && maxLeases)
+			{
+				FlashDictionary::setString(STR_DHCPDIP1, startIP);
+				FlashDictionary::setString(STR_DHCPDIP2, endIP);
+				FlashDictionary::setInt(STR_DHCPDMXL, maxLeases);
+			}
 		}
 		
 		static void MTD_FLASHMEM getDHCPServerParams(bool* enabled, char const** startIP, char const** endIP, uint32_t* maxLeases)
@@ -224,6 +285,35 @@ namespace fdv
 			*maxLeases = FlashDictionary::getInt(STR_DHCPDMXL, 10);
 		}
 		
+		
+		//// Web Server parameters
+		
+		static void MTD_FLASHMEM setWebServerParams(uint16_t port)
+		{
+			FlashDictionary::setInt(STR_WEBPORT, port);
+		}
+		
+		static void MTD_FLASHMEM getWebServerParams(uint16_t* port)
+		{
+			*port = FlashDictionary::getInt(STR_WEBPORT, 80);
+		}
+		
+		
+		//// UART parameters
+		
+		static void MTD_FLASHMEM setUARTParams(uint32_t baudRate, bool enableSystemOutput, SerialService serialService)
+		{
+			FlashDictionary::setInt(STR_BAUD, baudRate);
+			FlashDictionary::setBool(STR_SYSOUT, enableSystemOutput);
+			FlashDictionary::setInt(STR_UARTSRV, (int32_t)serialService);
+		}
+		
+		static void MTD_FLASHMEM getUARTParams(uint32_t* baudRate, bool* enableSystemOutput, SerialService* serialService)
+		{
+			*baudRate           = FlashDictionary::getInt(STR_BAUD, 115200);
+			*enableSystemOutput = FlashDictionary::getBool(STR_SYSOUT, false);
+			*serialService      = (SerialService)FlashDictionary::getInt(STR_UARTSRV, (int32_t)SerialService_Console);
+		}
 	};
 
 
@@ -251,8 +341,8 @@ namespace fdv
 			if (getRequest().method == HTTPHandler::Post)
 			{
 				// set WiFi mode
-				char const* clientmode = getRequest().form["clientmode"];
-				char const* apmode     = getRequest().form["apmode"];
+				char const* clientmode = getRequest().form[FSTR("clientmode")];
+				char const* apmode     = getRequest().form[FSTR("apmode")];
 				if (clientmode && apmode)
 					ConfigurationManager::setWiFiMode(WiFi::ClientAndAccessPoint);
 				else if (clientmode)
@@ -261,43 +351,47 @@ namespace fdv
 					ConfigurationManager::setWiFiMode(WiFi::AccessPoint);
 				
 				// set client mode parameters
-				ConfigurationManager::setClientParams(getRequest().form["CLSSID"], getRequest().form["CLPSW"]);				
+				ConfigurationManager::setClientParams(getRequest().form[FSTR("CLSSID")],
+				                                      getRequest().form[FSTR("CLPSW")]);
 				
 				// set access point parameters
-				ConfigurationManager::setAccessPointParams(getRequest().form["APSSID"],
-												           getRequest().form["APPSW"],
-														   strtol(getRequest().form["APCH"], NULL, 10),
-														   (WiFi::SecurityProtocol)strtol(getRequest().form["APSEC"], NULL, 10),
-														   getRequest().form["APHSSID"] != NULL);
+				char const* APCH    = getRequest().form[FSTR("APCH")];
+				char const* APSEC   = getRequest().form[FSTR("APSEC")];
+				if (APCH && APSEC)
+					ConfigurationManager::setAccessPointParams(getRequest().form[FSTR("APSSID")], 
+															   getRequest().form[FSTR("APPSW")], 
+															   strtol(APCH, NULL, 10),
+															   (WiFi::SecurityProtocol)strtol(APSEC, NULL, 10),
+															   getRequest().form[FSTR("APHSSID")] != NULL);
 			}
 			
 			// get WiFi mode
 			WiFi::Mode mode = ConfigurationManager::getWiFiMode();			
 			if (mode == WiFi::Client || mode == WiFi::ClientAndAccessPoint)
-				addParam(FSTR("clientmode"), FSTR("checked"));			
+				addParamStr(FSTR("clientmode"), FSTR("checked"));			
 			if (mode == WiFi::AccessPoint || mode == WiFi::ClientAndAccessPoint)
-				addParam(FSTR("apmode"), FSTR("checked"));
+				addParamStr(FSTR("apmode"), FSTR("checked"));
 			
 			// get client mode parameters
 			char const* SSID;
 			char const* securityKey;
 			ConfigurationManager::getClientParams(&SSID, &securityKey);
-			addParam(FSTR("CLSSID"), SSID);
-			addParam(FSTR("CLPSW"), securityKey);
+			addParamStr(FSTR("CLSSID"), SSID);
+			addParamStr(FSTR("CLPSW"), securityKey);
 			
 			// get access point parameters
 			uint8_t channel;
 			WiFi::SecurityProtocol securityProtocol;
 			bool hiddenSSID;
 			ConfigurationManager::getAccessPointParams(&SSID, &securityKey, &channel, &securityProtocol, &hiddenSSID);
+			addParamStr(FSTR("APSSID"), SSID);
+			addParamStr(FSTR("APPSW"), securityKey);
 			APtr<char> APCHStr(f_printf(FSTR("APCH%d"), channel));
+			addParamStr(APCHStr.get(), FSTR("selected"));
 			APtr<char> APSECStr(f_printf(FSTR("APSEC%d"), (int32_t)securityProtocol));
-			addParam(FSTR("APSSID"), SSID);
-			addParam(FSTR("APPSW"), securityKey);
-			addParam(APCHStr.get(), FSTR("selected"));
-			addParam(APSECStr.get(), FSTR("selected"));
+			addParamStr(APSECStr.get(), FSTR("selected"));
 			if (hiddenSSID)
-				addParam(FSTR("APHSSID"), FSTR("checked"));
+				addParamStr(FSTR("APHSSID"), FSTR("checked"));
 			
 			HTTPTemplateResponse::flush();
 		}
@@ -320,21 +414,24 @@ namespace fdv
 			if (getRequest().method == HTTPHandler::Post)
 			{
 				// set client mode IP configuration
-				ConfigurationManager::setClientIPParams(getRequest().form["staticIP"] != NULL,
-													    getRequest().form["CLIP"],
-														getRequest().form["CLMSK"],
-														getRequest().form["CLGTW"]);
+				ConfigurationManager::setClientIPParams(getRequest().form[FSTR("staticIP")] != NULL,
+													    getRequest().form[FSTR("CLIP")],
+														getRequest().form[FSTR("CLMSK")],
+														getRequest().form[FSTR("CLGTW")]);
 														
 				// set access point IP configuration
-				ConfigurationManager::setAccessPointIPParams(getRequest().form["APIP"],
-														     getRequest().form["APMSK"],
-														     getRequest().form["APGTW"]);
+				ConfigurationManager::setAccessPointIPParams(getRequest().form[FSTR("APIP")],
+														     getRequest().form[FSTR("APMSK")],
+														     getRequest().form[FSTR("APGTW")]);
 
 				// set DHCP server configuration
-				ConfigurationManager::setDHCPServerParams(getRequest().form["DHCPD"] != NULL,
-														  getRequest().form["startIP"],
-														  getRequest().form["endIP"],
-														  strtol(getRequest().form["maxLeases"], NULL, 10));
+				if (getRequest().form[FSTR("DHCPD")] != NULL)
+					ConfigurationManager::setDHCPServerParams(true,
+															  getRequest().form[FSTR("startIP")],
+															  getRequest().form[FSTR("endIP")],
+															  strtol(getRequest().form[FSTR("maxLeases")], NULL, 10));
+				else
+					ConfigurationManager::setDHCPServerParams(false);
 			}
 			
 			WiFi::Mode mode = ConfigurationManager::getWiFiMode();
@@ -345,19 +442,19 @@ namespace fdv
 			char const* netmask;
 			char const* gateway;
 			ConfigurationManager::getClientIPParams(&staticIP, &IP, &netmask, &gateway);
-			addParam(FSTR("DISP_CLIPCONF"), mode == WiFi::Client || mode == WiFi::ClientAndAccessPoint? FSTR("block") : FSTR("none"));
+			addParamStr(FSTR("DISP_CLIPCONF"), mode == WiFi::Client || mode == WiFi::ClientAndAccessPoint? FSTR("") : FSTR("disabled"));
 			if (staticIP)
-				addParam(FSTR("staticIP"), FSTR("checked"));
-			addParam(FSTR("CLIP"), IP);
-			addParam(FSTR("CLMSK"), netmask);
-			addParam(FSTR("CLGTW"), gateway);
+				addParamStr(FSTR("staticIP"), FSTR("checked"));
+			addParamStr(FSTR("CLIP"), IP);
+			addParamStr(FSTR("CLMSK"), netmask);
+			addParamStr(FSTR("CLGTW"), gateway);
 			
 			// get access point IP configuration
 			ConfigurationManager::getAccessPointIPParams(&IP, &netmask, &gateway);
-			addParam(FSTR("DISP_APIPCONF"), mode == WiFi::AccessPoint || mode == WiFi::ClientAndAccessPoint? FSTR("block") : FSTR("none"));
-			addParam(FSTR("APIP"), IP);
-			addParam(FSTR("APMSK"), netmask);
-			addParam(FSTR("APGTW"), gateway);
+			addParamStr(FSTR("DISP_APIPCONF"), mode == WiFi::AccessPoint || mode == WiFi::ClientAndAccessPoint? FSTR("") : FSTR("disabled"));
+			addParamStr(FSTR("APIP"), IP);
+			addParamStr(FSTR("APMSK"), netmask);
+			addParamStr(FSTR("APGTW"), gateway);
 			
 			// get DHCP server configuration
 			bool DHCPDEnabled;
@@ -366,11 +463,10 @@ namespace fdv
 			uint32_t maxLeases;
 			ConfigurationManager::getDHCPServerParams(&DHCPDEnabled, &startIP, &endIP, &maxLeases);
 			if (DHCPDEnabled)
-				addParam(FSTR("DHCPD"), FSTR("checked"));
-			addParam(FSTR("startIP"), startIP);
-			addParam(FSTR("endIP"), endIP);
-			APtr<char> maxLeasesStr(f_printf(FSTR("%d"), maxLeases));
-			addParam(FSTR("maxLeases"), maxLeasesStr.get());
+				addParamStr(FSTR("DHCPD"), FSTR("checked"));
+			addParamStr(FSTR("startIP"), startIP);
+			addParamStr(FSTR("endIP"), endIP);
+			addParamInt(FSTR("maxLeases"), maxLeases);
 			
 			HTTPTemplateResponse::flush();
 		}
@@ -380,11 +476,11 @@ namespace fdv
 
 	//////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////
-	// HTTPUARTConfigurationResponse
+	// HTTPServicesConfigurationResponse
 
-	struct HTTPUARTConfigurationResponse : public HTTPTemplateResponse
+	struct HTTPServicesConfigurationResponse : public HTTPTemplateResponse
 	{
-		HTTPUARTConfigurationResponse(HTTPHandler* httpHandler, char const* filename)
+		HTTPServicesConfigurationResponse(HTTPHandler* httpHandler, char const* filename)
 			: HTTPTemplateResponse(httpHandler, filename)
 		{
 		}
@@ -393,8 +489,36 @@ namespace fdv
 		{
 			if (getRequest().method == HTTPHandler::Post)
 			{
+				// set Web server configuration
+				char const* httpport = getRequest().form[FSTR("httpport")];
+				if (httpport)
+					ConfigurationManager::setWebServerParams(strtol(httpport, NULL, 10));
+				
+				// set UART configuration
+				char const* baud = getRequest().form[FSTR("baud")];
+				char const* serv = getRequest().form[FSTR("serv")];
+				if (baud && serv)
+					ConfigurationManager::setUARTParams(strtol(baud, NULL, 10),
+														getRequest().form[FSTR("debugout")] != NULL,
+														(SerialService)strtol(serv, NULL, 10));
 			}
-						
+			
+			// get Web server configuration
+			uint16_t webPort;
+			ConfigurationManager::getWebServerParams(&webPort);
+			addParamInt(FSTR("httpport"), webPort);
+			
+			// get UART configuration
+			uint32_t baudRate;
+			bool enableSystemOutput;
+			SerialService serialService;
+			ConfigurationManager::getUARTParams(&baudRate, &enableSystemOutput, &serialService);
+			addParamInt(FSTR("baud"), baudRate);
+			if (enableSystemOutput)
+				addParamStr(FSTR("debugout"), FSTR("checked"));
+			APtr<char> serialServiceStr(f_printf(FSTR("serv%d"), (int32_t)serialService));
+			addParamStr(serialServiceStr.get(), FSTR("checked"));						
+			
 			HTTPTemplateResponse::flush();
 		}
 		

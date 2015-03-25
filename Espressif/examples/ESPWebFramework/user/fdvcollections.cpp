@@ -180,11 +180,20 @@ void MTD_FLASHMEM LinkedCharChunks::addChunks(LinkedCharChunks* src)
 }
 
 
-void MTD_FLASHMEM LinkedCharChunks::append(char value)
+void MTD_FLASHMEM LinkedCharChunks::append(char value, uint32_t newChunkSize)
 {
-	CharChunk* chunk = addChunk(1);
-	chunk->data[0] = value;
-	chunk->items = 1;
+	if (m_current && m_current->items < m_current->capacity)
+	{
+		// can use current chunk
+		m_current->data[m_current->items++] = value;
+	}
+	else
+	{
+		// need another chunk
+		CharChunk* chunk = addChunk(newChunkSize);
+		chunk->data[0] = value;
+		chunk->items = 1;
+	}
 }
 
 
@@ -228,7 +237,6 @@ void MTD_FLASHMEM LinkedCharChunks::dump()
 // filename can stay in Ram or Flash
 bool MTD_FLASHMEM FlashFileSystem::find(char const* filename, char const** mimetype, void const** data, uint16_t* dataLength)
 {
-	//debug("find: %s\r\n", filename);
 	char const* curc = (char const*)(FLASH_MAP_START + FLASHFILESYSTEM_POS);
 	
 	// check magic
@@ -246,17 +254,12 @@ bool MTD_FLASHMEM FlashFileSystem::find(char const* filename, char const** mimet
 		curc += 1;
 		uint16_t filecontentlen = getWord(curc); 
 		curc += 2;
-		//debug("  filenamelen=%d mimetypelen=%d filecontentlen=%d\r\n", filenamelen, mimetypelen, filecontentlen);
 		if (filenamelen == 0)
-		{
-			//debug(FSTR("  not found\r\n"));
 			return false;	// not found
-		}
 		// check filename
 		if (f_strcmp(filename, curc) == 0)
 		{
 			// found
-			//debug(FSTR("  found\r\n"));
 			*mimetype   = curc + filenamelen;
 			*data       = (void*)(*mimetype + mimetypelen);
 			*dataLength = filecontentlen;

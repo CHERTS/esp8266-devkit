@@ -57,7 +57,9 @@ namespace fdv
 			virtual void flush() = 0;
 			virtual bool waitForData(uint32_t timeOutMs = portMAX_DELAY) = 0;
 								
-			uint16_t read(uint8_t* buffer, uint16_t bufferLen);									
+			uint16_t read(uint8_t* buffer, uint16_t bufferLen);
+			bool readLine(bool echo, LinkedCharChunks* receivedLine, uint32_t timeOutMs = portMAX_DELAY);
+
 			void writeNewLine();			
 			void write(uint8_t const* buffer, uint16_t bufferLen);
 			void write(char const* str);

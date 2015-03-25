@@ -7,58 +7,49 @@ Network Configuration
 
 
 <script type="text/javascript">
-<!--
-function showDiv(chk_id, div_id) {
-  var chbox = document.getElementById(chk_id);
-  var vis = "none";
-  if (chbox.checked) {
-    vis = "block";
+  function enableFields() {
+    document.getElementById('staticip_fields').disabled = !document.getElementById("ch_staticip").checked;
+	document.getElementById('dhcpd_fields').disabled = !document.getElementById("ch_dhcpd").checked;
   }
-  document.getElementById(div_id).style.display = vis;
-}
 
-function showDivs() {
-  showDiv('ch_staticip', 'div_staticip');
-  showDiv('ch_dhcpd', 'div_dhcpd');
-}
-
-window.onload = showDivs;
-//-->
+  window.onload = enableFields;
 </script>
 
 
 <form method='POST'>
 
-  <div style="display: {{DISP_CLIPCONF}}">
+  <fieldset {{DISP_CLIPCONF}}>
     <p><h3>Client Mode IP Configuration</h3></p>
     <div id="subcontent">
-      <input id="ch_staticip" type='checkbox' name='staticIP' value='1' {{staticIP}} onclick="showDivs()"> Static IP <br>	
-	  <div id="div_staticip">
+      <input id="ch_staticip" type='checkbox' name='staticIP' value='1' {{staticIP}} onclick="enableFields()"> Static IP <br>	
+	  <fieldset id="staticip_fields">
 	    IP: <input type='text' name='CLIP' value='{{CLIP}}'> <br>
 		Netmask: <input type='text' name='CLMSK' value='{{CLMSK}}'> <br>
 		Gateway: <input type='text' name='CLGTW' value='{{CLGTW}}'> <br>
-	  </div>
+	  </fieldset>
     </div>
-  </div>
+  </fieldset>
 
-  <div style="display: {{DISP_APIPCONF}}">
+  <fieldset {{DISP_APIPCONF}}>
     <p><h3>Access Point Mode IP Configuration</h3></p>
     <div id="subcontent">
 	    IP: <input type='text' name='APIP' value='{{APIP}}'> <br>
 		Netmask: <input type='text' name='APMSK' value='{{APMSK}}'> <br>
 		Gateway: <input type='text' name='APGTW' value='{{APGTW}}'> <br>
     </div>
-  </div>
+  </fieldset>
   
   <p><h3>DHCP Server Configuration</h3></p>
   <div id="subcontent">
-    <input id="ch_dhcpd" type='checkbox' name='DHCPD' value='1' {{DHCPD}} onclick="showDivs()"> Enable DHCP Server <br>	
-    <div id="div_dhcpd">
+    <input id="ch_dhcpd" type='checkbox' name='DHCPD' value='1' {{DHCPD}} onclick="enableFields()"> Enable DHCP Server <br>	
+    <fieldset id="dhcpd_fields">
       Start IP: <input type='text' name='startIP' value='{{startIP}}'> <br>
 	  End IP: <input type='text' name='endIP' value='{{endIP}}'> <br>
 	  Max Leases: <input type='text' name='maxLeases' value='{{maxLeases}}'> <br>
-    </div>
+    </fieldset>
   </div>
   
   <input type='submit' value='Save'>
+  
+  <br><br><p>System needs to be rebooted for the changes to take effect</p>
 </form>

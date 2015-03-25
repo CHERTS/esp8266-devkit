@@ -69,7 +69,38 @@ namespace fdv
 			*buffer++ = c;
 		}
 		return ret;
-	}			
+	}
+	
+	
+	// line must terminate with \r\n (0D0A) or with \n or with \r
+	// resulting buffer will end with 0x00 (in place of \r or \n)
+	bool MTD_FLASHMEM Serial::readLine(bool echo, LinkedCharChunks* receivedLine, uint32_t timeOutMs)
+	{
+		while (1)
+		{
+			if (waitForData(timeOutMs))
+			{				
+				int16_t c = read();
+				//debug("<%x>", (int)c);
+				if (c == -1)
+					return false;
+				if (echo)
+					write(c);
+				if (c == 0x0A || c == 0x0D)
+				{
+					receivedLine->append(0x00, 1);
+					c = peek();
+					if (c == 0x0A || c == 0x0D)
+						read();	// discard
+					return true;
+				}
+				else
+					receivedLine->append(c, 16);
+			}
+			else
+				return false;
+		}
+	}
 	
 
 	void MTD_FLASHMEM Serial::writeNewLine()
@@ -79,20 +110,39 @@ namespace fdv
 	}
 	
 	
+	// buffer can stay in RAM or Flash
 	void MTD_FLASHMEM Serial::write(uint8_t const* buffer, uint16_t bufferLen)
 	{
-		for (;bufferLen > 0; --bufferLen)
-			write(*buffer++);
+		if (isStoredInFlash(buffer))
+		{
+			for (;bufferLen > 0; --bufferLen)
+				write(getByte(buffer++));
+		}
+		else
+		{
+			for (;bufferLen > 0; --bufferLen)
+				write(*buffer++);
+		}
 	}
 	
 	
+	// str can stay in RAM or Flash
 	void MTD_FLASHMEM Serial::write(char const* str)
 	{
-		while (*str)
-			write(*str++);
+		if (isStoredInFlash(str))
+		{
+			while (getChar(str))
+				write(getChar(str++));
+		}
+		else
+		{
+			while (*str)
+				write(*str++);
+		}
 	}
 	
 
+	// str can stay in RAM or Flash
 	void MTD_FLASHMEM Serial::writeln(char const* str)
 	{
 		write(str);

@@ -29,6 +29,7 @@
 
 
 
+
 namespace fdv
 {
 
@@ -148,6 +149,11 @@ public:
 	T* get()
 	{
 		return m_ptr;
+	}
+	
+	T& operator[](uint32_t index)
+	{
+		return m_ptr[index];
 	}
 
 	void reset(T* ptr)

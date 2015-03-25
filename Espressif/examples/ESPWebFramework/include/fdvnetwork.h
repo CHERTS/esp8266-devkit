@@ -63,6 +63,12 @@ namespace fdv
 	struct WiFi
 	{
 			
+		enum Network
+		{
+			ClientNetwork      = 0,
+			AccessPointNetwork = 1
+		};
+
 		enum Mode
 		{
 			Client               = STATION_MODE,
@@ -78,6 +84,27 @@ namespace fdv
 			WPA2_PSK      = AUTH_WPA2_PSK,
 			WPA_WPA2_PSK  = AUTH_WPA_WPA2_PSK
 		};
+		
+		enum ClientConnectionStatus
+		{
+			ClientConnectionStatus_Idle          = STATION_IDLE, 
+			ClientConnectionStatus_Connecting    = STATION_CONNECTING, 
+			ClientConnectionStatus_WrongPassword = STATION_WRONG_PASSWORD, 
+			ClientConnectionStatus_NoAPFound     = STATION_NO_AP_FOUND, 
+			ClientConnectionStatus_Fail          = STATION_CONNECT_FAIL, 
+			ClientConnectionStatus_GotIP         = STATION_GOT_IP
+		};
+		
+		struct APInfo
+		{
+			uint8_t          BSSID[6];
+			char             SSID[33];	// includes ending zero
+			uint8_t          Channel;
+			uint8_t          RSSI;
+			SecurityProtocol AuthMode;
+			bool             isHidden;
+		};
+		
 
 		static Mode MTD_FLASHMEM setMode(Mode mode)
 		{
@@ -99,7 +126,7 @@ namespace fdv
 			softap_config config = {0};
 			wifi_softap_get_config(&config);
 			f_strcpy((char *)config.ssid, SSID);
-			config.ssid_len = strlen(SSID);
+			config.ssid_len = f_strlen(SSID);
 			f_strcpy((char *)config.password, securityKey);
 			config.channel = channel;
 			config.authmode = securityProtocol;
@@ -119,6 +146,89 @@ namespace fdv
 			wifi_station_set_config(&config);
 			wifi_station_connect();
 		}
+		
+		// fills MAC with MAC address of the specified network
+		// MAC must be a pointer to 6 bytes buffer
+		static void MTD_FLASHMEM getMACAddress(WiFi::Network network, uint8_t* MAC)
+		{
+			wifi_get_macaddr((uint8_t)network, MAC);
+		}
+		
+		static ClientConnectionStatus MTD_FLASHMEM getClientConnectionStatus()
+		{
+			return (ClientConnectionStatus)wifi_station_get_connect_status();
+		}
+		
+		// returns access point list
+		static APInfo* MTD_FLASHMEM getAPList(uint32_t* count, bool rescan)
+		{
+			if (rescan)
+			{
+				wifi_station_scan(NULL, scanDoneCB);
+				getAPInfo()->receive();	// wait for completion
+			}
+			APInfo* infos;
+			getAPInfo(&infos, count);
+			return infos;
+		}
+		
+	private:
+	
+		static void MTD_FLASHMEM scanDoneCB(void* arg, STATUS status)
+		{
+			if (status == OK)
+			{
+				// count items
+				uint32_t count = 0;
+				for (bss_info* bss_link = ((bss_info*)arg)->next.stqe_next; bss_link; bss_link = bss_link->next.stqe_next)
+					++count;
+				// fill items
+				APInfo* infos;
+				getAPInfo(&infos, &count, count);
+				for (bss_info* bss_link = ((bss_info*)arg)->next.stqe_next; bss_link; bss_link = bss_link->next.stqe_next, ++infos)
+				{
+					memcpy(infos->BSSID, bss_link->bssid, 6);
+					memset(infos->SSID, 0, 33);
+					memcpy(infos->SSID, bss_link->ssid, 32);
+					infos->Channel  = bss_link->channel;
+					infos->RSSI     = bss_link->rssi;
+					infos->AuthMode = (SecurityProtocol)bss_link->authmode;
+					infos->isHidden = (bool)bss_link->is_hidden;
+				}
+				getAPInfo()->send();
+			}
+		}
+		
+		// allocateCount >= 0 -> allocate (or reallocate or free) AP info
+		// allocateCount < 0  -> get infos
+		static Queue<bool>* MTD_FLASHMEM getAPInfo(APInfo** infos = NULL, uint32_t* count = NULL, int32_t allocateCount = -1)
+		{
+			static APInfo*  s_infos = NULL;
+			static uint32_t s_count = 0;
+			static Queue<bool>* s_queue = new Queue<bool>(1);	// never deleted
+			if (allocateCount >= 0)
+			{
+				if (s_infos != NULL)
+					delete[] s_infos;
+				s_infos = NULL;
+				s_count = 0;
+				if (allocateCount > 0)
+				{
+					s_infos = new APInfo[allocateCount];
+					s_count = allocateCount;
+				}
+			}
+			if (infos && count)
+			{
+				*infos = s_infos;
+				*count = s_count;
+			}
+			return s_queue;
+		}
+		
+		
+		
+		
 
 	};
 	
@@ -129,32 +239,40 @@ namespace fdv
 	
 	struct IP
 	{
-
-		enum Network
-		{
-			ClientNetwork      = 0,
-			AccessPointNetwork = 1
-		};
 	
-		static void MTD_FLASHMEM configureStatic(Network network, char const* IP, char const* netmask, char const* gateway)
+		static void MTD_FLASHMEM configureStatic(WiFi::Network network, char const* IP, char const* netmask, char const* gateway)
 		{
 			ip_info info;
 			info.ip.addr      = ipaddr_addr(APtr<char>(f_strdup(IP)).get());
 			info.netmask.addr = ipaddr_addr(APtr<char>(f_strdup(netmask)).get());
 			info.gw.addr      = ipaddr_addr(APtr<char>(f_strdup(gateway)).get());
 			Critical critical;
-			if (network == ClientNetwork)
+			if (network == WiFi::ClientNetwork)
 				wifi_station_dhcpc_stop();
 			wifi_set_ip_info(network, &info);
 		}
 		
 		// applies only to ClientNetwork
-		static void MTD_FLASHMEM configureDHCP(Network network)
+		static void MTD_FLASHMEM configureDHCP(WiFi::Network network)
 		{
-			if (network == ClientNetwork)
+			if (network == WiFi::ClientNetwork)
 			{
 				Critical critical;
 				wifi_station_dhcpc_start();
+			}
+		}
+		
+		// fills IP with IP address of the specified network
+		// IP, netmask, gateway must be a pointer to 4 bytes buffer
+		static void MTD_FLASHMEM getIPInfo(WiFi::Network network, uint8_t* IP, uint8_t* netmask, uint8_t* gateway)
+		{
+			ip_info info;
+			wifi_get_ip_info(network, &info);
+			for (uint32_t i = 0; i != 4; ++i)
+			{
+				IP[i]      = ((uint8_t*)&info.ip.addr)[i];
+				netmask[i] = ((uint8_t*)&info.netmask.addr)[i];
+				gateway[i] = ((uint8_t*)&info.gw.addr)[i];
 			}
 		}
 		
@@ -904,14 +1022,36 @@ namespace fdv
 			m_filename = filename;
 		}
 		
-		void MTD_FLASHMEM addParam(char const* key, char const* value)
+		void MTD_FLASHMEM addParamStr(char const* key, char const* value)
 		{
 			LinkedCharChunks linkedCharChunks;
 			linkedCharChunks.addChunk(value, f_strlen(value), false);
 			m_params.add(key, linkedCharChunks);
 		}
 		
-		void MTD_FLASHMEM addParam(char const* key, LinkedCharChunks* value)
+		void MTD_FLASHMEM addParamInt(char const* key, int32_t value)
+		{
+			char* valueStr = f_printf(FSTR("%d"), value);
+			LinkedCharChunks* linkedCharChunks = m_params.add(key);
+			linkedCharChunks->addChunk(valueStr, f_strlen(valueStr), true);	// true = need to free
+		}
+		
+		void MTD_FLASHMEM addParamFmt(char const* key, char const *fmt, ...)
+		{
+			va_list args;			
+			va_start(args, fmt);
+			uint16_t len = vsprintf(NULL, fmt, args);
+			va_end(args);
+			char buf[len + 1];			
+			va_start(args, fmt);
+			vsprintf(buf, fmt, args);
+			va_end(args);
+			
+			LinkedCharChunks* linkedCharChunks = m_params.add(key);
+			linkedCharChunks->addChunk(buf, len, true);	// true = need to free
+		}
+		
+		void MTD_FLASHMEM addParamCharChunks(char const* key, LinkedCharChunks* value)
 		{
 			m_params.add(key, *value);
 		}
