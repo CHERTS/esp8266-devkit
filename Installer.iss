@@ -35,34 +35,36 @@ WizardImageFile=ESP8266P.bmp
 LicenseFile=license.txt
 
 [Files]
-Source: "Espressif\xtensa-lx106-elf\*"; DestDir: "{app}\xtensa-lx106-elf"; Flags: ignoreversion createallsubdirs recursesubdirs
-Source: "Espressif\docs\*"; DestDir: "{app}\docs"; Flags: ignoreversion createallsubdirs recursesubdirs
-Source: "Espressif\utils\*"; DestDir: "{app}\utils"; Flags: ignoreversion createallsubdirs recursesubdirs
-Source: "Espressif\examples\*"; DestDir: "{app}\examples"; Flags: ignoreversion createallsubdirs recursesubdirs
-Source: "Espressif\extra\*"; DestDir: "{app}\extra"; Flags: ignoreversion createallsubdirs recursesubdirs
-Source: "Espressif\ESP8266_RTOS_SDK\*"; DestDir: "{app}\ESP8266_RTOS_SDK"; Flags: ignoreversion createallsubdirs recursesubdirs
-Source: "Espressif\ESP8266_SDK\*"; DestDir: "{app}\ESP8266_SDK"; Flags: ignoreversion createallsubdirs recursesubdirs
-Source: "Espressif\ESP8266_SDK_094\*"; DestDir: "{app}\ESP8266_SDK_094"; Flags: ignoreversion createallsubdirs recursesubdirs
-Source: "Espressif\ESP8266_SDK_095\*"; DestDir: "{app}\ESP8266_SDK_095"; Flags: ignoreversion createallsubdirs recursesubdirs
+Source: "Espressif\xtensa-lx106-elf\*"; DestDir: "{app}\xtensa-lx106-elf"; Flags: ignoreversion createallsubdirs recursesubdirs; Components: compiler
+Source: "Espressif\docs\*"; DestDir: "{app}\docs"; Flags: ignoreversion createallsubdirs recursesubdirs; Components: docs
+Source: "Espressif\utils\*"; DestDir: "{app}\utils"; Flags: ignoreversion createallsubdirs recursesubdirs; Components: utils
+Source: "Espressif\examples\*"; DestDir: "{app}\examples"; Flags: ignoreversion createallsubdirs recursesubdirs; Components: examples
+Source: "Espressif\extra\*"; DestDir: "{app}\extra"; Flags: ignoreversion createallsubdirs recursesubdirs; Components: sdk
+Source: "Espressif\ESP8266_RTOS_SDK\*"; DestDir: "{app}\ESP8266_RTOS_SDK"; Flags: ignoreversion createallsubdirs recursesubdirs; Components: sdk
+Source: "Espressif\ESP8266_SDK\*"; DestDir: "{app}\ESP8266_SDK"; Flags: ignoreversion createallsubdirs recursesubdirs; Components: sdk
+Source: "Espressif\ESP8266_SDK_094\*"; DestDir: "{app}\ESP8266_SDK_094"; Flags: ignoreversion createallsubdirs recursesubdirs; Components: sdk
+Source: "Espressif\ESP8266_SDK_095\*"; DestDir: "{app}\ESP8266_SDK_095"; Flags: ignoreversion createallsubdirs recursesubdirs; Components: sdk
 Source: "Espressif\Espressif web site.url"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Espressif\DevKit web site.url"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Espressif\changelog.txt"; DestDir: "{app}"; Flags: ignoreversion; Languages: english turkish
 Source: "Espressif\changelog_ru.txt"; DestDir: "{app}"; Flags: ignoreversion; Languages: russian
+Source: "Install.ico"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Uninstall.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "donate-en.bmp"; DestDir: "{tmp}"; Flags: dontcopy; Languages: english
 Source: "donate-ru.bmp"; DestDir: "{tmp}"; Flags: dontcopy; Languages: russian
 Source: "donate-tr.bmp"; DestDir: "{tmp}"; Flags: dontcopy; Languages: turkish
 Source: "InnoCallback.dll"; DestDir: "{tmp}"; Flags: dontcopy
 
 [Dirs]
-Name: "{app}\xtensa-lx106-elf"
-Name: "{app}\docs"
-Name: "{app}\utils"
-Name: "{app}\examples"
-Name: "{app}\extra"
-Name: "{app}\ESP8266_RTOS_SDK"
-Name: "{app}\ESP8266_SDK"
-Name: "{app}\ESP8266_SDK_094"
-Name: "{app}\ESP8266_SDK_095"
+Name: "{app}\xtensa-lx106-elf"; Components: compiler
+Name: "{app}\docs"; Components: docs
+Name: "{app}\utils"; Components: utils
+Name: "{app}\examples"; Components: examples
+Name: "{app}\extra"; Components: sdk
+Name: "{app}\ESP8266_RTOS_SDK"; Components: sdk
+Name: "{app}\ESP8266_SDK"; Components: sdk
+Name: "{app}\ESP8266_SDK_094"; Components: sdk
+Name: "{app}\ESP8266_SDK_095"; Components: sdk
 
 [Registry]
 Root: "HKCU"; Subkey: "Software\Terminal\TmacroForm"; ValueType: string; ValueName: "macro1E_Text"; ValueData: "%SCRS""C:\Espressif\utils\esp-reboot.tsc"""
@@ -71,37 +73,39 @@ Root: "HKCU"; Subkey: "Software\Terminal\TmacroForm"; ValueType: string; ValueNa
 [Run]
 
 [Icons]
-Name: "{group}\Documentation"; Filename: "{app}\docs"; WorkingDir: "{app}\docs"; MinVersion: 0.0,5.0; Languages: english
-Name: "{group}\Документация"; Filename: "{app}\docs"; WorkingDir: "{app}\docs"; MinVersion: 0.0,5.0; Languages: russian
-Name: "{group}\Belgeler"; Filename: "{app}\docs"; WorkingDir: "{app}\docs"; MinVersion: 0.0,5.0; Languages: turkish
-Name: "{group}\Examples"; Filename: "{app}\examples"; WorkingDir: "{app}\examples"; MinVersion: 0.0,5.0; Languages: english
-Name: "{group}\Примеры прошивок"; Filename: "{app}\examples"; WorkingDir: "{app}\examples"; MinVersion: 0.0,5.0; Languages: russian
-Name: "{group}\Örnekleri firmware"; Filename: "{app}\examples"; WorkingDir: "{app}\examples"; MinVersion: 0.0,5.0; Languages: turkish
-Name: "{group}\Run terminal"; Filename: "{app}\utils\Terminal.exe"; WorkingDir: "{app}\utils\"; IconFilename: "{app}\utils\Terminal.exe"; MinVersion: 0.0,5.0; Languages: english
-Name: "{group}\Запустить Terminal"; Filename: "{app}\utils\Terminal.exe"; WorkingDir: "{app}\utils\"; IconFilename: "{app}\utils\Terminal.exe"; MinVersion: 0.0,5.0; Languages: russian
-Name: "{group}\Programı Terminal"; Filename: "{app}\utils\Terminal.exe"; WorkingDir: "{app}\utils\"; IconFilename: "{app}\utils\Terminal.exe"; MinVersion: 0.0,5.0; Languages: turkish
+Name: "{group}\Documentation"; Filename: "{app}\docs"; WorkingDir: "{app}\docs"; MinVersion: 0.0,5.0; Languages: english; Components: docs
+Name: "{group}\Документация"; Filename: "{app}\docs"; WorkingDir: "{app}\docs"; MinVersion: 0.0,5.0; Languages: russian; Components: docs
+Name: "{group}\Belgeler"; Filename: "{app}\docs"; WorkingDir: "{app}\docs"; MinVersion: 0.0,5.0; Languages: turkish; Components: docs
+Name: "{group}\Examples"; Filename: "{app}\examples"; WorkingDir: "{app}\examples"; MinVersion: 0.0,5.0; Languages: english; Components: examples
+Name: "{group}\Примеры прошивок"; Filename: "{app}\examples"; WorkingDir: "{app}\examples"; MinVersion: 0.0,5.0; Languages: russian; Components: examples
+Name: "{group}\Örnekleri firmware"; Filename: "{app}\examples"; WorkingDir: "{app}\examples"; MinVersion: 0.0,5.0; Languages: turkish; Components: examples
+Name: "{group}\Run terminal"; Filename: "{app}\utils\Terminal.exe"; WorkingDir: "{app}\utils\"; IconFilename: "{app}\utils\Terminal.exe"; MinVersion: 0.0,5.0; Languages: english; Components: utils
+Name: "{group}\Запустить Terminal"; Filename: "{app}\utils\Terminal.exe"; WorkingDir: "{app}\utils\"; IconFilename: "{app}\utils\Terminal.exe"; MinVersion: 0.0,5.0; Languages: russian; Components: utils
+Name: "{group}\Programı Terminal"; Filename: "{app}\utils\Terminal.exe"; WorkingDir: "{app}\utils\"; IconFilename: "{app}\utils\Terminal.exe"; MinVersion: 0.0,5.0; Languages: turkish; Components: utils
 Name: "{group}\Espressif Web site"; Filename: "{app}\Espressif web site.url"; WorkingDir: "{app}"; IconFilename: "%SystemRoot%\system32\SHELL32.dll"; IconIndex: 13; MinVersion: 0.0,5.0; Languages: english
 Name: "{group}\Beб-сайт Espressif"; Filename: "{app}\Espressif web site.url"; WorkingDir: "{app}"; IconFilename: "%SystemRoot%\system32\SHELL32.dll"; IconIndex: 13; MinVersion: 0.0,5.0; Languages: russian
 Name: "{group}\Web sitesi Espressif"; Filename: "{app}\Espressif web site.url"; WorkingDir: "{app}"; IconFilename: "%SystemRoot%\system32\SHELL32.dll"; IconIndex: 13; MinVersion: 0.0,5.0; Languages: turkish
 Name: "{group}\Сhangelog"; Filename: "{app}\changelog.txt"; WorkingDir: "{app}"; MinVersion: 0.0,5.0; Languages: english
 Name: "{group}\Список изменений"; Filename: "{app}\changelog.txt"; WorkingDir: "{app}"; MinVersion: 0.0,5.0; Languages: russian
 Name: "{group}\Değişikliklerin listesi"; Filename: "{app}\changelog.txt"; WorkingDir: "{app}"; MinVersion: 0.0,5.0; Languages: turkish
-Name: "{group}\{cm:UninstallProgram,Espressif ESP8266 Developer Kit}"; Filename: "{uninstallexe}"; MinVersion: 0.0,5.0
+Name: "{group}\{cm:UninstallProgram,{#DevKitAppName}}"; Filename: "{uninstallexe}"; IconFilename: "{app}\Install.ico"; MinVersion: 0.0,5.0
 
 [UninstallDelete]
-Type: filesandordirs; Name: "{app}\xtensa-lx106-elf\*"
-Type: filesandordirs; Name: "{app}\docs\*"
-Type: filesandordirs; Name: "{app}\utils\*"
-Type: filesandordirs; Name: "{app}\examples\*"
-Type: filesandordirs; Name: "{app}\extra\*"
-Type: filesandordirs; Name: "{app}\ESP8266_RTOS_SDK\*"
-Type: filesandordirs; Name: "{app}\ESP8266_SDK\*"
-Type: filesandordirs; Name: "{app}\ESP8266_SDK_094\*"
-Type: filesandordirs; Name: "{app}\ESP8266_SDK_095\*"
+Type: filesandordirs; Name: "{app}\xtensa-lx106-elf\*"; Components: compiler
+Type: filesandordirs; Name: "{app}\docs\*"; Components: docs
+Type: filesandordirs; Name: "{app}\utils\*"; Components: utils
+Type: filesandordirs; Name: "{app}\examples\*"; Components: examples
+Type: filesandordirs; Name: "{app}\extra\*"; Components: sdk
+Type: filesandordirs; Name: "{app}\ESP8266_RTOS_SDK\*"; Components: sdk
+Type: filesandordirs; Name: "{app}\ESP8266_SDK\*"; Components: sdk
+Type: filesandordirs; Name: "{app}\ESP8266_SDK_094\*"; Components: sdk
+Type: filesandordirs; Name: "{app}\ESP8266_SDK_095\*"; Components: sdk
 Type: files; Name: "{app}\DevKit web site.url"
 Type: files; Name: "{app}\Espressif web site.url"
 Type: files; Name: "{app}\changelog.txt"; Languages: english turkish
 Type: files; Name: "{app}\changelog_ru.txt"; Languages: russian
+Type: files; Name: "{app}\Install.ico"
+Type: files; Name: "{app}\Uninstall.ico"
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -121,6 +125,40 @@ turkish.UninstallProgram=Kaldır %1
 english.DONATE=Dear users, support this project and it will continue to develop:
 russian.DONATE=Уважаемые пользователи, поддержите проект и благодаря Вам он сможет развиваться дальше:
 turkish.DONATE=Sevgili kullanıcılar, çalışmayı beğendiyseniz lütfen bağış yaparak çalışmamın gelişimine katkıda bulunun.:
+english.CUSTOMINSTALL=Custom installation
+russian.CUSTOMINSTALL=Выборочная установка
+turkish.CUSTOMINSTALL=Özel yükleme
+
+;Flags: iscustom можно поставить только у одного типа, поэтому ниже на Pascal Script написан хак, как локализовать Custom installation 
+[Types]
+Name: "full"; Description: "Full installation (Compiler, SDK, utils, docs and examples)"; Languages: english
+Name: "compact"; Description: "Compact installation (Compiler, SDK, and utils)"; Languages: english
+Name: "full"; Description: "Полная установка (Компилятор, утилиты, документация и примеры)"; Languages: russian
+Name: "compact"; Description: "Компактная установка (Компилятор и утилиты)"; Languages: russian
+Name: "full"; Description: "Tam kurulum (Derleyici, SDK, utils, dokümanlar ve örnekler)"; Languages: turkish
+Name: "compact"; Description: "Kompakt kurulum (Derleyici, SDK ve utils)"; Languages: turkish
+Name: "custom"; Description: "Custom installation"; Flags: iscustom
+
+;Flags: fixed - значит нельзя отключить!
+;Flags: exclusive - можно выбрать только одно из exclusive
+
+[Components]
+Name: compiler; Description: GCC Xtensa LX106; Types: full compact custom
+Name: sdk; Description: Espressif SDK; Types: full compact custom; Languages: english
+Name: docs; Description: Documentation; Types: full custom; Languages: english
+Name: utils; Description: Utilites; Types: full compact custom; Languages: english
+Name: examples; Description: Examples; Types: full custom; Languages: english
+Name: sdk; Description: "Espressif SDK"; Types: full compact custom; Languages: russian
+Name: docs; Description: "Документация"; Types: full custom; Languages: russian
+Name: utils; Description: "Утилиты"; Types: full compact custom; Languages: russian
+Name: examples; Description: "Примеры"; Types: full custom; Languages: russian
+Name: sdk; Description: Espressif SDK; Types: full compact custom; Languages: turkish
+Name: docs; Description: "Doküman"; Types: full custom; Languages: turkish
+Name: utils; Description: "Utilites"; Types: full compact custom; Languages: turkish
+Name: examples; Description: "Örnekler"; Types: full custom; Languages: turkish
+;Name: "readme"; Description: "Readme File"; Types: full
+;Name: "readme\en"; Description: "English"; Flags: exclusive
+;Name: "readme\ru"; Description: "Russian"; Flags: exclusive
 
 [Code]
 const
@@ -255,6 +293,10 @@ begin
 end;
 
 procedure CurPageChanged(CurPageID: Integer);
+var
+  OptionsPage: TWizardPage;
+  PageSurface: TNewNotebookPage;
+  SetupTypesCombo: TComboBox;
 begin
 {  if CurPageID = wpLicense then
   begin
@@ -266,6 +308,20 @@ begin
 }
   if CurPageID = wpFinished then
     CreateImage()
+  // Хак для локализации Custom installation
+  else if (CurPageID = wpSelectComponents) then
+  begin
+    OptionsPage := PageFromID(CurPageID);
+    PageSurface := OptionsPage.Surface;
+    SetupTypesCombo := TComboBox(PageSurface.Controls[2]);
+    if (SetupTypesCombo <> nil) then
+    begin
+      if (SetupTypesCombo.Items[2] <> ExpandConstant('{cm:CUSTOMINSTALL}')) then
+      begin
+        SetupTypesCombo.Items[2] := ExpandConstant('{cm:CUSTOMINSTALL}');
+      end;
+    end;
+  end
   else
   begin
     {KillSlideTimer;}
