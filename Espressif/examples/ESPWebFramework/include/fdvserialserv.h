@@ -56,6 +56,8 @@ namespace fdv
 		{
 			m_serial = HardwareSerial::getSerial(0);
 			m_serial->writeNewLine();
+			m_serial->write(FSTR("ESPWebFramework started.\n\r"));
+			m_serial->write(FSTR("Enter <help> to help.\n\r"));
 			while (1)
 			{
 				m_receivedChunks.clear();
@@ -153,7 +155,7 @@ namespace fdv
 		
 		void MTD_FLASHMEM cmd_help()
 		{
-			m_serial->writeln(FSTR("\r\nESP Console"));
+			m_serial->writeln(FSTR("ESP Console:"));
 			m_serial->writeln(FSTR("help          : Show this help"));
 			m_serial->writeln(FSTR("reboot [ms]   : Restart system in [ms] milliseconds"));
 			m_serial->writeln(FSTR("restore       : Erase Flash stored settings"));
