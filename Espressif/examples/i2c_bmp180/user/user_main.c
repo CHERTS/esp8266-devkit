@@ -24,8 +24,8 @@ static volatile os_timer_t sensor_timer;
 
 void sensor_timerfunc(void *arg)
 {
-	int32_t temperature;
-	int32_t pressure;
+    int32_t temperature;
+    int32_t pressure;
     ets_uart_printf("Get temperature and pressure...\r\n");
     temperature = BMP180_GetTemperature();
     pressure = BMP180_GetPressure(OSS_0);

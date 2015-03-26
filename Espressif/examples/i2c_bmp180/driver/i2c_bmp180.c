@@ -203,6 +203,7 @@ int16_t ICACHE_FLASH_ATTR BMP180_readExRawValue(uint8_t cmd, enum PRESSURE_RESOL
 
 bool ICACHE_FLASH_ATTR BMP180_Init()
 {
+	i2c_init();
 	int16_t version = BMP180_readRegister16(BMP180_CHIP_ID_REG);
 	if (version != BMP180_CHIP_ID) {
 		#ifdef BMP180_DEBUG
@@ -235,7 +236,7 @@ bool ICACHE_FLASH_ATTR BMP180_Init()
 
 	#ifdef BMP180_DEBUG
 	ets_uart_printf("BMP180_Calibration:\r\n");
-	char temp[80];
+	char temp[128];
 	os_sprintf(temp, "AC1: %ld, AC2: %ld, AC3: %ld, AC4: %ld, AC5: %ld, AC6: %ld, B1: %ld, B2: %ld, MB: %ld, MC: %ld, MD: %ld\r\n",
 				ac1, ac2, ac3, ac4, ac5, ac6, b1, b2, mb, mc, md);
 	ets_uart_printf(temp);
