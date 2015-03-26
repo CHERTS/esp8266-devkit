@@ -12,6 +12,7 @@ v2.0.0 (26.04.2015):
 * All third-party libraries, header files (lwip and etñ) and additional linker scripts (eagle.app.v6.cpp.ld, eagle.app.v6.cpp.irom.ld and etc) are moved to the directory C:\Espressif\extra;
 * Updated documentation, added file "docs\ESP8266_IoT_SDK_Programming Guide_v1.0.0.pdf";
 * Updated all examples. In the Makefile added options for utility esptool.exe. Now you can program the ESP board with different flash-memory chips.
+* Updated installer, the installation process, you can choose which components to install: compiler, SDK, tools, examples, documentation.
 
 v1.0.12 (18.03.2015):
 + Added new examples:
