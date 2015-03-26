@@ -1,7 +1,7 @@
 Changelog:
 ----------
 
-v1.0.13 (18.04.2015):
+v2.0.0 (26.04.2015):
 + Added new examples:
   hello_world_cpp_irom - An example of firmware in C++ with a modified Makefile and linker script eagle.app.v6.cpp.irom.ld. In this example, all the functions and methods by default go to irom, and only marked ICACHE_IRAM_ATTR - go to iram (Author: Sermus);
   ESP8266_Relay_Board - "Three Channel WiFi Relay/Thermostat Board", (compiled, works correctly), the original source https://github.com/mharizanov/ESP8266_Relay_Board;

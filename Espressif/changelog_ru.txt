@@ -1,7 +1,7 @@
 Список изменений:
 -----------------
 
-v1.0.13 (18.04.2015):
+v2.0.0 (26.04.2015):
 + Добавлены новые примеры:
   hello_world_cpp_irom - Пример прошивки на С++ с модифицированным Makefile и скриптом линковщика eagle.app.v6.cpp.irom.ld. В данном примере все функции и методы по-умолчанию идут в irom, и только помеченные ICACHE_IRAM_ATTR - идут в iram (Автор: Sermus);
   ESP8266_Relay_Board - Проект "Three Channel WiFi Relay/Thermostat Board", (компилируется, проверен в работе), оригинальные исходники https://github.com/mharizanov/ESP8266_Relay_Board;
