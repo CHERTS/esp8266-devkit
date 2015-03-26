@@ -259,30 +259,11 @@ namespace fdv
 			WiFi::APInfo* infos = WiFi::getAPList(&count, scan);
 			for (uint32_t i = 0; i != count; ++i)
 			{
-				char const* authMode = FSTR("");
-				switch (infos[i].AuthMode)
-				{
-					case WiFi::Open:
-						authMode = FSTR("Open");
-						break;
-					case WiFi::WEP:
-						authMode = FSTR("WEP");
-						break;
-					case WiFi::WPA_PSK:
-						authMode = FSTR("WPA-PSK");
-						break;
-					case WiFi::WPA2_PSK:
-						authMode = FSTR("WPA2-PSK");
-						break;
-					case WiFi::WPA_WPA2_PSK:
-						authMode = FSTR("WPA-WPA2-PSK");
-						break;
-				}
 				m_serial->printf(FSTR("  %2d - Address: %02X:%02X:%02X:%02X:%02X:%02X\r\n"), i, infos[i].BSSID[0], infos[i].BSSID[1], infos[i].BSSID[2], infos[i].BSSID[3], infos[i].BSSID[4], infos[i].BSSID[5]);
 				m_serial->printf(FSTR("       SSID: %s\r\n"), infos[i].SSID);
 				m_serial->printf(FSTR("       Channel: %d\r\n"), infos[i].Channel);
 				m_serial->printf(FSTR("       RSSI: %d\r\n"), infos[i].RSSI);
-				m_serial->printf(FSTR("       Mode: %s\r\n"), authMode);								 
+				m_serial->printf(FSTR("       Security: %s\r\n"), WiFi::convSecurityProtocolToString(infos[i].AuthMode));
 			}
 		}
 		

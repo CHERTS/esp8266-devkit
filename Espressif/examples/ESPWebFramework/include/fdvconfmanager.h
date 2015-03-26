@@ -373,11 +373,15 @@ namespace fdv
 				addParamStr(FSTR("apmode"), FSTR("checked"));
 			
 			// get client mode parameters
-			char const* SSID;
+			char const* SSID = getRequest().query[FSTR("AP")]; // get SSID from last scan?
 			char const* securityKey;
-			ConfigurationManager::getClientParams(&SSID, &securityKey);
+			if (!SSID)
+			{				
+				// get from configuration among the password
+				ConfigurationManager::getClientParams(&SSID, &securityKey);
+				addParamStr(FSTR("CLPSW"), securityKey);
+			}
 			addParamStr(FSTR("CLSSID"), SSID);
-			addParamStr(FSTR("CLPSW"), securityKey);
 			
 			// get access point parameters
 			uint8_t channel;
@@ -523,6 +527,44 @@ namespace fdv
 		}
 		
 	};
+	
+
+	//////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+	// HTTPWiFiScanResponse
+
+	struct HTTPWiFiScanResponse : public HTTPTemplateResponse
+	{
+		HTTPWiFiScanResponse(HTTPHandler* httpHandler, char const* filename)
+			: HTTPTemplateResponse(httpHandler, filename)
+		{
+		}
+		
+		virtual void MTD_FLASHMEM flush()
+		{
+			uint32_t count = 0;
+			WiFi::APInfo* infos = WiFi::getAPList(&count, true);
+
+			char paramKey[count][8];
+			APtr<char> paramValue[count];
+			for (uint32_t i = 0; i != count; ++i)
+			{
+				sprintf(paramKey[i], FSTR("%dAPS"), i);
+				paramValue[i].reset(f_printf(FSTR("<tr> <td><a href='confwifi?AP=%s'>%s</a></td> <td>%02X:%02X:%02X:%02X:%02X:%02X</td> <td>%d</td> <td>%d</td> <td>%s</td> </tr>"), 
+				                             infos[i].SSID,
+											 infos[i].SSID,
+											 infos[i].BSSID[0], infos[i].BSSID[1], infos[i].BSSID[2], infos[i].BSSID[3], infos[i].BSSID[4], infos[i].BSSID[5],
+											 infos[i].Channel,
+											 infos[i].RSSI,
+											 WiFi::convSecurityProtocolToString(infos[i].AuthMode)));											 
+				addParamStr(paramKey[i], paramValue[i].get());
+			}
+
+			HTTPTemplateResponse::flush();
+		}
+		
+	};
+
 	
 }
 

@@ -117,6 +117,30 @@ namespace fdv
 			Mode mode = (Mode)wifi_get_opmode();
 			return mode;
 		}
+		
+		static char const* MTD_FLASHMEM convSecurityProtocolToString(SecurityProtocol securityProtocol)
+		{
+			char const* authMode = FSTR("");
+			switch (securityProtocol)
+			{
+				case WiFi::Open:
+					authMode = FSTR("Open");
+					break;
+				case WiFi::WEP:
+					authMode = FSTR("WEP");
+					break;
+				case WiFi::WPA_PSK:
+					authMode = FSTR("WPA-PSK");
+					break;
+				case WiFi::WPA2_PSK:
+					authMode = FSTR("WPA2-PSK");
+					break;
+				case WiFi::WPA_WPA2_PSK:
+					authMode = FSTR("WPA-WPA2-PSK");
+					break;
+			}
+			return authMode;
+		}			
 
 		// setMode must be called with AccessPoint or ClientAndAccessPoint
 		// note: make sure there is enough stack space free otherwise mail cause reset (fatal exception)!
@@ -931,8 +955,8 @@ namespace fdv
 	//////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////
 	// ParameterReplacer
-	// If input contains {%..%} blocks only getBlocks() should be used and getResult() contains empty data.
-	// If input contains only {{}} tags only getREsult() should be used.
+	// If input contains {%..%} blocks only then getBlocks() should be used and getResult() will contain empty data.
+	// If input contains only {{}} tags only then getResult() should be used.
 	
 	struct ParameterReplacer
 	{
@@ -984,6 +1008,10 @@ namespace fdv
 	// example: 
 	//   {{something}}
 	// Parameters cannot stay in template file.
+	//
+	// Parameters can be indicized using # before the name. Example:
+	//   {{#param}}
+	// Now all parameters like 0param, 1param, 2param, etc.. will be replaced in palce of "#param".
 	//
 	// A template can only contain {{}} tags, which specify the blocks or parameters to replace. Example:
 	// Content of file "base.html":

@@ -33,6 +33,7 @@ struct MyHTTPHandler : public HTTPHandler
 		{
 			{FSTR("/"),	         (PageHandler)&MyHTTPHandler::get_home},
 			{FSTR("/confwifi"),  (PageHandler)&MyHTTPHandler::get_confwifi},
+			{FSTR("/wifiscan"),  (PageHandler)&MyHTTPHandler::get_wifiscan},
 			{FSTR("/confnet"),   (PageHandler)&MyHTTPHandler::get_confnet},
 			{FSTR("/confserv"),  (PageHandler)&MyHTTPHandler::get_confserv},
 			{FSTR("/reboot"),    (PageHandler)&MyHTTPHandler::get_reboot},
@@ -44,7 +45,6 @@ struct MyHTTPHandler : public HTTPHandler
 	
 	void MTD_FLASHMEM get_home()
 	{
-		//debug("get_home()\r\n");
 		HTTPTemplateResponse response(this, FSTR("base.html"));
 		response.addParamStr(FSTR("title"), FSTR("ESP8266 WebFramework"));
 		response.addParamStr(FSTR("content"), FSTR("Please select a menu item on the left"));
@@ -54,6 +54,12 @@ struct MyHTTPHandler : public HTTPHandler
 	void MTD_FLASHMEM get_confwifi()
 	{
 		HTTPWifiConfigurationResponse response(this, FSTR("configwifi.html"));
+		response.flush();
+	}
+
+	void MTD_FLASHMEM get_wifiscan()
+	{
+		HTTPWiFiScanResponse response(this, FSTR("wifiscan.html"));
 		response.flush();
 	}
 
@@ -92,7 +98,6 @@ struct MyHTTPHandler : public HTTPHandler
 	
 	void MTD_FLASHMEM get_all()
 	{
-		//debug("get %s\r\n", APtr<char>(t_strdup(getRequest().requestedPage)).get());		 
 		HTTPStaticFileResponse response(this, getRequest().requestedPage);
 		response.flush();
 	}			

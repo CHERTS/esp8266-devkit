@@ -60,7 +60,7 @@ p {
 }
 
 br {
-  line-height:22px;
+  line-height:32px;
 }
 
 h1 { font-size: 2em; }
@@ -171,6 +171,10 @@ h6 { font-size: .75em; }
 	text-align: center;	
 }
 
+.spaced {
+    margin: 10px;
+}
+
 input[type=submit]{
 	-webkit-box-shadow:rgba(0,0,0,0.0.1) 0 1px 0 0;
 	-moz-box-shadow:rgba(0,0,0,0.0.1) 0 1px 0 0;
@@ -188,3 +192,9 @@ input[type=submit]{
 	-webkit-border-radius:5px;
 	margin: 5px;
 }
+
+.tg  {margin:10px;width:97%;border-collapse:collapse;border-spacing:0;border-color:#787878;}
+.tg th{padding:10px 5px;border-style:solid;border-width:0px;overflow:hidden;word-break:normal;border-color:#787878;color:#F0F0F0;background-color:#787878;border-top-width:1px;border-bottom-width:1px;text-align:left;}
+.tg td{padding:10px 5px;border-style:solid;border-width:0px;overflow:hidden;word-break:normal;border-color:#787878;color:#FFFFFF;background-color:#B3B3B3;border-top-width:1px;border-bottom-width:1px;}
+
+
