@@ -826,7 +826,7 @@ int ICACHE_FLASH_ATTR cgiBroadcastD(HttpdConnData *connData) {
 		sysCfg.broadcastd_thingspeak_channel=atoi(buff);
 	}
 	
-	len=httpdFindArg(connData->postBuff, "broadcastd-ro_apikey", buff, sizeof(buff));
+	len=httpdFindArg(connData->postBuff, "broadcastd-ro-apikey", buff, sizeof(buff));
 	if (len>0) {
 		os_strcpy((char *)sysCfg.broadcastd_ro_apikey,buff);
 	}
