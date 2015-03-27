@@ -16,13 +16,34 @@
 #include "mem.h"
 #include "httpclient.h"
 
-
 // Debug output.
-#if 1
-#define PRINTF(...) os_printf(__VA_ARGS__)
+#ifdef HTTP_DEBUG
+#undef HTTP_DEBUG
+#define HTTP_DEBUG(...) os_printf(__VA_ARGS__);
 #else
-#define PRINTF(...)
+#define HTTP_DEBUG(...)
 #endif
+
+// enum espconn state, see file /include/lwip/api/err.c
+const char *sEspconnErr[] =
+{
+		"Ok",                    // ERR_OK          0
+		"Out of memory error",   // ERR_MEM        -1
+		"Buffer error",          // ERR_BUF        -2
+		"Timeout",               // ERR_TIMEOUT    -3
+		"Routing problem",       // ERR_RTE        -4
+		"Operation in progress", // ERR_INPROGRESS -5
+		"Illegal value",         // ERR_VAL        -6
+		"Operation would block", // ERR_WOULDBLOCK -7
+		"Connection aborted",    // ERR_ABRT       -8
+		"Connection reset",      // ERR_RST        -9
+		"Connection closed",     // ERR_CLSD       -10
+		"Not connected",         // ERR_CONN       -11
+		"Illegal argument",      // ERR_ARG        -12
+		"Address in use",        // ERR_USE        -13
+		"Low-level netif error", // ERR_IF         -14
+		"Already connected"      // ERR_ISCONN     -15
+};
 
 // Internal state.
 typedef struct {
@@ -42,7 +63,7 @@ static char * esp_strdup(const char * str)
 	}
 	char * new_str = (char *)os_malloc(os_strlen(str) + 1); // 1 for null character
 	if (new_str == NULL) {
-		os_printf("esp_strdup: malloc error");
+		HTTP_DEBUG("esp_strdup: malloc error");
 		return NULL;
 	}
 	os_strcpy(new_str, str);
@@ -62,7 +83,7 @@ static void ICACHE_FLASH_ATTR receive_callback(void * arg, char * buf, unsigned 
 	const int new_size = req->buffer_size + len;
 	char * new_buffer;
 	if (new_size > BUFFER_SIZE_MAX || NULL == (new_buffer = (char *)os_malloc(new_size))) {
-		os_printf("Response too long %d\n", new_size);
+		HTTP_DEBUG("Response too long %d\n", new_size);
 		os_free(req->buffer);
 		req->buffer = NULL;
 		// TODO: espconn_disconnect(conn) without crashing.
@@ -84,12 +105,17 @@ static void ICACHE_FLASH_ATTR sent_callback(void * arg)
 	request_args * req = (request_args *)conn->reverse;
 
 	if (req->post_data == NULL) {
-		PRINTF("All sent\n");
+		HTTP_DEBUG("All sent\n");
 	}
 	else {
 		// The headers were sent, now send the contents.
-		PRINTF("Sending request body\n");
-		espconn_sent(conn, (uint8_t *)req->post_data, strlen(req->post_data));
+		HTTP_DEBUG("Sending request body\n");
+		sint8 espsent_status = espconn_sent(conn, (uint8_t *)req->post_data, strlen(req->post_data));
+		if(espsent_status == ESPCONN_OK) {
+			HTTP_DEBUG("Request body sent, req->post_data = %s\n", req->post_data);
+		} else {
+			HTTP_DEBUG("Error while sending request body.\n");
+		}
 		os_free(req->post_data);
 		req->post_data = NULL;
 	}
@@ -97,7 +123,7 @@ static void ICACHE_FLASH_ATTR sent_callback(void * arg)
 
 static void ICACHE_FLASH_ATTR connect_callback(void * arg)
 {
-	PRINTF("Connected\n");
+	HTTP_DEBUG("Connected\n");
 	struct espconn * conn = (struct espconn *)arg;
 	request_args * req = (request_args *)conn->reverse;
 
@@ -124,13 +150,18 @@ static void ICACHE_FLASH_ATTR connect_callback(void * arg)
 						 "\r\n",
 						 method, req->path, req->hostname, req->port, post_headers);
 
-	espconn_sent(conn, (uint8_t *)buf, len);
-	PRINTF("Sending request header\n");
+	sint8 espsent_status = espconn_sent(conn, (uint8_t *)buf, len);
+	if(espsent_status == ESPCONN_OK) {
+		HTTP_DEBUG("Data sent, buf = %s\n", buf);
+	} else {
+		HTTP_DEBUG("Error while sending data.\n");
+	}
+	HTTP_DEBUG("Sending request header\n");
 }
 
 static void ICACHE_FLASH_ATTR disconnect_callback(void * arg)
 {
-	PRINTF("Disconnected\n");
+	HTTP_DEBUG("Disconnected\n");
 	struct espconn *conn = (struct espconn *)arg;
 
 	if(conn == NULL) {
@@ -147,7 +178,7 @@ static void ICACHE_FLASH_ATTR disconnect_callback(void * arg)
 
 			const char * version = "HTTP/1.1 ";
 			if (os_strncmp(req->buffer, version, strlen(version)) != 0) {
-				os_printf("Invalid version in %s\n", req->buffer);
+				HTTP_DEBUG("Invalid version in %s\n", req->buffer);
 				return;
 			}
 			int http_status = atoi(req->buffer + strlen(version));
@@ -166,15 +197,30 @@ static void ICACHE_FLASH_ATTR disconnect_callback(void * arg)
 	os_free(conn);
 }
 
+static void ICACHE_FLASH_ATTR reconnect_callback(void * arg, sint8 errType)
+{
+	struct espconn *conn = (struct espconn *)arg;
+	HTTP_DEBUG("RECONNECT\n");
+	if (errType != ESPCONN_OK)
+		HTTP_DEBUG("Connection error: %d - %s\r\n", errType, ((errType>-16)&&(errType<1))? sEspconnErr[-errType] : "?");
+	if(conn->proto.tcp != NULL)
+	{
+		os_free(conn->proto.tcp);
+		HTTP_DEBUG("os_free: conn->proto.tcp\r\n");
+	}
+	os_free(conn);
+	HTTP_DEBUG("os_free: conn\r\n");
+}
+
 static void ICACHE_FLASH_ATTR dns_callback(const char * hostname, ip_addr_t * addr, void * arg)
 {
 	request_args * req = (request_args *)arg;
 
 	if (addr == NULL) {
-		os_printf("DNS failed, host: %s\n", hostname);
+		HTTP_DEBUG("DNS failed, host: %s\n", hostname);
 	}
 	else {
-		PRINTF("DNS found, host: %s, address: " IPSTR "\n", hostname, IP2STR(addr));
+		HTTP_DEBUG("DNS found, host: %s, address: " IPSTR "\n", hostname, IP2STR(addr));
 
 		struct espconn * conn = (struct espconn *)os_malloc(sizeof(struct espconn));
 		conn->type = ESPCONN_TCP;
@@ -188,19 +234,34 @@ static void ICACHE_FLASH_ATTR dns_callback(const char * hostname, ip_addr_t * ad
 
 		espconn_regist_connectcb(conn, connect_callback);
 		espconn_regist_disconcb(conn, disconnect_callback);
+		espconn_regist_reconcb(conn, reconnect_callback);
 
 		// TODO: consider using espconn_regist_reconcb (for timeouts?)
 		// cf esp8266_sdk_v0.9.1/examples/at/user/at_ipCmd.c  (TCP ARQ retransmission?)
 
-		espconn_connect(conn);
+		sint8 espcon_status = espconn_connect(conn);
+		switch(espcon_status)
+		{
+			case ESPCONN_OK:
+				HTTP_DEBUG("TCP created.\r\n");
+				break;
+			case ESPCONN_RTE:
+				HTTP_DEBUG("Error connection, routing problem.\r\n");
+				break;
+			case ESPCONN_TIMEOUT:
+				HTTP_DEBUG("Error connection, timeout.\r\n");
+				break;
+			default:
+				HTTP_DEBUG("Connection error: %d - %s\r\n", espcon_status, ((espcon_status>-16)&&(espcon_status<1))? sEspconnErr[-espcon_status] : "?");
+		}
 	}
 }
 
 void ICACHE_FLASH_ATTR http_raw_request(const char * hostname, int port, const char * path, const char * post_data, http_callback user_callback)
 {
-	PRINTF("DNS request\n");
+	HTTP_DEBUG("DNS request\n");
 
-	request_args * req = (request_args *)os_malloc(sizeof(request_args));
+	request_args *req = (request_args *)os_malloc(sizeof(request_args));
 	req->hostname = esp_strdup(hostname);
 	req->path = esp_strdup(path);
 	req->port = port;
@@ -215,17 +276,17 @@ void ICACHE_FLASH_ATTR http_raw_request(const char * hostname, int port, const c
 										hostname, &addr, dns_callback);
 
 	if (error == ESPCONN_INPROGRESS) {
-		PRINTF("DNS pending\n");
+		HTTP_DEBUG("DNS pending\n");
 	}
 	else if (error == ESPCONN_OK) {
 		// Already in the local names table (or hostname was an IP address), execute the callback ourselves.
 		dns_callback(hostname, &addr, req);
 	}
 	else if (error == ESPCONN_ARG) {
-		os_printf("DNS error %s\n", hostname);
+		HTTP_DEBUG("DNS error %s\n", hostname);
 	}
 	else {
-		os_printf("DNS error code %d\n", error);
+		HTTP_DEBUG("DNS error code %d\n", error);
 	}
 }
 
@@ -244,7 +305,7 @@ void ICACHE_FLASH_ATTR http_post(const char * url, const char * post_data, http_
 	int port = 80;
 
 	if (os_strncmp(url, "http://", strlen("http://")) != 0) {
-		os_printf("URL is not HTTP %s\n", url);
+		HTTP_DEBUG("URL is not HTTP %s\n", url);
 		return;
 	}
 	url += strlen("http://"); // Get rid of the protocol.
@@ -266,7 +327,7 @@ void ICACHE_FLASH_ATTR http_post(const char * url, const char * post_data, http_
 	else {
 		port = atoi(colon + 1);
 		if (port == 0) {
-			os_printf("Port error %s\n", url);
+			HTTP_DEBUG("Port error %s\n", url);
 			return;
 		}
 
@@ -279,9 +340,9 @@ void ICACHE_FLASH_ATTR http_post(const char * url, const char * post_data, http_
 		path = "/";
 	}
 
-	PRINTF("hostname=%s\n", hostname);
-	PRINTF("port=%d\n", port);
-	PRINTF("path=%s\n", path);
+	HTTP_DEBUG("hostname=%s\n", hostname);
+	HTTP_DEBUG("port=%d\n", port);
+	HTTP_DEBUG("path=%s\n", path);
 	http_raw_request(hostname, port, path, post_data, user_callback);
 }
 

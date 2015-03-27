@@ -1,6 +1,8 @@
 #ifndef _USER_CONFIG_H_
 #define _USER_CONFIG_H_
 
+#define HTTP_DEBUG	true
+
 #define WIFI_CLIENTSSID		"MYAP"
 #define WIFI_CLIENTPASSWORD	"00000000"
 

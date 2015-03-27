@@ -24,9 +24,17 @@
 #include "driver/dht22.h"
 #include "user_config.h"
 
+typedef enum {
+	WIFI_CONNECTING,
+	WIFI_CONNECTING_ERROR,
+	WIFI_CONNECTED,
+} tConnState;
+
 LOCAL os_timer_t dht22_timer;
 LOCAL void ICACHE_FLASH_ATTR setup_wifi_st_mode(void);
-static struct ip_info ipconfig;
+static struct ip_info ipConfig;
+static ETSTimer WiFiLinker;
+static tConnState connState = WIFI_CONNECTING;
 
 const char *WiFiMode[] =
 {
@@ -72,48 +80,75 @@ LOCAL void ICACHE_FLASH_ATTR dht22_cb(void *arg)
 	static char data[256];
 	static char temp[10];
 	static char hum[10];
-	uint8_t status;
+	struct dht_sensor_data* r;
+	float lastTemp, lastHum;
+
 	os_timer_disarm(&dht22_timer);
-	struct dht_sensor_data* r = DHTRead();
-	float lastTemp = r->temperature;
-	float lastHum = r->humidity;
-	if(r->success)
+	switch(connState)
 	{
-		status = wifi_station_get_connect_status();
-		os_printf("ESP8266 wifi_station_get_connect_status returns %s\r\n", WiFiStatus[status]);
-		if (status != STATION_GOT_IP)
-		{
-			setup_wifi_st_mode();
-		}
-		status = wifi_station_get_connect_status();
-		os_printf("ESP8266 wifi_station_get_connect_status now %s\r\n", WiFiStatus[status]);
-		if (status == STATION_GOT_IP)
-		{
-			wifi_get_ip_info(STATION_IF, &ipconfig);
-			os_sprintf(temp, "%d.%d",(int)(lastTemp),(int)((lastTemp - (int)lastTemp)*100));
-			os_sprintf(hum, "%d.%d",(int)(lastHum),(int)((lastHum - (int)lastHum)*100));
-			os_printf("Temperature: %s *C, Humidity: %s %%\r\n", temp, hum);
-			// Start the connection process
-			os_sprintf(data, "http://%s/update?key=%s&field1=%s&field2=%s&status=dev_ip:%d.%d.%d.%d", THINGSPEAK_SERVER, THINGSPEAK_API_KEY, temp, hum, IP2STR(&ipconfig.ip));
-			os_printf("Request: %s\r\n", data);
-			http_get(data, thingspeak_http_callback);
-			/*os_sprintf(data, "key=%s&field1=%s&field2=%s&status=dev_ip:%d.%d.%d.%d", THINGSPEAK_SERVER, THINGSPEAK_API_KEY, temp, hum, IP2STR(&ipconfig.ip));
-			os_printf("Request: http://184.106.153.149/update?%s\r\n", data);
-			http_post("http://184.106.153.149/update", data, thingspeak_http_callback);*/
-		}
-		else
-		{
-			os_printf("ESP8266 failed to connect to network! Will retry later.\r\n");
-			return;
-		}
-	}
-	else
-	{
-		os_printf("Error reading temperature and humidity.\r\n");
+		case WIFI_CONNECTED:
+			r = DHTRead();
+			lastTemp = r->temperature;
+			lastHum = r->humidity;
+			if(r->success)
+			{
+					wifi_get_ip_info(STATION_IF, &ipConfig);
+					os_sprintf(temp, "%d.%d",(int)(lastTemp),(int)((lastTemp - (int)lastTemp)*100));
+					os_sprintf(hum, "%d.%d",(int)(lastHum),(int)((lastHum - (int)lastHum)*100));
+					os_printf("Temperature: %s *C, Humidity: %s %%\r\n", temp, hum);
+					// Start the connection process
+					os_sprintf(data, "http://%s/update?key=%s&field1=%s&field2=%s&status=dev_ip:%d.%d.%d.%d", THINGSPEAK_SERVER, THINGSPEAK_API_KEY, temp, hum, IP2STR(&ipConfig.ip));
+					os_printf("Request: %s\r\n", data);
+					http_get(data, thingspeak_http_callback);
+					/*os_sprintf(data, "key=%s&field1=%s&field2=%s&status=dev_ip:%d.%d.%d.%d", THINGSPEAK_SERVER, THINGSPEAK_API_KEY, temp, hum, IP2STR(&ipconfig.ip));
+					os_printf("Request: http://184.106.153.149/update?%s\r\n", data);
+					http_post("http://184.106.153.149/update", data, thingspeak_http_callback);*/
+			} else {
+				os_printf("Error reading temperature and humidity.\r\n");
+			}
+			break;
+		default:
+			os_printf("WiFi not connected...\r\n");
 	}
 	os_timer_setfn(&dht22_timer, (os_timer_func_t *)dht22_cb, (void *)0);
 	os_timer_arm(&dht22_timer, DATA_SEND_DELAY, 1);
 }
+
+static void ICACHE_FLASH_ATTR wifi_check_ip(void *arg)
+{
+	os_timer_disarm(&WiFiLinker);
+	switch(wifi_station_get_connect_status())
+	{
+		case STATION_GOT_IP:
+			wifi_get_ip_info(STATION_IF, &ipConfig);
+			if(ipConfig.ip.addr != 0) {
+				connState = WIFI_CONNECTED;
+				os_printf("WiFi connected, wait DHT22 timer...\r\n");
+			} else {
+				connState = WIFI_CONNECTING_ERROR;
+				os_printf("WiFi connected, ip.addr is null\r\n");
+			}
+			break;
+		case STATION_WRONG_PASSWORD:
+			connState = WIFI_CONNECTING_ERROR;
+			os_printf("WiFi connecting error, wrong password\r\n");
+			break;
+		case STATION_NO_AP_FOUND:
+			connState = WIFI_CONNECTING_ERROR;
+			os_printf("WiFi connecting error, ap not found\r\n");
+			break;
+		case STATION_CONNECT_FAIL:
+			connState = WIFI_CONNECTING_ERROR;
+			os_printf("WiFi connecting fail\r\n");
+			break;
+		default:
+			connState = WIFI_CONNECTING;
+			os_printf("WiFi connecting...\r\n");
+	}
+	os_timer_setfn(&WiFiLinker, (os_timer_func_t *)wifi_check_ip, NULL);
+	os_timer_arm(&WiFiLinker, 2000, 0);
+}
+
 
 LOCAL void ICACHE_FLASH_ATTR setup_wifi_st_mode(void)
 {
@@ -158,6 +193,11 @@ void user_init(void)
 
 	// Init DHT22 sensor
 	DHTInit(DHT22);
+
+	// Wait for Wi-Fi connection
+	os_timer_disarm(&WiFiLinker);
+	os_timer_setfn(&WiFiLinker, (os_timer_func_t *)wifi_check_ip, NULL);
+	os_timer_arm(&WiFiLinker, 1000, 0);
 
 	// Set up a timer to send the message
 	os_timer_disarm(&dht22_timer);
