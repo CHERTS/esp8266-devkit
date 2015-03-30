@@ -54,6 +54,7 @@ extern "C"
 // used for static methods
 #define STC_FLASHMEM __attribute__((section(".irom3.text")))
 
+#include "fdvcommonstr.h"
 #include "fdvprintf.h"
 #include "fdvdebug.h"
 #include "fdvsync.h"

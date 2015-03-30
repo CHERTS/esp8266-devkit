@@ -36,6 +36,7 @@ struct MyHTTPHandler : public HTTPHandler
 			{FSTR("/wifiscan"),  (PageHandler)&MyHTTPHandler::get_wifiscan},
 			{FSTR("/confnet"),   (PageHandler)&MyHTTPHandler::get_confnet},
 			{FSTR("/confserv"),  (PageHandler)&MyHTTPHandler::get_confserv},
+			{FSTR("/confgpio"),  (PageHandler)&MyHTTPHandler::get_confgpio},
 			{FSTR("/reboot"),    (PageHandler)&MyHTTPHandler::get_reboot},
 			{FSTR("/restore"),   (PageHandler)&MyHTTPHandler::get_restore},
 			{FSTR("*"),          (PageHandler)&MyHTTPHandler::get_all},
@@ -45,9 +46,7 @@ struct MyHTTPHandler : public HTTPHandler
 	
 	void MTD_FLASHMEM get_home()
 	{
-		HTTPTemplateResponse response(this, FSTR("base.html"));
-		response.addParamStr(FSTR("title"), FSTR("ESP8266 WebFramework"));
-		response.addParamStr(FSTR("content"), FSTR("Please select a menu item on the left"));
+		HTTPTemplateResponse response(this, FSTR("home.html"));
 		response.flush();
 	}
 
@@ -72,6 +71,12 @@ struct MyHTTPHandler : public HTTPHandler
 	void MTD_FLASHMEM get_confserv()
 	{
 		HTTPServicesConfigurationResponse response(this, FSTR("confserv.html"));
+		response.flush();
+	}
+
+	void MTD_FLASHMEM get_confgpio()
+	{
+		HTTPGPIOConfigurationResponse response(this, FSTR("confgpio.html"));
 		response.flush();
 	}
 	
@@ -104,10 +109,9 @@ struct MyHTTPHandler : public HTTPHandler
 };
 
 
-
 extern "C" void FUNC_FLASHMEM user_init(void) 
 {
 	DisableWatchDog();				
-	ConfigurationManager::apply< TCPServer<MyHTTPHandler, 2, 512> >();
+	ConfigurationManager::applyAll< TCPServer<MyHTTPHandler, 2, 512> >();
 }
 

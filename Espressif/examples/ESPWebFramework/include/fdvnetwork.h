@@ -56,6 +56,7 @@ sint8 FUNC_FLASHMEM udhcpd_stop(void);
 namespace fdv
 {
 	
+	
 	//////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////
 	// WiFi
@@ -120,7 +121,7 @@ namespace fdv
 		
 		static char const* MTD_FLASHMEM convSecurityProtocolToString(SecurityProtocol securityProtocol)
 		{
-			char const* authMode = FSTR("");
+			char const* authMode = STR_;
 			switch (securityProtocol)
 			{
 				case WiFi::Open:
@@ -674,7 +675,7 @@ namespace fdv
 				curc = extractHeaders(curc, headerEnd, &m_request.headers);
 				
 				// look for data (maybe POST data)
-				char const* contentLengthStr = m_request.headers[FSTR("Content-Length")];
+				char const* contentLengthStr = m_request.headers[STR_Content_Length];
 				if (contentLengthStr)
 				{
 					// download additional content
@@ -688,7 +689,7 @@ namespace fdv
 					}
 					m_receivedData.append(0);	// add additional terminating "0"
 					// check content type
-					char const* contentType = m_request.headers[FSTR("Content-Type")];
+					char const* contentType = m_request.headers[STR_Content_Type];
 					if (contentType && f_strstr(contentType, FSTR("application/x-www-form-urlencoded")))
 					{
 						CharChunksIterator contentStart = m_receivedData.getIterator();	// cannot use directly headerEnd because added data
@@ -890,7 +891,7 @@ namespace fdv
 				m_httpHandler->writeFmt(FSTR("%s: %s\r\n"), APtr<char>(t_strdup(item->key)).get(), APtr<char>(t_strdup(item->value)).get());
 			}
 			// content length header
-			m_httpHandler->writeFmt(FSTR("Content-Length: %d\r\n\r\n"), m_content.getItemsCount());
+			m_httpHandler->writeFmt(FSTR("%s: %d\r\n\r\n"), STR_Content_Length, m_content.getItemsCount());
 			// actual content
 			if (m_content.getItemsCount() > 0)
 			{				
@@ -934,14 +935,14 @@ namespace fdv
 			if (FlashFileSystem::find(m_filename.get(), &mimetype, &data, &dataLength))
 			{
 				// found				
-				setStatus(FSTR("200 OK"));
-				addHeader(FSTR("Content-Type"), mimetype);
+				setStatus(STR_200_OK);
+				addHeader(STR_Content_Type, mimetype);
 				addContent(data, dataLength);
 			}
 			else
 			{
 				// not found
-				setStatus(FSTR("404 Not Found"));
+				setStatus(STR_404_Not_Fount);
 			}
 			HTTPResponse::flush();
 		}
@@ -1110,8 +1111,8 @@ namespace fdv
 			if (m_filename && FlashFileSystem::find(m_filename, &mimetype, &data, &dataLength))
 			{
 				// found
-				setStatus(FSTR("200 OK"));
-				addHeader(FSTR("Content-Type"), FSTR("text/html"));
+				setStatus(STR_200_OK);
+				addHeader(STR_Content_Type, FSTR("text/html"));
 				
 				// replace parameters
 				ParameterReplacer replacer((char const*)data, (char const*)data + dataLength, &m_params);
@@ -1139,7 +1140,7 @@ namespace fdv
 				}
 			}
 			// not found
-			setStatus(FSTR("404 Not Found"));
+			setStatus(STR_404_Not_Fount);
 		}
 		
 	private:
