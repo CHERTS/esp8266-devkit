@@ -3,6 +3,7 @@ Changelog:
 
 v2.0.1 (30.04.2015):
 * Libraries folder of "ESP8266_SDK\lib" updated to version 1.0.0;
+* Update a utility "utils\esptool-ck.exe";
 * Updated examples:
   ESPWebFramework;
   dht22_thingspeak;

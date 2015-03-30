@@ -3,6 +3,7 @@
 
 v2.0.1 (30.04.2015):
 * Библиотеки из папка ESP8266_SDK\lib обновлены до версии 1.0.0;
+* Обновлена утилита "utils\esptool-ck.exe";
 * Обновлены примеры:
   ESPWebFramework;
   dht22_thingspeak;
