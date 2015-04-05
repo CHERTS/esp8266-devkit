@@ -1,6 +1,6 @@
 ﻿;InnoSetupVersion=5.5.0
 #define DevKitVersion "2.0.2"
-#define DevKitSDKVersion "1.0.0"
+#define DevKitSDKVersion "1.0.1 b1"
 #define DevKitAppName "Unofficial Development Kit for Espressif ESP8266"
 #define DevKitAppURL "http://www.programs74.ru"
 #define DevKitAppPublisher "Mikhail Grigorev"

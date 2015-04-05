@@ -4,11 +4,13 @@
 v2.0.2 (07.04.2015):
 * Обновлена SDK до версии 1.0.1 b1 (папка ESP8266_SDK);
 * Обновлена RTOS SDK, каталог "C:\Espressif\ESP8266_RTOS_SDK";
+* Обновлена утилита "utils\esptool-ck.exe";
+* Обновлены Makefile во всех примерах. В Makefile добавлена опция указания скорости порта для утилиты esptool.exe;
 * Обновлены примеры:
   esphttpd;
   ESP8266_Relay_Board;
-  nodemcu-firmware;
   esp_rtos_sdk_example;
+  i2c_bmp180;
 
 v2.0.1 (30.03.2015):
 * Библиотеки из папка ESP8266_SDK\lib обновлены до версии 1.0.0;
