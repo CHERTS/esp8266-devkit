@@ -11,6 +11,7 @@ v2.0.2 (07.04.2015):
   ESP8266_Relay_Board;
   esp_rtos_sdk_example;
   i2c_bmp180;
+  ESPWebFramework;
 
 v2.0.1 (30.03.2015):
 * Библиотеки из папка ESP8266_SDK\lib обновлены до версии 1.0.0;
