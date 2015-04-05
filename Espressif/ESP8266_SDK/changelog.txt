@@ -1,3 +1,32 @@
+esp_iot_sdk_v1.0.1_b1_15_04_02 Release note
+-------------------------------------------
+
+Fix bugs:
+1. Connect to ESP8266 softAP fail after SmartConfig;
+2. SmartConfig loses one bit of SSID
+
+Optimize:
+1. espconn_set_opt: set configuration of TCP connection,add parameter for TCP keep-alive
+
+Add APIs:
+1. espconn_clear_opt: clear configuration of TCP connection
+2. espconn_set_keepalive: set configuration of TCP keep-alive to detect if TCP connection broke
+3. espconn_get_keepalive: get configuration of TCP keep-alive
+
+AT_v0.23_b1 release note
+Note: AT added some functions so flash size need to be 1024KB or more than that.
+
+Fix bug:
+1. Always "busy" if TCP connection abnormally broke during AT+CIPSEND
+
+Optimize:
+1. Add UDP transparent transmission
+2. Optimize the initial value of AT+CWDHCP?
+3. Add TCP keep-alive function in AT+CIPSTART
+
+Add AT command:
+1. Add AT+CIPSENDEX which support quit from sending mode by "\0" (so an useful "\0" need to be "\\0")
+
 esp_iot_sdk_v1.0.0_15_03_20 Release Note
 ----------------------------------------
 
