@@ -1,7 +1,15 @@
 Changelog:
 ----------
 
-v2.0.1 (30.04.2015):
+v2.0.2 (07.04.2015):
+* Update RTOS SDK, directory "C:\Espressif\ESP8266_RTOS_SDK";
+* Updated examples:
+  esphttpd;
+  ESP8266_Relay_Board;
+  nodemcu-firmware;
+  esp_rtos_sdk_example;
+
+v2.0.1 (30.03.2015):
 * Libraries folder of "ESP8266_SDK\lib" updated to version 1.0.0;
 * Update a utility "utils\esptool-ck.exe";
 * Updated examples:
