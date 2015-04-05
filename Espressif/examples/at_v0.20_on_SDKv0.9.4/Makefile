@@ -19,6 +19,7 @@ SDK_BASE	?= c:/Espressif/ESP8266_SDK_094
 SDK_TOOLS	?= c:/Espressif/utils
 ESPTOOL		?= $(SDK_TOOLS)/esptool.exe
 ESPPORT		?= COM2
+ESPBAUD		?= 115200
 
 # name for the target project
 TARGET		= app
@@ -124,7 +125,7 @@ $(FW_BASE):
 	$(Q) mkdir -p $@
 
 flash: all
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x00000 firmware/eagle.app.flash.bin
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash 0x00000 firmware/eagle.app.flash.bin
 
 rebuild: clean all
 

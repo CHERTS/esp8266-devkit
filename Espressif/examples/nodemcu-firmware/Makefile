@@ -99,6 +99,7 @@ SDK_TOOLS	?= c:/Espressif/utils
 ESPTOOL		?= $(SDK_TOOLS)/esptool.exe
 ESPTOOL-CK	?= $(SDK_TOOLS)/esptool-ck.exe
 ESPPORT		?= COM2
+ESPBAUD		?= 115200
 
 CSRCS ?= $(wildcard *.c)
 ASRCs ?= $(wildcard *.s)
@@ -185,8 +186,8 @@ progr: all
 ifndef PDIR
 	$(MAKE) -C ./app flash
 else
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash $(flashimageoptions) 0x00000 $(FIRMWAREDIR)0x00000.bin 0x10000 $(FIRMWAREDIR)0x10000.bin
-	$(ESPTOOL) -p $(ESPPORT) write_flash $(flashimageoptions) 0x7c000 $(FIRMWAREDIR)esp_init_data_default.bin 0x7e000 $(FIRMWAREDIR)blank.bin
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x00000 $(FIRMWAREDIR)0x00000.bin 0x10000 $(FIRMWAREDIR)0x10000.bin
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x7c000 $(FIRMWAREDIR)esp_init_data_default.bin 0x7e000 $(FIRMWAREDIR)blank.bin
 endif
 
 luainit:

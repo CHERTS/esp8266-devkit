@@ -20,6 +20,7 @@ SDK_BASE	?= $(TOOLS_ROOT)/ESP8266_RTOS_SDK
 # esptool path and port
 ESPTOOL		?= $(TOOLS_ROOT)/utils/esptool.exe
 ESPPORT		?= COM2
+ESPBAUD		?= 115200
 
 # name for the target project
 TARGET		= app
@@ -162,14 +163,14 @@ flashonefile: all
 	$(Q) rm -f *.ii
 	$(Q) rm -f *.i
 	$(Q) rm -f *.s
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x00000 $(FW_BASE)/eagle.app.flash.bin
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash 0x00000 $(FW_BASE)/eagle.app.flash.bin
 
 flash: all
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x00000 $(FW_BASE)/eagle.flash.bin 0x40000 $(FW_BASE)/eagle.irom0text.bin
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash 0x00000 $(FW_BASE)/eagle.flash.bin 0x40000 $(FW_BASE)/eagle.irom0text.bin
 
 flashinit:
 	$(vecho) "Flash init data default and blank data."
-	$(ESPTOOL) -p $(ESPPORT) write_flash 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
 
 rebuild: clean all
 

@@ -20,6 +20,7 @@ SDK_BASE	?= $(TOOLS_ROOT)/ESP8266_RTOS_SDK
 # esptool path and port
 ESPTOOL		?= $(TOOLS_ROOT)/utils/esptool.exe
 ESPPORT		?= COM2
+ESPBAUD		?= 115200
 
 WEBDIR = ./webcontent/
 WEBCONTENTADDRS = 0x17000
@@ -229,7 +230,7 @@ firmware:
 	$(Q) mkdir -p $@
 
 flash: all
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash $(flashimageoptions) 0x00000 $(FW_BASE)/eagle.flash.bin 0x40000 $(FW_BASE)/eagle.irom0text.bin
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x00000 $(FW_BASE)/eagle.flash.bin 0x40000 $(FW_BASE)/eagle.irom0text.bin
 
 flashinit:
 	$(vecho) "Flash init data:"
@@ -238,10 +239,10 @@ flashinit:
 	$(vecho) "Default config (Clear SDK settings):"
 	$(vecho) "blank.bin-------->0x7E000"
 	$(vecho) "esp_init_data_default.bin-------->0x7C000"
-	$(ESPTOOL) -p $(ESPPORT) write_flash $(flashimageoptions) 0x79000 $(SDK_BASE)/bin/clear_eep.bin 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x79000 $(SDK_BASE)/bin/clear_eep.bin 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
 
 flashweb: webcontent
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash $(flashimageoptions) $(WEBCONTENTADDRS) webcontent.bin
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) $(WEBCONTENTADDRS) webcontent.bin
 
 webcontent:
 	binarydir.exe $(WEBDIR) webcontent.bin $(MAXWEBCONTENT)

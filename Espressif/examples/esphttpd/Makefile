@@ -23,6 +23,7 @@ SDK_EXTRA_LIBS ?= c:/Espressif/ESP8266_SDK/lib
 # esptool path and port
 ESPTOOL		?=$(SDK_TOOLS)/esptool.exe
 ESPPORT		?=COM2
+ESPBAUD		?= 115200
 # old - use c:/Espressif/utils/esptool.exe util
 # new - use c:/Espressif/utils/esptool-ck.exe util
 ESPTOOLMODE	?=old
@@ -320,7 +321,7 @@ flashonefile: all webpages.espfs
 ifeq ($(esptoolmode), new)
 	$(ESPTOOL) -cp $(ESPPORT) -cd ck -cb 256000 -ca 0x00000 -cf $(FW_BASE)/eagle.app.flash.bin -v
 else
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash $(flashimageoptions) 0x00000 $(FW_BASE)/eagle.app.flash.bin
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x00000 $(FW_BASE)/eagle.app.flash.bin
 endif
 
 flashboot: all
@@ -329,7 +330,7 @@ ifeq ($(boot), new)
 ifeq ($(esptoolmode), new)
 	$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x00000 -cf $(SDK_BASE)/bin/boot_v1.2.bin -v
 else
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash $(flashimageoptions) 0x00000 $(SDK_BASE)/bin/boot_v1.2.bin
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x00000 $(SDK_BASE)/bin/boot_v1.2.bin
 endif
 endif
 ifeq ($(boot), old)
@@ -337,7 +338,7 @@ ifeq ($(boot), old)
 ifeq ($(esptoolmode), new)
 	$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x00000 -cf $(SDK_BASE)/bin/boot_v1.1.bin -v
 else
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash $(flashimageoptions) 0x00000 $(SDK_BASE)/bin/boot_v1.1.bin
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x00000 $(SDK_BASE)/bin/boot_v1.1.bin
 endif
 endif
 ifeq ($(boot), none)
@@ -350,7 +351,7 @@ ifeq ($(esptoolmode), new)
 	$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x00000 -cf $(FW_BASE)/eagle.flash.bin -v
 	$(ESPTOOL) -cp $(ESPPORT) -cd ck -cb 256000 -ca 0x40000 -cf $(FW_BASE)/eagle.irom0text.bin -v
 else
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash $(flashimageoptions) 0x00000 $(FW_BASE)/eagle.flash.bin 0x40000 $(FW_BASE)/eagle.irom0text.bin
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x00000 $(FW_BASE)/eagle.flash.bin 0x40000 $(FW_BASE)/eagle.irom0text.bin
 endif
 else
 ifeq ($(boot), none)
@@ -358,13 +359,13 @@ ifeq ($(boot), none)
 		$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x00000 -cf $(FW_BASE)/eagle.flash.bin -v
 		$(ESPTOOL) -cp $(ESPPORT) -cd ck -cb 256000 -ca 0x40000 -cf $(FW_BASE)/eagle.irom0text.bin -v
 	else
-		$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash $(flashimageoptions) 0x00000 $(FW_BASE)/eagle.flash.bin 0x40000 $(FW_BASE)/eagle.irom0text.bin
+		$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x00000 $(FW_BASE)/eagle.flash.bin 0x40000 $(FW_BASE)/eagle.irom0text.bin
 	endif
 else
 ifeq ($(esptoolmode), new)
 	$(ESPTOOL) -cp $(ESPPORT) -cd ck -cb 256000 -ca $(addr) -cf $(FW_BASE)/upgrade/$(BIN_NAME).bin -v
 else
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash $(flashimageoptions) $(addr) $(FW_BASE)/upgrade/$(BIN_NAME).bin
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) $(addr) $(FW_BASE)/upgrade/$(BIN_NAME).bin
 endif
 endif
 endif
@@ -373,7 +374,7 @@ ifeq ($(esptoolmode), new)
 	$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x7c000 -cf $(SDK_BASE)/bin/esp_init_data_default.bin -v
 	$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x7e000 -cf $(SDK_BASE)/bin/blank.bin -v
 else
-	$(ESPTOOL) -p $(ESPPORT) write_flash $(flashimageoptions) 0x79000 $(SDK_BASE)/bin/clear_eep.bin 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x79000 $(SDK_BASE)/bin/clear_eep.bin 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
 endif
 
 flashinit:
@@ -388,7 +389,7 @@ ifeq ($(esptoolmode), new)
 	$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x7c000 -cf $(SDK_BASE)/bin/esp_init_data_default.bin -v
 	$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x7e000 -cf $(SDK_BASE)/bin/blank.bin -v
 else
-	$(ESPTOOL) -p $(ESPPORT) write_flash $(flashimageoptions) 0x79000 $(SDK_BASE)/bin/clear_eep.bin 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x79000 $(SDK_BASE)/bin/clear_eep.bin 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
 endif
 
 webpages.espfs: $(FW_BASE) cleanwebpages
@@ -399,7 +400,7 @@ htmlflash: webpages.espfs
 ifeq ($(esptoolmode), new)
 	$(ESPTOOL) -cp $(ESPPORT) -cd ck -cb 256000 -ca 0x12000 -cf $(FW_BASE)/webpages.espfs -v
 else
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash $(flashimageoptions) 0x12000 $(FW_BASE)/webpages.espfs
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x12000 $(FW_BASE)/webpages.espfs
 endif
 
 rebuild: clean all

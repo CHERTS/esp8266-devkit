@@ -19,6 +19,7 @@ SDK_BASE	?= c:/Espressif/ESP8266_SDK
 SDK_TOOLS	?= c:/Espressif/utils
 ESPTOOL		?= $(SDK_TOOLS)/esptool.exe
 ESPPORT		?= COM2
+ESPBAUD		?= 115200
 
 # BOOT = none
 # BOOT = old - boot_v1.1
@@ -273,16 +274,16 @@ flashonefile: all
 	$(vecho) "No boot needed."
 	$(vecho) "Generate eagle.app.flash.bin successully in folder firmware."
 	$(vecho) "eagle.app.flash.bin-------->0x00000"
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x00000 firmware/eagle.app.flash.bin
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash 0x00000 firmware/eagle.app.flash.bin
 
 flashboot: all flashinit
 ifeq ($(boot), new)
 	$(vecho) "Flash boot_v1.2 and +"
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x00000 $(SDK_BASE)/bin/boot_v1.2.bin
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash 0x00000 $(SDK_BASE)/bin/boot_v1.2.bin
 endif
 ifeq ($(boot), old)
 	$(vecho) "Flash boot_v1.1 and +"
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x00000 $(SDK_BASE)/bin/boot_v1.1.bin
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash 0x00000 $(SDK_BASE)/bin/boot_v1.1.bin
 endif
 ifeq ($(boot), none)
 	$(vecho) "No boot needed."
@@ -290,18 +291,18 @@ endif
 
 flash: all
 ifeq ($(app), 0) 
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x00000 firmware/eagle.flash.bin 0x40000 firmware/eagle.irom0text.bin
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash 0x00000 firmware/eagle.flash.bin 0x40000 firmware/eagle.irom0text.bin
 else
 ifeq ($(boot), none)
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x00000 firmware/eagle.flash.bin 0x40000 firmware/eagle.irom0text.bin
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash 0x00000 firmware/eagle.flash.bin 0x40000 firmware/eagle.irom0text.bin
 else
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash $(addr) firmware/upgrade/$(BIN_NAME).bin
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(addr) firmware/upgrade/$(BIN_NAME).bin
 endif
 endif
 
 flashinit:
 	$(vecho) "Flash init data default and blank data."
-	$(ESPTOOL) -p $(ESPPORT) write_flash 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
 
 rebuild: clean all
 
