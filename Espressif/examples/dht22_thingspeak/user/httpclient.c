@@ -183,7 +183,10 @@ static void ICACHE_FLASH_ATTR disconnect_callback(void * arg)
 			}
 			int http_status = atoi(req->buffer + strlen(version));
 
-			char * body = (char *)os_strstr(req->buffer, "\r\n\r\n") + 4;
+			//char * body = (char *)os_strstr(req->buffer, "\r\n\r\n") + 4;
+			char * body = (char *)os_strstr(req->buffer, "\r\n\r\n");
+			if (body)
+				body+=4;
 
 			if (req->user_callback != NULL) { // Callback is optional.
 				req->user_callback(body, http_status, req->buffer);
