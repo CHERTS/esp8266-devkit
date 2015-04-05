@@ -102,7 +102,7 @@ uint8_t mqtt_ds18b20_temp_pub_topic[64];
 
 uint32_t sensor_ds18b20_enable;
 uint32_t sensor_dht22_enable;
-uint32_t sensor_dht22_humi_thermostat;
+uint32_t thermostat1_input;
 
 uint32_t relay_latching_enable;
 uint32_t relay_1_state;

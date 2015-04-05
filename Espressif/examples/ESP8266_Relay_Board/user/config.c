@@ -119,7 +119,7 @@ void ICACHE_FLASH_ATTR CFG_Load()
 
 		sysCfg.sensor_ds18b20_enable=SENSOR_DS18B20_ENABLE;
 		sysCfg.sensor_dht22_enable=SENSOR_DHT22_ENABLE;
-		sysCfg.sensor_dht22_humi_thermostat=0;
+		sysCfg.thermostat1_input=0; //0=DS18b20, 1=DHT22
 				
 		sysCfg.relay_latching_enable=RELAY_LATCHING_ENABLE;
 		sysCfg.relay_1_state=0;

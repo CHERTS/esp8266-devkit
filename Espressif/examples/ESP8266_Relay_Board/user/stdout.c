@@ -44,6 +44,8 @@ typedef struct {
 // UartDev is defined and initialized in rom code.
 extern UartDevice    UartDev;
 
+int serialTreading;
+
 static void ICACHE_FLASH_ATTR stdoutUartTxd(char c) {
 	//Wait until there is room in the FIFO
 	while (((READ_PERI_REG(UART_STATUS(0))>>UART_TXFIFO_CNT_S)&UART_TXFIFO_CNT)>=126) ;
@@ -84,6 +86,11 @@ uart0_rx_intr_handler(void *para)
             pRxBuff->BuffState = WRITE_OVER;
 			pRxBuff->pWritePos = pRxBuff->pRcvMsgBuff -1;
 			os_printf("Received: %s\n",(const char *)pRxBuff->pRcvMsgBuff);
+
+			if (os_strncmp((const char *)pRxBuff->pRcvMsgBuff,"serialremotetemp=",17) == 0 ) {
+				serialTreading=atoi((const char *)pRxBuff->pRcvMsgBuff+17);
+				os_printf("Serial temperature is: %d \r\n", serialTreading);
+			}
 			
 			if (os_strncmp((const char *)pRxBuff->pRcvMsgBuff,"relay",5) == 0 ) {
 			int relayNum=(pRxBuff->pRcvMsgBuff[5]-'0');

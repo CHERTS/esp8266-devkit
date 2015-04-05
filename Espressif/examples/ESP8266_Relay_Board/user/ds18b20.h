@@ -1,5 +1,5 @@
 struct sensor_reading* read_ds18b20(void);
-int ds_str(char *buff,int sensornum);
+bool ds_str(char *buff,int sensornum);
 void ds_init(uint32_t polltime);
 int readDS(uint8_t *dsaddr);
 struct sensor_reading dsreading [4];

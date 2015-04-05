@@ -1,6 +1,7 @@
 var visibleFlag = 1;
 var statusMsg = false;
 var connected = false;
+var doingsave=false;
 	
 var state = {
     relay1: 0,
@@ -126,20 +127,34 @@ function setStatus(msg,dur,pri){	 // show msg on status bar
 	}
 	
 function save(param, payload) {
+	doingsave=true;
     $.ajax({
         type: 'GET',
         url: "relay.cgi?" + param + "=" + payload,
         async: true,
-		timeout: 5000,
+		timeout: 3000,
+		tryCount : 0,
+		retryLimit : 3,
 		success: function (data) {
 			statusMsg = false;
 			if(!connected) setStatus("Connected",2,0); 
 			connected=true;
+			doingsave=false;
 		},
-		error: function (data) {
-			if(connected) setStatus("No connection to server!",0,1);
-			connected=false;
-		}
+		error : function(xhr, textStatus, errorThrown ) {
+        if (textStatus == 'timeout') {
+            this.tryCount++;
+            if (this.tryCount <= this.retryLimit) {
+                //try again
+                $.ajax(this);
+                return;
+            }            
+            return;
+        }
+		if(connected) setStatus("No connection to server!",0,1);
+		connected=false;
+		doingsave=false;
+    }
     });
 }
 
@@ -151,20 +166,33 @@ function server_get() {
 			url: "relay.cgi",
 			dataType: 'json',
 			async: true,
-			timeout: 5000,
+			timeout: 3000,
+			tryCount : 0,
+			retryLimit : 3,
 			success: function (data) {
 				if (data.length !== 0) {
 					statusMsg = false;
 					if(!connected) setStatus("Connected",2,0); 
 					connected=true;
-					state = data;
-					update();
+					if(!doingsave) {
+						state = data;
+						update();
+					}
 				}
 			},
-			error: function (data) {
-				if(connected) setStatus("No connection to server!",0,1);
-				connected=false;
-			}
+		error : function(xhr, textStatus, errorThrown ) {
+        if (textStatus == 'timeout') {
+            this.tryCount++;
+            if (this.tryCount <= this.retryLimit) {
+                //try again
+                $.ajax(this);
+                return;
+            }            
+            return;
+        }
+		if(connected) setStatus("No connection to server!",0,1);
+		connected=false;
+		}
 		});
 	}
     return;

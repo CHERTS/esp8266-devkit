@@ -51,18 +51,27 @@ static void ICACHE_FLASH_ATTR networkConnectedCb(void *arg) {
     struct espconn* conn = arg;
     char buf[384];
 	char buf2[255];
-	char dstemp[32];
-	char temp[32];
-	char humi[32];
-
-	ds_str(dstemp,0);
-	dht_temp_str(temp);
-	dht_humi_str(humi);
+	char t1[32];
+	char t2[32];
+	char t3[32];
 	
 	//double expand as sysCfg.broadcastd_url cntains placeholders as well
 	os_sprintf(buf2,"GET %s HTTP/1.1\r\nHost: %s\r\nAccept: */*\r\nUser-Agent: Mozilla/4.0 (compatible; esp8266; Windows NT 5.1)\r\n\r\n",sysCfg.broadcastd_url,sysCfg.broadcastd_host);
-	os_sprintf(buf,buf2,currGPIO12State,currGPIO13State,currGPIO15State,dstemp,temp,humi);
-
+	
+	if(sysCfg.sensor_dht22_enable)  {
+		dht_temp_str(t2);
+		dht_humi_str(t3);
+		os_sprintf(buf,buf2,currGPIO12State,currGPIO13State,currGPIO15State,"N/A",t2,t3);
+	}
+	
+	if(sysCfg.sensor_ds18b20_enable)  { // If DS18b20 daemon is enabled, then send up to 3 sensor's data instead
+		ds_str(t1,0);
+		if(numds>1) ds_str(t2,1); //reuse to save space
+		if(numds>2)  ds_str(t3,2); //reuse to save space
+		os_sprintf(buf,buf2,currGPIO12State,currGPIO13State,currGPIO15State,t1,t2,t3);
+	}
+	
+	
     espconn_sent(conn, (uint8*)buf, os_strlen(buf));
 
 	os_printf("Sent HTTP GET: %s\n\r",buf);

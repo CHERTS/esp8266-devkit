@@ -21,9 +21,10 @@ var setpoint = 21;
 var unit ="&deg;C";
 var statusMsg = false;
 var connected = false;
+var doingsave = false;
 
 var thermostat = {
-	roomtemperature: "21",
+	temperature: "21",
 	humidity: "50",
 	humidistat: 0,
 	relay1state: 0,
@@ -170,7 +171,7 @@ function update() {
 	if(!isNaN((Number(thermostat.humidity)).toFixed(1)))
 		$('.humidity').show();
 	
-	$(".zone-temperature").html((Number(thermostat.roomtemperature)).toFixed(1) + "&deg;C");
+	$(".zone-temperature").html((Number(thermostat.temperature)).toFixed(1) + "&deg;C");
     $("#zone-humidity").html((Number(thermostat.humidity)).toFixed(1) + "%");
 	
 	if(thermostat.relay1state === 0) {
@@ -590,6 +591,7 @@ function checkVisibility() {
 }
 
 function save(param, payload) {
+	doingsave=true;
     $.ajax({
         type: 'POST',
         url: "thermostat.cgi?param=" + param,
@@ -597,15 +599,27 @@ function save(param, payload) {
 		dataType: 'text',
 		cache: false,
         async: true,
-		timeout: 5000,
-		success: function (data) {
+			timeout: 3000,
+			tryCount : 0,
+			retryLimit : 3,			success: function (data) {
 			statusMsg = false;
 			if(!connected) setStatus("Connected",2,0); 
 			connected=true;
+			doingsave=false;
 		},
-		error: function (XMLHttpRequest, textStatus, errorThrown) {
-			if(connected) setStatus("No connection to server!",0,1);
-			connected=false;
+		error : function(xhr, textStatus, errorThrown ) {
+        if (textStatus == 'timeout') {
+            this.tryCount++;
+            if (this.tryCount <= this.retryLimit) {
+                //try again
+                $.ajax(this);
+                return;
+            }            
+            return;
+        }
+		if(connected) setStatus("No connection to server!",0,1);
+		connected=false;
+		doingsave=false;
 		}
     });
 }
@@ -617,22 +631,34 @@ function server_get() {
 			url: "thermostat.cgi?param=state",
 			dataType: 'json',
 			async: true,
-			timeout: 5000,
-			success: function (data) {
+			timeout: 3000,
+			tryCount : 0,
+			retryLimit : 3,				success: function (data) {
 				if (data.length !== 0) {
 					statusMsg = false;
 					if(!connected) setStatus("Connected",2,0); 
 					connected=true;
-					output = data;
-					thermostat=data;
-					thermostat.manualsetpoint/=100;
-					update();
+					if(!doingsave) {
+						output = data;
+						thermostat=data;
+						thermostat.manualsetpoint/=100;
+						update();
+					}
 				}
 			},
-			error: function (data) {
-				if(connected) setStatus("No connection to server!",0,1);
-				connected=false;
-			}
+		error : function(xhr, textStatus, errorThrown ) {
+        if (textStatus == 'timeout') {
+            this.tryCount++;
+            if (this.tryCount <= this.retryLimit) {
+                //try again
+                $.ajax(this);
+                return;
+            }            
+            return;
+        }
+		if(connected) setStatus("No connection to server!",0,1);
+		connected=false;
+		}
 		});
 	}
     return output;
@@ -645,17 +671,28 @@ function server_get2(param) {
 			url: "thermostat.cgi?param=" + param,
 			dataType: 'json',
 			async: false,
-			timeout: 5000,
+			timeout: 3000,
+			tryCount : 0,
+			retryLimit : 3,			
 			success: function (data) {
 				if (data.length !== 0) output = data;
 					statusMsg = false;
 					if(!connected) setStatus("Connected",2,0); 
 					connected=true;
 			},
-			error: function (data) {
-				if(connected) setStatus("No connection to server!",0,1);
-				connected=false;
-			}
+		error : function(xhr, textStatus, errorThrown ) {
+        if (textStatus == 'timeout') {
+            this.tryCount++;
+            if (this.tryCount <= this.retryLimit) {
+                //try again
+                $.ajax(this);
+                return;
+            }            
+            return;
+        }
+		if(connected) setStatus("No connection to server!",0,1);
+		connected=false;
+		}
 		});
 	}
     return output;

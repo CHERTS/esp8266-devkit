@@ -11,6 +11,7 @@
 #include "time_utils.h"
 #include "dht22.h"
 #include "ds18b20.h"
+#include "stdout.h"
 
 static int ICACHE_FLASH_ATTR wd(int year, int month, int day) {
   size_t JND =                                                     \
@@ -75,16 +76,14 @@ static  void ICACHE_FLASH_ATTR pollThermostatCb(void * arg)
 			struct sensor_reading* result = readDHT();
 			if(result->success) {
 				Treading=result->temperature*100;
-				if(sysCfg.sensor_dht22_humi_thermostat)
+				if(sysCfg.thermostat1_input==2) // Humidistat
 					Treading=result->humidity*100;
 			}			
 		}
-		else {
+		else { if(sysCfg.sensor_ds18b20_enable && sysCfg.thermostat1_input==0 ) { 
 			struct sensor_reading* result = read_ds18b20();
 			if(result->success) {
-	
 			    int SignBit, Whole, Fract;
-	
 				Treading = result->temperature;
 				
 				SignBit = Treading & 0x8000;  // test most sig bit
@@ -96,13 +95,23 @@ static  void ICACHE_FLASH_ATTR pollThermostatCb(void * arg)
 
 				if (SignBit) // negative
 					Whole*=-1;
-
 				Treading=Whole*100+Fract;
-
 			}
+		}//ds8b20 enabled
+		}
+		
+		if(sysCfg.thermostat1_input==3) { //MQTT input to thermostat
+		}
+		
+		if(sysCfg.thermostat1_input==4) { //Serial input to thermostat
+			Treading=serialTreading;
+		}
+		
+		if(sysCfg.thermostat1_input==5) { //Fixed value to thermostat
+			Treading=1000;
 		}
 
-		if(Treading ==-9999 || Treading >12000 || Treading <-30000) { // Check for valid reading
+		if(Treading ==-9999 || Treading >12000 || Treading <-3000) { // Check for valid reading
 			os_printf("Could not get valid temperature reading\n");
 			return;
 		} 

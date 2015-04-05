@@ -13,7 +13,17 @@
 <table>
 <tr><td>DS18B20 enabled?:</td><td><input type="checkbox" name="sensor-ds18b20-enable" id="sensor-ds18b20-enable" %sensor-ds18b20-enable% /></td></tr>
 <tr><td>DHT22 enabled?:</td><td><input type="checkbox" name="sensor-dht22-enable" id="sensor-dht22-enable" %sensor-dht22-enable% /></td></tr>
-<tr><td>DHT22 humidity as thermostat input?:</td><td><input type="checkbox" name="sensor-dht22-humi-thermostat" id="sensor-dht22-humi-thermostat" %sensor-dht22-humi-thermostat% /></td></tr>
+<tr><td>Thermostat input:</td><td>
+
+<select name="thermostat1-input" id="thermostat1-input">
+  <option value="0" %selectedds18b20% >DS18B20 sensor #1</option>
+  <option value="1" %selecteddht22t% >DHT22 temperature</option>
+  <option value="2" %selecteddht22h% >DHT22 humidity</option>
+  <option value="3" %selectedmqtt% >MQTT</option>
+  <option value="4" %selectedserial% >Serial input</option>  
+  <option value="5" %selectedfixed% >Fixed value (10)</option>    
+</select>
+
 </table>
 <br/>
 <button type="button" onClick="parent.location='/'">Back</button>

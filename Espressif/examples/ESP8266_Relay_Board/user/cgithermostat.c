@@ -25,7 +25,7 @@ Some random cgi routines.
 #include "ds18b20.h"
 #include "time_utils.h"
 #include "config.h"
-
+#include "stdout.h"
 
 #include "jsmn.h"
 
@@ -64,6 +64,7 @@ int ICACHE_FLASH_ATTR cgiThermostat(HttpdConnData *connData) {
 	}
 
 	os_strcpy(buff, "Unknown");	
+	os_strcpy(temp, "N/A");
 	os_strcpy(humi, "N/A");	
 
 	len=httpdFindArg(connData->getArgs, "param", buff, sizeof(buff));
@@ -71,16 +72,25 @@ int ICACHE_FLASH_ATTR cgiThermostat(HttpdConnData *connData) {
 
 		if(os_strcmp(buff,"state")==0) {
 		
-			if(sysCfg.sensor_dht22_enable) { 
+			if(sysCfg.sensor_dht22_enable && (sysCfg.thermostat1_input == 1 || sysCfg.thermostat1_input == 2)) { 
 				dht_temp_str(temp);
 				dht_humi_str(humi);
 			}
-			else {
+			else if (sysCfg.sensor_ds18b20_enable && sysCfg.thermostat1_input == 0) { 			
 				ds_str(temp,0);
 			}
+
+			else if (sysCfg.thermostat1_input == 4) { 		//Serial
+				os_sprintf(temp,"%d.%d",(int)serialTreading/100,serialTreading-((int)serialTreading/100)*100);
+			}
+
+			else if (sysCfg.thermostat1_input == 5) { 		//Fixed value
+				os_strcpy(temp,"10");
+			}
+
 	
-			os_sprintf(buff, "{\"roomtemperature\": \"%s\"\n,\"humidity\": \"%s\"\n,\"humidistat\": %d\n,\"relay1state\": %d\n,\"relay1name\":\"%s\",\n\"opmode\":%d\n,\"state\":%d,\n\"manualsetpoint\": %d\n,\"mode\":%d }\n",
-				temp, humi, (int)sysCfg.sensor_dht22_humi_thermostat, currGPIO12State,(char *)sysCfg.relay1name,(int)sysCfg.thermostat1opmode, (int)sysCfg.thermostat1state, (int)sysCfg.thermostat1manualsetpoint,(int)sysCfg.thermostat1mode);
+			os_sprintf(buff, "{\"temperature\": \"%s\"\n,\"humidity\": \"%s\"\n,\"humidistat\": %d\n,\"relay1state\": %d\n,\"relay1name\":\"%s\",\n\"opmode\":%d\n,\"state\":%d,\n\"manualsetpoint\": %d\n,\"mode\":%d }\n",
+				temp, humi, (int)sysCfg.thermostat1_input==2?1:0, currGPIO12State,(char *)sysCfg.relay1name,(int)sysCfg.thermostat1opmode, (int)sysCfg.thermostat1state, (int)sysCfg.thermostat1manualsetpoint,(int)sysCfg.thermostat1mode);
 
 
 		}

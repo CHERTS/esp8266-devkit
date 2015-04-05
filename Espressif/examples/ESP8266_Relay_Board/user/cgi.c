@@ -706,8 +706,11 @@ int ICACHE_FLASH_ATTR cgiSensorSettings(HttpdConnData *connData) {
 	len=httpdFindArg(connData->postBuff, "sensor-dht22-enable", buff, sizeof(buff));
 	sysCfg.sensor_dht22_enable = (len > 0) ? 1:0;
 
-	len=httpdFindArg(connData->postBuff, "sensor-dht22-humi-thermostat", buff, sizeof(buff));
-	sysCfg.sensor_dht22_humi_thermostat = (len > 0) ? 1:0;
+
+	len=httpdFindArg(connData->postBuff, "thermostat1-input", buff, sizeof(buff));
+	if (len>0) {
+		sysCfg.thermostat1_input=atoi(buff);
+	}
 
 	CFG_Save();
 	httpdRedirect(connData, "/");
@@ -729,10 +732,29 @@ void ICACHE_FLASH_ATTR tplSensorSettings(HttpdConnData *connData, char *token, v
 			os_strcpy(buff, sysCfg.sensor_dht22_enable == 1 ? "checked" : "" );
 	}
 
-	if (os_strcmp(token, "sensor-dht22-humi-thermostat")==0) {
-			os_strcpy(buff, sysCfg.sensor_dht22_humi_thermostat == 1 ? "checked" : "" );
+	if (os_strcmp(token, "selectedds18b20")==0) {
+			os_strcpy(buff, sysCfg.thermostat1_input == 0 ? "selected" : "" );
 	}
 
+	if (os_strcmp(token, "selecteddht22t")==0) {
+			os_strcpy(buff, sysCfg.thermostat1_input == 1 ? "selected" : "" );
+	}
+
+	if (os_strcmp(token, "selecteddht22h")==0) {
+			os_strcpy(buff, sysCfg.thermostat1_input == 2 ? "selected" : "" );
+	}
+
+	if (os_strcmp(token, "selectedmqtt")==0) {
+			os_strcpy(buff, sysCfg.thermostat1_input == 3 ? "selected" : "" );
+	}
+
+	if (os_strcmp(token, "selectedserial")==0) {
+			os_strcpy(buff, sysCfg.thermostat1_input == 4 ? "selected" : "" );
+	}
+
+	if (os_strcmp(token, "selectedfixed")==0) {
+			os_strcpy(buff, sysCfg.thermostat1_input == 5 ? "selected" : "" );
+	}
 	
 	httpdSend(connData, buff, -1);
 
