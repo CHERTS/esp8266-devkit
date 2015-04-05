@@ -385,7 +385,7 @@ uart_init_new(void)
     UART_WaitTxFifoEmpty(UART1);
 
     UART_ConfigTypeDef uart_config;
-    uart_config.baud_rate    = BIT_RATE_115200;
+    uart_config.baud_rate    = BIT_RATE_74880;
     uart_config.data_bits     = UART_WordLength_8b;
     uart_config.parity          = USART_Parity_None;
     uart_config.stop_bits     = USART_StopBits_1;
