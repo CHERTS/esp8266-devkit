@@ -1,7 +1,7 @@
 Changelog:
 ----------
 
-v2.0.2 (07.04.2015):
+v2.0.2 (05.04.2015):
 * Update SDK v1.0.1 b1 (folder ESP8266_SDK);
 * Update RTOS SDK, directory "C:\Espressif\ESP8266_RTOS_SDK";
 * Update a utility "utils\esptool-ck.exe";
