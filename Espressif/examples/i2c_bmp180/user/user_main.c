@@ -26,12 +26,17 @@ void sensor_timerfunc(void *arg)
 {
     int32_t temperature;
     int32_t pressure;
+	char buff[20];
     ets_uart_printf("Get temperature and pressure...\r\n");
     temperature = BMP180_GetTemperature();
     pressure = BMP180_GetPressure(OSS_0);
-    console_printf("Temperature: %ld\r\n", temperature);
-    console_printf("Pressure: %ld Pa\r\n", pressure);
-    console_printf("Altitude: %ld m\r\n", BMP180_CalcAltitude(pressure)/10);
+    console_printf("Temperature: %s *C\r\n", BMP180_Int2String(buff, temperature));
+    console_printf("Temperature: %d.%d *F\r\n", (int)(9 * temperature / 50 + 32), (int)(9 * temperature / 5 % 10));
+    console_printf("Pressure: %d mm rt.st.\r\n", (int)(pressure/133.322368));
+    console_printf("Pressure: %d m water.st.\r\n", (int)(pressure/9806.65));
+    console_printf("Pressure: %d.%d mbar\r\n", (int)(pressure), (int)(pressure%100));
+    console_printf("Pressure: %d.%d mmHg\r\n", (int)(pressure * 75 / 10000), (int)((pressure * 75 % 10000) / 1000));
+    console_printf("Altitude: %d\r\n", BMP180_CalcAltitude(pressure));
 }
 
 static void ICACHE_FLASH_ATTR

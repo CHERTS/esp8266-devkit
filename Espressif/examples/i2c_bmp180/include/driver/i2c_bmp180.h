@@ -32,7 +32,7 @@
 #define CONVERSION_TIME				5
 #define BMP180_W					0xEE
 #define BMP180_R					0xEF
-#define BMP180_CHIP_ID				0x55
+#define BMP180_CHIP_ID				0x5502
 #define BMP180_VERSION_REG			0xD1
 #define BMP180_CHIP_ID_REG			0xD0
 #define BMP180_CTRL_REG				0xF4
@@ -57,5 +57,7 @@ bool BMP180_Init(void);
 int32_t BMP180_GetTemperature();
 int32_t BMP180_GetPressure(enum PRESSURE_RESOLUTION resolution);
 int32_t BMP180_CalcAltitude(int32_t pressure);
+char* BMP180Int2String(char* buffer, int32_t value);
+char* BMP180Float2String(char* buffer, float value);
 
 #endif

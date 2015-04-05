@@ -68,6 +68,7 @@ int16_t ICACHE_FLASH_ATTR BMP180_readRegister16(uint8_t reg)
 	i2c_send_ack(0);
 	i2c_stop();
 	int16_t res = (msb << 8) + lsb;
+	//int16_t res = (msb << 8) | lsb;
 	return res;
 }
 
@@ -244,7 +245,7 @@ bool ICACHE_FLASH_ATTR BMP180_Init()
 	return 1;
 }
 
-int32_t BMP180_GetTemperature()
+int32_t ICACHE_FLASH_ATTR BMP180_GetTemperature()
 {
 	int32_t UT;
 	int32_t B5, X1, X2, T;
@@ -256,7 +257,7 @@ int32_t BMP180_GetTemperature()
 	return (T);
 }
 
-int32_t BMP180_GetPressure(enum PRESSURE_RESOLUTION resolution)
+int32_t ICACHE_FLASH_ATTR BMP180_GetPressure(enum PRESSURE_RESOLUTION resolution)
 {
 	int32_t UT;
 	uint16_t UP;
@@ -293,7 +294,20 @@ int32_t BMP180_GetPressure(enum PRESSURE_RESOLUTION resolution)
 	return P;
 }
 
-int32_t BMP180_CalcAltitude(int32_t pressure)
+int32_t ICACHE_FLASH_ATTR BMP180_CalcAltitude(int32_t pressure)
 {
 	return (int32_t)(pow(((float)MYALTITUDE/44330)+1,5.255F)*pressure);
 }
+
+char* ICACHE_FLASH_ATTR BMP180_Int2String(char* buffer, int32_t value)
+{
+	os_sprintf(buffer, "%d.%d", (int)(value/10), (int)(value%10));
+	return buffer;
+}
+
+char* ICACHE_FLASH_ATTR BMP180_Float2String(char* buffer, float value)
+{
+  os_sprintf(buffer, "%d.%d", (int)(value),(int)((value - (int)value)*100));
+  return buffer;
+}
+
