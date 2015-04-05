@@ -83,7 +83,8 @@ namespace fdv
 			WEP           = AUTH_WEP,
 			WPA_PSK       = AUTH_WPA_PSK,
 			WPA2_PSK      = AUTH_WPA2_PSK,
-			WPA_WPA2_PSK  = AUTH_WPA_WPA2_PSK
+			WPA_WPA2_PSK  = AUTH_WPA_WPA2_PSK,
+		    MAX			  = AUTH_MAX
 		};
 		
 		enum ClientConnectionStatus
@@ -154,7 +155,7 @@ namespace fdv
 			config.ssid_len = f_strlen(SSID);
 			f_strcpy((char *)config.password, securityKey);
 			config.channel = channel;
-			config.authmode = securityProtocol;
+			config.authmode = AUTH_MODE(securityProtocol);
 			config.ssid_hidden = (uint8)hiddenSSID;
 			Critical critical;
 			wifi_softap_set_config(&config);
