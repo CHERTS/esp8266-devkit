@@ -3,7 +3,7 @@
 # Last edit: 20/11/2014
 #
 # Modified: Mikhail Grigorev
-# Last edit: 24/01/2015
+# Last edit: 08/04/2015
 #
 # You will need the following mingw32/64 or equivalent linux packages to build it:
 # msys gcc msys-coreutils msys-wget msys-autoconf msys-automake msys-mktemp
@@ -27,6 +27,7 @@ MPFR="mpfr-3.1.2"
 MPC="mpc-1.0.2"
 
 DOWNLOAD=1
+REPOCHECK=1
 RECONF=1
 REBUILD=1
 REINSTALL=1
@@ -35,6 +36,7 @@ BASELIBS=1
 while true ; do
     case "$1" in
         --nodownloads) DOWNLOAD=0 ; echo "Not downloading anything" ; shift ;;
+        --norepocheck) REPOCHECK=0 ; echo "Never check for updates in the repository gcc-xtensa, esp-newlib and esp-binutils" ; shift ;;
         --noreconf) RECONF=0 ; echo "Not reconfiguring anything" ; shift ;;
         --norebuild) REBUILD=0 ; echo "Not rebuilding anything" ; shift ;;
         --noreinstall) REINSTALL=0 ; echo "Not reinstalling anything" ; shift ;;
@@ -81,6 +83,10 @@ if [ $DOWNLOAD -gt 0 ]; then
   find $XTDLP -maxdepth 1 -type d -name gmp-* | xargs -i mv -v {} $XTDLP/$GMP
   find $XTDLP -maxdepth 1 -type d -name mpfr-* | xargs -i mv -v {} $XTDLP/$MPFR
   find $XTDLP -maxdepth 1 -type d -name mpc-* | xargs -i mv -v {} $XTDLP/$MPC
+
+fi
+
+if [ $REPOCHECK -gt 0 ]; then
 
   echo "Cloning/pulling repos..."
   
