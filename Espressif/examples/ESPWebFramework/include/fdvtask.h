@@ -34,6 +34,7 @@ namespace fdv
 	/////////////////////////////////////////////////////////////
 	// Task
 	// An abstract wrapper for FreeRTOS task
+	// Child class destructor should take care of call terminate() to destroy the task.
 	//
 	// Example:
 	//

@@ -64,7 +64,7 @@ namespace fdv
 		}
 		
 		
-		// cannot be re-applied
+		// can be re-applied
 		static void MTD_FLASHMEM applyUARTServices()
 		{
 			// UART and serial services
@@ -75,13 +75,23 @@ namespace fdv
 			HardwareSerial::getSerial(0)->reconfig(baudRate);
 			if (!enableSystemOutput)
 				DisableStdOut();
+			if (s_serialConsole)
+			{
+				delete s_serialConsole;
+				s_serialConsole = NULL;
+			}
+			if (s_serialBinary)
+			{
+				delete s_serialBinary;
+				s_serialBinary = NULL;
+			}
 		    switch (serialService)
 			{
 				case SerialService_Console:
-					new SerialConsole;
+					s_serialConsole = new SerialConsole;
 					break;
 				case SerialService_BinaryProtocol:
-					// todo
+					s_serialBinary = new SerialBinary;
 					break;
 			}
 		}
@@ -352,6 +362,16 @@ namespace fdv
 			*serialService      = (SerialService)FlashDictionary::getInt(STR_UARTSRV, (int32_t)SerialService_Console);
 		}
 		
+		static SerialConsole* MTD_FLASHMEM getSerialConsole()
+		{
+			return s_serialConsole;
+		}
+		
+		static SerialBinary* MTD_FLASHMEM getSerialBinary()
+		{
+			return s_serialBinary;
+		}
+		
 		
 		//// GPIO parameters
 		
@@ -389,6 +409,11 @@ namespace fdv
 				*value      = false;
 			}
 		}
+		
+		
+	private:
+		static SerialConsole* s_serialConsole;
+		static SerialBinary*  s_serialBinary;
 	};
 
 
@@ -546,6 +571,7 @@ namespace fdv
 			addParamStr(FSTR("startIP"), startIP);
 			addParamStr(FSTR("endIP"), endIP);
 			addParamInt(STR_maxLeases, maxLeases);
+			addParamStr(FSTR("DISP_DHCPD"), mode == WiFi::AccessPoint || mode == WiFi::ClientAndAccessPoint? STR_ : STR_disabled);
 			
 			HTTPTemplateResponse::flush();
 		}
@@ -577,9 +603,12 @@ namespace fdv
 				char const* baud = getRequest().form[STR_baud];
 				char const* serv = getRequest().form[FSTR("serv")];
 				if (baud && serv)
+				{
 					ConfigurationManager::setUARTParams(strtol(baud, NULL, 10),
 														getRequest().form[STR_debugout] != NULL,
 														(SerialService)strtol(serv, NULL, 10));
+					ConfigurationManager::applyUARTServices();
+				}
 			}
 			
 			// get Web server configuration

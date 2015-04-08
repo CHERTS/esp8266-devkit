@@ -10,13 +10,13 @@ Services
 
   <p><h3>Web Server Configuration</h3></p>
   <div id="subcontent">			
-    HTTP Port: <input type='text' name='httpport' value='{{httpport}}'> <br>
+    HTTP Port: <input type='text' name='httpport' value='{{httpport}}'> (requires reboot)<br>
   </div>
 
   <p><h3>UART Configuration</h3></p>
   <div id="subcontent">			
     Baud Rate: <input type='text' name='baud' value='{{baud}}'> <br>
-	<input type='checkbox' name='debugout' value='1' {{debugout}}> <span title="Use only with None or Console services.">Enable system output (printf)</span> <br>
+	<input type='checkbox' name='debugout' value='1' {{debugout}}> <span title="Use only with None or Console services.">Enable system output (requires reboot)</span> <br>
   </div>
 
   <p><h3>UART Services</h3></p>
@@ -30,5 +30,4 @@ Services
   
   <input type='submit' value='Save'>
   
-  <br><br><p>System needs to be rebooted for the changes to take effect</p>
 </form>

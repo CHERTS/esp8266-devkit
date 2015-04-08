@@ -46,6 +46,19 @@ namespace fdv
 	// GPIO
 	//
 	// ON/OFF frequency up to 5.7 MHz.
+	//
+	// Applications should use only following GPIOs:
+	//
+	//   GPIO0
+	//   GPIO2
+	//   GPIO4
+	//   GPIO5
+	//   GPIO12
+	//   GPIO13
+	//   GPIO14
+	//   GPIO15
+	//   GPIO16
+	//
 	// Applications should NOT use following GPIOs:
 	//
 	//   GPIO1:   Used for UART 0 - TX
@@ -154,8 +167,8 @@ namespace fdv
 		
 	private:
 		uint32_t m_pinReg;
-		uint8_t m_gpioNum;
-		uint8_t m_pinFunc;
+		uint8_t  m_gpioNum;
+		uint8_t  m_pinFunc;
 	};
 
 
@@ -188,12 +201,95 @@ namespace fdv
 			WRITE_PERI_REG(RTC_GPIO_OUT, (READ_PERI_REG(RTC_GPIO_OUT) & (uint32_t)0xfffffffe) | (uint32_t)((uint8_t)value & 1));
 		}
 		
+		void MTD_FLASHMEM writeLow()
+		{
+			WRITE_PERI_REG(RTC_GPIO_OUT, (READ_PERI_REG(RTC_GPIO_OUT) & (uint32_t)0xfffffffe));
+		}
+		
+		void MTD_FLASHMEM writeHigh()
+		{
+			WRITE_PERI_REG(RTC_GPIO_OUT, (READ_PERI_REG(RTC_GPIO_OUT) & (uint32_t)0xfffffffe) | (uint32_t)(1));
+		}
+
 		bool MTD_FLASHMEM read()
 		{
 			return (bool)(READ_PERI_REG(RTC_GPIO_IN_DATA) & 1);
 		}		
 	};
+
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////////////////////
+	// GPIOX
+	// Embeds functionalities of GPIO and GPIO16
 	
+	class GPIOX
+	{
+	public:
+	
+		// gpioNum 0..16
+		GPIOX(uint32_t gpioNum)
+			: m_gpioNum(gpioNum)
+		{
+		}
+
+		void MTD_FLASHMEM modeInput()
+		{
+			if (m_gpioNum != 16)
+				GPIO(m_gpioNum).modeInput();
+			else
+				GPIO16().modeInput();
+		}
+		
+		void MTD_FLASHMEM modeOutput()
+		{
+			if (m_gpioNum != 16)
+				GPIO(m_gpioNum).modeOutput();
+			else
+				GPIO16().modeOutput();	
+		}
+		
+		void MTD_FLASHMEM enablePullUp(bool value)
+		{
+			if (m_gpioNum != 16)
+				GPIO(m_gpioNum).enablePullUp(value);
+		}
+		
+		void MTD_FLASHMEM write(bool value)
+		{
+			if (m_gpioNum != 16)
+				GPIO(m_gpioNum).write(value);
+			else
+				GPIO16().write(value);
+		}
+		
+		void MTD_FLASHMEM writeLow()
+		{
+			if (m_gpioNum != 16)
+				GPIO(m_gpioNum).writeLow();
+			else
+				GPIO16().writeLow();
+		}
+		
+		void MTD_FLASHMEM writeHigh()
+		{
+			if (m_gpioNum != 16)
+				GPIO(m_gpioNum).writeHigh();
+			else
+				GPIO16().writeHigh();
+		}
+		
+		bool MTD_FLASHMEM read()
+		{
+			if (m_gpioNum != 16)
+				return GPIO(m_gpioNum).read();
+			else
+				return GPIO16().read();
+		}
+		
+	private:
+		uint32_t m_gpioNum;
+	};
 	
 }
 

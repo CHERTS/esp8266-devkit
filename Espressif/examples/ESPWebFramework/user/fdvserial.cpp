@@ -61,12 +61,13 @@ namespace fdv
 	// Serial
 
 
-	uint16_t MTD_FLASHMEM Serial::read(uint8_t* buffer, uint16_t bufferLen)
+	uint16_t MTD_FLASHMEM Serial::read(void* buffer, uint16_t bufferLen, uint32_t timeOutMs)
 	{
+		uint8_t* bbuf = (uint8_t*)buffer;
 		uint16_t ret = 0;
-		for (int16_t c; bufferLen > 0 && (c = read()) > -1; --bufferLen, ++ret)
+		for (int16_t c; bufferLen > 0 && (c = read(timeOutMs)) > -1; --bufferLen, ++ret)
 		{
-			*buffer++ = c;
+			*bbuf++ = c;
 		}
 		return ret;
 	}
@@ -204,10 +205,10 @@ namespace fdv
 	}
 	
 	
-	int16_t MTD_FLASHMEM HardwareSerial::read()
+	int16_t MTD_FLASHMEM HardwareSerial::read(uint32_t timeOutMs)
 	{
 		uint8_t ret;
-		if (m_queue.receive(&ret, 0))
+		if (m_queue.receive(&ret, timeOutMs))
 			return ret;
 		return -1;				
 	}

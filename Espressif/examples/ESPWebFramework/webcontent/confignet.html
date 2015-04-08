@@ -39,15 +39,17 @@ Network Configuration
     </div>
   </fieldset>
   
-  <p><h3>DHCP Server Configuration</h3></p>
-  <div id="subcontent">
-    <input id="ch_dhcpd" type='checkbox' name='DHCPD' value='1' {{DHCPD}} onclick="enableFields()"> Enable DHCP Server <br>	
-    <fieldset id="dhcpd_fields">
-      Start IP: <input type='text' name='startIP' value='{{startIP}}'> <br>
-	  End IP: <input type='text' name='endIP' value='{{endIP}}'> <br>
-	  Max Leases: <input type='text' name='maxLeases' value='{{maxLeases}}'> <br>
-    </fieldset>
-  </div>
+  <fieldset {{DISP_DHCPD}}
+    <p><h3>DHCP Server Configuration</h3></p>
+    <div id="subcontent">
+	  <input id="ch_dhcpd" type='checkbox' name='DHCPD' value='1' {{DHCPD}} onclick="enableFields()"> Enable DHCP Server <br>	
+	  <fieldset id="dhcpd_fields">
+	    Start IP: <input type='text' name='startIP' value='{{startIP}}'> <br>
+	    End IP: <input type='text' name='endIP' value='{{endIP}}'> <br>
+	    Max Leases: <input type='text' name='maxLeases' value='{{maxLeases}}'> <br>
+	  </fieldset>
+    </div>
+  </fieldset>
   
   <input type='submit' value='Save'>
   

@@ -74,6 +74,7 @@ namespace fdv
 	static char const STR_maxLeases[] FLASHMEM      = "maxLeases";
 	static char const STR_HI[] FLASHMEM             = "HI";
 	static char const STR_LO[] FLASHMEM             = "LO";
+	static char const STR_BINPRORDY[] FLASHMEM      = "BINPRORDY";
 	
 }
 

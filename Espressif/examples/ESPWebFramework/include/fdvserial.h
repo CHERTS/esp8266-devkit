@@ -52,12 +52,12 @@ namespace fdv
 			virtual void put(uint8_t value) = 0;
 			virtual void write(uint8_t b) = 0;
 			virtual int16_t peek() = 0;
-			virtual int16_t read() = 0;
+			virtual int16_t read(uint32_t timeOutMs = 0) = 0;
 			virtual uint16_t available() = 0;
 			virtual void flush() = 0;
 			virtual bool waitForData(uint32_t timeOutMs = portMAX_DELAY) = 0;
 								
-			uint16_t read(uint8_t* buffer, uint16_t bufferLen);
+			uint16_t read(void* buffer, uint16_t bufferLen, uint32_t timeOutMs = 0);
 			bool readLine(bool echo, LinkedCharChunks* receivedLine, uint32_t timeOutMs = portMAX_DELAY);
 
 			void writeNewLine();			
@@ -100,7 +100,7 @@ namespace fdv
 			void put(uint8_t value);
 			
 			int16_t peek();			
-			int16_t read();			
+			int16_t read(uint32_t timeOutMs = 0);			
 			uint16_t available();			
 			void MTD_FLASHMEM flush();			
 			bool MTD_FLASHMEM waitForData(uint32_t timeOutMs = portMAX_DELAY);			
