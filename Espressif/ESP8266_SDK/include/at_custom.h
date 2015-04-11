@@ -33,7 +33,10 @@ typedef struct
   void (*at_exeCmd)(uint8_t id);
 }at_funcationType;
 
+typedef void (*at_custom_uart_rx_intr)(uint8* data,int32 len);
+
 extern uint8 at_customLinkMax;
+
 /**
   * @brief  Response "OK" to uart.
   * @param  None
@@ -112,4 +115,13 @@ void at_leave_special_state(void);
   *         bit7~0  : customized version
   */
 uint32 at_get_version(void);
+
+/**
+  * @brief  register custom uart rx interrupt function
+  * @param  rx_func: custom uart rx interrupt function.
+  * If rx_func is non-void,when rx interrupt comming,it will call rx_func(data,len),
+  * data is the buffer of data,len is the length of data.Otherwise,it will run AT rx function.
+  * @retval None
+  */
+void at_register_uart_rx_intr(at_custom_uart_rx_intr rx_func);
 #endif
