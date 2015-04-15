@@ -1,0 +1,36 @@
+#######################################
+# Syntax Coloring Map for WebESP8266
+# (formerly NewSoftSerial)
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+WebESP8266	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+begin	KEYWORD2
+end	KEYWORD2
+yield	KEYWORD2
+isReady	KEYWORD2
+getPlatform	KEYWORD2
+send_CMD_READY	KEYWORD2
+send_CMD_IOCONF	KEYWORD2
+send_CMD_IOSET	KEYWORD2
+send_CMD_IOGET	KEYWORD2
+send_CMD_IOASET	KEYWORD2
+send_CMD_IOAGET	KEYWORD2
+
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
+PLATFORM_BASELINE LITERAL1
+PLATFORM_ESP8266	LITERAL1
+PLATFORM_ATMEGA328	LITERAL1
+

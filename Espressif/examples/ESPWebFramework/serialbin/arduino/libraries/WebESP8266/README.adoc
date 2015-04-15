@@ -1,4 +1,12 @@
-/*
+= ESPWeb8266 library =
+
+Enables binary bidirectional communication with ESP8266
+
+For more information about this library please visit us at
+https://github.com/fdivitto/ESPWebFramework
+
+== License ==
+
 # Created by Fabrizio Di Vittorio (fdivitto2013@gmail.com)
 # Copyright (c) 2015 Fabrizio Di Vittorio.
 # All rights reserved.
@@ -18,30 +26,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this module; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA
-*/
-
-
-
-
-#include "fdv.h"
-
-
-
-
-
-namespace fdv
-{
-
-
-#if (FDV_INCLUDE_SERIALCONSOLE == 1)
-SerialConsole* ConfigurationManager::s_serialConsole = NULL;
-#endif
-
-#if (FDV_INCLUDE_SERIALBINARY == 1)
-SerialBinary*  ConfigurationManager::s_serialBinary  = NULL;
-#endif
-	
-}
-
-
-

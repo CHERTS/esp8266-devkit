@@ -75,24 +75,32 @@ namespace fdv
 			HardwareSerial::getSerial(0)->reconfig(baudRate);
 			if (!enableSystemOutput)
 				DisableStdOut();
+#if (FDV_INCLUDE_SERIALCONSOLE == 1)
 			if (s_serialConsole)
 			{
 				delete s_serialConsole;
 				s_serialConsole = NULL;
 			}
+#endif
+#if (FDV_INCLUDE_SERIALBINARY == 1)
 			if (s_serialBinary)
 			{
 				delete s_serialBinary;
 				s_serialBinary = NULL;
 			}
+#endif
 		    switch (serialService)
 			{
+#if (FDV_INCLUDE_SERIALCONSOLE == 1)
 				case SerialService_Console:
 					s_serialConsole = new SerialConsole;
 					break;
+#endif
+#if (FDV_INCLUDE_SERIALBINARY == 1)
 				case SerialService_BinaryProtocol:
 					s_serialBinary = new SerialBinary;
 					break;
+#endif
 			}
 		}
 		
@@ -362,15 +370,19 @@ namespace fdv
 			*serialService      = (SerialService)FlashDictionary::getInt(STR_UARTSRV, (int32_t)SerialService_Console);
 		}
 		
+#if (FDV_INCLUDE_SERIALCONSOLE == 1)
 		static SerialConsole* MTD_FLASHMEM getSerialConsole()
 		{
 			return s_serialConsole;
 		}
+#endif
 		
+#if (FDV_INCLUDE_SERIALBINARY == 1)
 		static SerialBinary* MTD_FLASHMEM getSerialBinary()
 		{
 			return s_serialBinary;
 		}
+#endif
 		
 		
 		//// GPIO parameters
@@ -412,8 +424,12 @@ namespace fdv
 		
 		
 	private:
+#if (FDV_INCLUDE_SERIALCONSOLE == 1)
 		static SerialConsole* s_serialConsole;
+#endif
+#if (FDV_INCLUDE_SERIALBINARY == 1)
 		static SerialBinary*  s_serialBinary;
+#endif
 	};
 
 

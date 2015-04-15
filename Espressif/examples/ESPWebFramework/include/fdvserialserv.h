@@ -43,6 +43,7 @@ namespace fdv
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// SerialConsole
 	
+#if (FDV_INCLUDE_SERIALCONSOLE == 1)
 	
 	struct SerialConsole : public Task
 	{
@@ -290,7 +291,10 @@ namespace fdv
 		CharChunksIterator      m_params[MAX_PARAMETERS];
 	};
 	
+#endif	// FDV_INCLUDE_SERIALCONSOLE
 
+
+#if (FDV_INCLUDE_SERIALBINARY == 1)
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////////////////////////
@@ -305,6 +309,25 @@ namespace fdv
 	// All values are little-endian
 	// Each part should handle the case when it expects an ACK but a command arrives. In this case receiver should process the command before, and then wait again for the ACK.
 	// Each part must have the same protocol version.
+	//
+	// Example 1. How switch Arduino LED (pin13) on/off. Arduino with "FullControl" example sketch.
+	// SerialBinary* sb = ConfigurationManager::getSerialBinary();	
+	// while (true)
+	// {
+	//   if (!sb->isReady() && sb->checkReady())
+	//   {
+	//     // Link just established. Set pin 13 as Output.
+	//     sb->send_CMD_IOCONF(13, SerialBinary::PIN_CONF_OUTPUT);
+	//   }
+	//   if (sb->isReady())
+	//   {
+	//     sb->send_CMD_IOSET(13, true);
+	//     Task::delay(500);
+	//     sb->send_CMD_IOSET(13, false);
+	//     Task::delay(500);
+	//   }
+	// }
+	//
 	//
 	// Message structure:
 	//   1 uint8_t  : Incremental ID. Each part maintain an incremental ID, which identifies a message. Replies include the same ID.
@@ -406,7 +429,7 @@ namespace fdv
 		static uint8_t const PLATFORM_THIS         = PLATFORM_ESP8266;
 
 		// pin configuration flags
-		static uint8_t const PIN_CONF_DIR          = 0b00000001;	// 0 = input / 1 = output
+		static uint8_t const PIN_CONF_OUTPUT       = 0b00000001;	// 0 = input / 1 = output
 		static uint8_t const PIN_CONF_PULLUP       = 0b00000010;	// 0 = disabled / 1 = enabled (if supported)		
 		
 		// pin identifiers - ESP8266
@@ -733,10 +756,18 @@ namespace fdv
 		
 		bool MTD_FLASHMEM isReady()
 		{
-			checkReady();
 			MutexLock lock(&m_mutex);
 			return m_isReady;
 		}
+
+		
+		bool MTD_FLASHMEM checkReady()
+		{
+			if (!isReady())
+				send_CMD_READY();
+			return isReady();
+		}
+		
 		
 		
 		uint8_t MTD_FLASHMEM getPlatform()
@@ -748,17 +779,7 @@ namespace fdv
 
 
 	private:
-		
-		
-		void MTD_FLASHMEM checkReady()
-		{
-			m_mutex.lock();
-			bool rdy = m_isReady;
-			m_mutex.unlock();
-			if (!rdy)
-				send_CMD_READY();
-		}
-		
+				
 		
 		Message MTD_FLASHMEM receive()
 		{
@@ -942,7 +963,7 @@ namespace fdv
 		{
 			// process message
 			Message_CMD_IOCONF msgIOCONF(msg);
-			if (msgIOCONF.flags & PIN_CONF_DIR)
+			if (msgIOCONF.flags & PIN_CONF_OUTPUT)
 				GPIOX(msgIOCONF.pin).modeOutput();
 			else
 				GPIOX(msgIOCONF.pin).modeInput();
@@ -1035,7 +1056,7 @@ namespace fdv
 		
 		bool MTD_FLASHMEM send_CMD_IOCONF(uint8_t pin, uint8_t flags)
 		{
-			if (isReady())
+			if (checkReady())
 			{
 				for (uint32_t i = 0; i != MAX_RESEND_COUNT; ++i)
 				{
@@ -1047,8 +1068,10 @@ namespace fdv
 					msgContainer.freeData();
 					
 					// wait for ACK
-					return waitNoParamsACK(msgID);
+					if (waitNoParamsACK(msgID))
+						return true;
 				}
+				m_isReady = false;	// no more ready
 			}
 			return false;
 		}
@@ -1056,7 +1079,7 @@ namespace fdv
 
 		bool MTD_FLASHMEM send_CMD_IOSET(uint8_t pin, uint8_t state)
 		{
-			if (isReady())
+			if (checkReady())
 			{
 				for (uint32_t i = 0; i != MAX_RESEND_COUNT; ++i)
 				{
@@ -1068,8 +1091,10 @@ namespace fdv
 					msgContainer.freeData();
 					
 					// wait for ACK
-					return waitNoParamsACK(msgID);
+					if (waitNoParamsACK(msgID))
+						return true;
 				}
+				m_isReady = false;	// no more ready
 			}
 			return false;
 		}
@@ -1077,7 +1102,7 @@ namespace fdv
 
 		bool MTD_FLASHMEM send_CMD_IOGET(uint8_t pin, uint8_t* state)
 		{
-			if (isReady())
+			if (checkReady())
 			{
 				for (uint32_t i = 0; i != MAX_RESEND_COUNT; ++i)
 				{
@@ -1098,6 +1123,7 @@ namespace fdv
 						return true;
 					}
 				}
+				m_isReady = false;	// no more ready
 			}
 			return false;
 		}
@@ -1105,7 +1131,7 @@ namespace fdv
 
 		bool MTD_FLASHMEM send_CMD_IOASET(uint8_t pin, uint16_t state)
 		{
-			if (isReady())
+			if (checkReady())
 			{
 				for (uint32_t i = 0; i != MAX_RESEND_COUNT; ++i)
 				{
@@ -1117,8 +1143,10 @@ namespace fdv
 					msgContainer.freeData();
 					
 					// wait for ACK
-					return waitNoParamsACK(msgID);
+					if (waitNoParamsACK(msgID))
+						return true;
 				}
+				m_isReady = false;	// no more ready
 			}
 			return false;
 		}
@@ -1126,7 +1154,7 @@ namespace fdv
 
 		bool MTD_FLASHMEM send_CMD_IOAGET(uint8_t pin, uint16_t* state)
 		{
-			if (isReady())
+			if (checkReady())
 			{
 				for (uint32_t i = 0; i != MAX_RESEND_COUNT; ++i)
 				{
@@ -1147,6 +1175,7 @@ namespace fdv
 						return true;
 					}
 				}
+				m_isReady = false;	// no more ready
 			}
 			return false;
 		}
@@ -1162,7 +1191,8 @@ namespace fdv
 		bool                                                 m_isReady;
 		uint8_t                                              m_platform;
 	};
-	
+
+#endif // FDV_INCLUDE_SERIALBINARY
 	
 }
 

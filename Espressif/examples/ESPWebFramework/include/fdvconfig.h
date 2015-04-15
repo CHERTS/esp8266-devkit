@@ -20,28 +20,16 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA
 */
 
+#ifndef _FDVCONFIG_H_
+#define _FDVCONFIG_H_
+
+///// Include / esclude features
 
 
+// Include SerialConsole class and related functionalities
+#define FDV_INCLUDE_SERIALCONSOLE 1
 
-#include "fdv.h"
+// Include SerialBinary class and related functionalities
+#define FDV_INCLUDE_SERIALBINARY 1
 
-
-
-
-
-namespace fdv
-{
-
-
-#if (FDV_INCLUDE_SERIALCONSOLE == 1)
-SerialConsole* ConfigurationManager::s_serialConsole = NULL;
 #endif
-
-#if (FDV_INCLUDE_SERIALBINARY == 1)
-SerialBinary*  ConfigurationManager::s_serialBinary  = NULL;
-#endif
-	
-}
-
-
-
