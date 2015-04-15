@@ -50,6 +50,7 @@ struct HttpdPriv {
 //Connection pool
 static HttpdPriv connPrivData[MAX_CONN];
 static HttpdConnData connData[MAX_CONN];
+static HttpdPostData connPostData[MAX_CONN];
 
 //Listening connection data
 static struct espconn httpdConn;
@@ -60,15 +61,6 @@ typedef struct {
 	const char *ext;
 	const char *mimetype;
 } MimeMap;
-
-#ifdef GZIP_COMPRESSION
-static const char * gzippedFileTypes[] = {
-	"js",
-	"html",
-	"css",
-	NULL
-};
-#endif
 
 //The mappings from file extensions to mime types. If you need an extra mime type,
 //add it here.
@@ -85,6 +77,19 @@ static const MimeMap mimeTypes[]={
 	{NULL, "text/html"}, //default value
 };
 
+// The static files with the following extensions from the HTML folder will be compressed and served with GZIP compression
+// Add any other file types you want compressed here (and don't forget to modify the Makefile too)
+#ifdef GZIP_COMPRESSION
+static const char * gzippedFileTypes[] = {
+	"js",
+	"html",
+	"css",
+	NULL
+};
+
+static const char gzipNonSupportedMessage[] = "<html><head></head><body>Your browser does not accept gzip-compressed data.</body></html>";
+#endif
+
 //Returns a static char* to a mime type for a given url to a file.
 const char ICACHE_FLASH_ATTR *httpdGetMimetype(char *url) {
 	int i=0;
@@ -98,10 +103,13 @@ const char ICACHE_FLASH_ATTR *httpdGetMimetype(char *url) {
 	return mimeTypes[i].mimetype;
 }
 
+
 #ifdef GZIP_COMPRESSION
-// Sends Content-encoding: gzip header if the requested file was GZIP compressed
-void sendEncodingHeader(HttpdConnData *connData) {
+//Sends Content-encoding header if the requested file was GZIP compressed
+//If the client does not sent the Accept-encoding, send out a static html message.
+const char* sendGZIPEncodingIfNeeded(HttpdConnData *connData) {
 	int i=0;
+	char acceptEncodingBuffer[64];
 	//Go find the extension
 	char *ext=connData->url+(strlen(connData->url)-1);
 	while (ext!=connData->url && *ext!='.') ext--;
@@ -110,13 +118,23 @@ void sendEncodingHeader(HttpdConnData *connData) {
 	//ToDo: os_strcmp is case sensitive; we may want to do case-intensive matching here...
 	while (gzippedFileTypes[i]!=NULL) {
 		if (os_strcmp(ext, gzippedFileTypes[i])==0) {
-			httpdHeader(connData, "Content-Encoding", "gzip");
-			return;
+			//when serving gzipped files check the browser's  "Accept-Encoding" header
+			//if the client does not advertises that he accepts GZIP send a warning message (telnet users for e.g.)
+			httpdGetHeader(connData, "Accept-Encoding", acceptEncodingBuffer, 64);
+			if (os_strstr(acceptEncodingBuffer, "gzip") == NULL) {
+				//No Accept-Encoding: gzip header present
+				return gzipNonSupportedMessage;
+			} else {
+				httpdHeader(connData, "Content-Encoding", "gzip");
+				return NULL;
+			}
 		}
 		i++;
 	}
+	return NULL;
 }
 #endif
+
 
 //Looks up the connData info for a specific esp connection
 static HttpdConnData ICACHE_FLASH_ATTR *httpdFindConnData(void *arg) {
@@ -124,20 +142,21 @@ static HttpdConnData ICACHE_FLASH_ATTR *httpdFindConnData(void *arg) {
 	for (i=0; i<MAX_CONN; i++) {
 		if (connData[i].conn==(struct espconn *)arg) return &connData[i];
 	}
+	//Shouldn't happen.
 	os_printf("FindConnData: Huh? Couldn't find connection for %p\n", arg);
-	return NULL; //WtF?
+	return NULL;
 }
 
 //Retires a connection for re-use
 static void ICACHE_FLASH_ATTR httpdRetireConn(HttpdConnData *conn) {
-	if (conn->postBuff!=NULL) os_free(conn->postBuff);
-	conn->postBuff=NULL;
+	if (conn->post->buff!=NULL) os_free(conn->post->buff);
+	conn->post->buff=NULL;
 	conn->cgi=NULL;
 	conn->conn=NULL;
 }
 
 //Stupid li'l helper function that returns the value of a hex char.
-static int ICACHE_FLASH_ATTR httpdHexVal(char c) {
+static int httpdHexVal(char c) {
 	if (c>='0' && c<='9') return c-'0';
 	if (c>='A' && c<='F') return c-'A'+10;
 	if (c>='a' && c<='f') return c-'a'+10;
@@ -148,7 +167,7 @@ static int ICACHE_FLASH_ATTR httpdHexVal(char c) {
 //Takes the valLen bytes stored in val, and converts it into at most retLen bytes that
 //are stored in the ret buffer. Returns the actual amount of bytes used in ret. Also
 //zero-terminates the ret buffer.
-int ICACHE_FLASH_ATTR httpdUrlDecode(char *val, int valLen, char *ret, int retLen) {
+int httpdUrlDecode(char *val, int valLen, char *ret, int retLen) {
 	int s=0, d=0;
 	int esced=0, escVal=0;
 	while (s<valLen && d<retLen) {
@@ -310,47 +329,89 @@ static void ICACHE_FLASH_ATTR httpdSentCb(void *arg) {
 	if (r==HTTPD_CGI_DONE) {
 		conn->cgi=NULL; //mark for destruction.
 	}
+	if (r==HTTPD_CGI_NOTFOUND || r==HTTPD_CGI_AUTHENTICATED) {
+		os_printf("ERROR! CGI fn returns code %d after sending data! Bad CGI!\n", r);
+		conn->cgi=NULL; //mark for destruction.
+	}
 	xmitSendBuff(conn);
 }
 
-static const char *httpNotFoundHeader="HTTP/1.0 404 Not Found\r\nServer: esp8266-httpd/0.1\r\nContent-Type: text/plain\r\n\r\nNot Found.\r\n";
+static const char *httpNotFoundHeader="HTTP/1.0 404 Not Found\r\nServer: esp8266-httpd/0.1\r\nContent-Type: text/plain\r\nContent-Length: 12\r\n\r\nNot Found.\r\n";
 
 //This is called when the headers have been received and the connection is ready to send
 //the result headers and data.
-static void ICACHE_FLASH_ATTR httpdSendResp(HttpdConnData *conn) {
-	int i=0;
+//We need to find the CGI function to call, call it, and dependent on what it returns either
+//find the next cgi function, wait till the cgi data is sent or close up the connection.
+static void ICACHE_FLASH_ATTR httpdProcessRequest(HttpdConnData *conn) {
 	int r;
-	//See if the url is somewhere in our internal url table.
-	while (builtInUrls[i].url!=NULL && conn->url!=NULL) {
-		int match=0;
-//		os_printf("%s == %s?\n", builtInUrls[i].url, conn->url);
-		if (os_strcmp(builtInUrls[i].url, conn->url)==0) match=1;
-		if (builtInUrls[i].url[os_strlen(builtInUrls[i].url)-1]=='*' &&
-				os_strncmp(builtInUrls[i].url, conn->url, os_strlen(builtInUrls[i].url)-1)==0) match=1;
-		if (match) {
-			os_printf("Is url index %d\n", i);
-			conn->cgiData=NULL;
-			conn->cgi=builtInUrls[i].cgiCb;
-			conn->cgiArg=builtInUrls[i].cgiArg;
-			r=conn->cgi(conn);
-			if (r!=HTTPD_CGI_NOTFOUND) {
-				if (r==HTTPD_CGI_DONE) conn->cgi=NULL;  //If cgi finishes immediately: mark conn for destruction.
-				return;
-			}
-		}
-		i++;
+	int i=0;
+	if (conn->url==NULL) {
+		os_printf("WtF? url = NULL\n");
+		return; //Shouldn't happen
 	}
-	//Can't find :/
-	os_printf("%s not found. 404!\n", conn->url);
-	httpdSend(conn, httpNotFoundHeader, -1);
-	conn->cgi=NULL; //mark for destruction
+	//See if we can find a CGI that's happy to handle the request.
+	while (1) {
+		//Look up URL in the built-in URL table.
+		while (builtInUrls[i].url!=NULL) {
+			int match=0;
+			//See if there's a literal match
+			if (os_strcmp(builtInUrls[i].url, conn->url)==0) match=1;
+			//See if there's a wildcard match
+			if (builtInUrls[i].url[os_strlen(builtInUrls[i].url)-1]=='*' &&
+					os_strncmp(builtInUrls[i].url, conn->url, os_strlen(builtInUrls[i].url)-1)==0) match=1;
+			if (match) {
+				os_printf("Is url index %d\n", i);
+				conn->cgiData=NULL;
+				conn->cgi=builtInUrls[i].cgiCb;
+				conn->cgiArg=builtInUrls[i].cgiArg;
+				break;
+			}
+			i++;
+		}
+		if (builtInUrls[i].url==NULL) {
+			//Drat, we're at the end of the URL table. This usually shouldn't happen. Well, just
+			//generate a built-in 404 to handle this.
+			os_printf("%s not found. 404!\n", conn->url);
+			httpdSend(conn, httpNotFoundHeader, -1);
+			xmitSendBuff(conn);
+			conn->cgi=NULL; //mark for destruction
+			return;
+		}
+		
+		//Okay, we have a CGI function that matches the URL. See if it wants to handle the
+		//particular URL we're supposed to handle.
+		r=conn->cgi(conn);
+		if (r==HTTPD_CGI_MORE) {
+			//Yep, it's happy to do so and has more data to send.
+			xmitSendBuff(conn);
+			return;
+		} else if (r==HTTPD_CGI_DONE) {
+			//Yep, it's happy to do so and already is done sending data.
+			xmitSendBuff(conn);
+			conn->cgi=NULL; //mark conn for destruction
+			return;
+		} else if (r==HTTPD_CGI_NOTFOUND || r==HTTPD_CGI_AUTHENTICATED) {
+			//URL doesn't want to handle the request: either the data isn't found or there's no
+			//need to generate a login screen.
+			i++; //look at next url the next iteration of the loop.
+		}
+	}
 }
 
 //Parse a line of header data and modify the connection data accordingly.
 static void ICACHE_FLASH_ATTR httpdParseHeader(char *h, HttpdConnData *conn) {
 	int i;
-//	os_printf("Got header %s\n", h);
-	if (os_strncmp(h, "GET ", 4)==0 || os_strncmp(h, "POST ", 5)==0) {
+	char first_line = false;
+	
+	if (os_strncmp(h, "GET ", 4)==0) {
+		conn->requestType = HTTPD_METHOD_GET;
+		first_line = true;
+	} else if (os_strncmp(h, "POST ", 5)==0) {
+		conn->requestType = HTTPD_METHOD_POST;
+		first_line = true;
+	}
+
+	if (first_line) {
 		char *e;
 		
 		//Skip past the space after POST/GET
@@ -373,18 +434,35 @@ static void ICACHE_FLASH_ATTR httpdParseHeader(char *h, HttpdConnData *conn) {
 		} else {
 			conn->getArgs=NULL;
 		}
-	} else if (os_strncmp(h, "Content-Length: ", 16)==0) {
-		i=0;
+
+	} else if (os_strncmp(h, "Content-Length:", 15)==0) {
+		i=15;
 		//Skip trailing spaces
-		while (h[i]!=' ') i++;
+		while (h[i]==' ') i++;
 		//Get POST data length
-		conn->postLen=atoi(h+i+1);
-		//Clamp if too big. Hmm, maybe we should error out instead?
-		if (conn->postLen>MAX_POST) conn->postLen=MAX_POST;
-		os_printf("Mallocced buffer for %d bytes of post data.\n", conn->postLen);
-		//Alloc the memory.
-		conn->postBuff=(char*)os_malloc(conn->postLen+1);
-		conn->priv->postPos=0;
+		conn->post->len=atoi(h+i);
+
+		// Allocate the buffer
+		if (conn->post->len > MAX_POST) {
+			// we'll stream this in in chunks
+			conn->post->buffSize = MAX_POST;
+		} else {
+			conn->post->buffSize = conn->post->len;
+		}
+		os_printf("Mallocced buffer for %d + 1 bytes of post data.\n", conn->post->buffSize);
+		conn->post->buff=(char*)os_malloc(conn->post->buffSize + 1);
+		conn->post->buffLen=0;
+	} else if (os_strncmp(h, "Content-Type: ", 14)==0) {
+		if (os_strstr(h, "multipart/form-data")) {
+			// It's multipart form data so let's pull out the boundary for future use
+			char *b;
+			if ((b = os_strstr(h, "boundary=")) != NULL) {
+				conn->post->multipartBoundary = b + 7; // move the pointer 2 chars before boundary then fill them with dashes
+				conn->post->multipartBoundary[0] = '-';
+				conn->post->multipartBoundary[1] = '-';
+				os_printf("boundary = %s\n", conn->post->multipartBoundary);
+			}
+		}
 	}
 }
 
@@ -399,46 +477,50 @@ static void ICACHE_FLASH_ATTR httpdRecvCb(void *arg, char *data, unsigned short 
 	conn->priv->sendBuff=sendBuff;
 	conn->priv->sendBuffLen=0;
 
+	//This is slightly evil/dirty: we abuse conn->post->len as a state variable for where in the http communications we are:
+	//<0 (-1): Post len unknown because we're still receiving headers
+	//==0: No post data
+	//>0: Need to receive post data
+	//ToDo: See if we can use something more elegant for this.
+
 	for (x=0; x<len; x++) {
-		if (conn->postLen<0) {
+		if (conn->post->len<0) {
 			//This byte is a header byte.
 			if (conn->priv->headPos!=MAX_HEAD_LEN) conn->priv->head[conn->priv->headPos++]=data[x];
 			conn->priv->head[conn->priv->headPos]=0;
-			//Scan for /r/n/r/n
+			//Scan for /r/n/r/n. Receiving this indicate the headers end.
 			if (data[x]=='\n' && (char *)os_strstr(conn->priv->head, "\r\n\r\n")!=NULL) {
 				//Indicate we're done with the headers.
-				conn->postLen=0;
+				conn->post->len=0;
 				//Reset url data
 				conn->url=NULL;
-				//Find end of next header line
+				//Iterate over all received headers and parse them.
 				p=conn->priv->head;
 				while(p<(&conn->priv->head[conn->priv->headPos-4])) {
-					e=(char *)os_strstr(p, "\r\n");
-					if (e==NULL) break;
-					e[0]=0;
-					httpdParseHeader(p, conn);
-					p=e+2;
+					e=(char *)os_strstr(p, "\r\n"); //Find end of header line
+					if (e==NULL) break;			//Shouldn't happen.
+					e[0]=0;						//Zero-terminate header
+					httpdParseHeader(p, conn);	//and parse it.
+					p=e+2;						//Skip /r/n (now /0/n)
 				}
 				//If we don't need to receive post data, we can send the response now.
-				if (conn->postLen==0) {
-					httpdSendResp(conn);
+				if (conn->post->len==0) {
+					httpdProcessRequest(conn);
 				}
 			}
-		} else if (conn->priv->postPos!=-1 && conn->postLen!=0 && conn->priv->postPos <= conn->postLen) {
+		} else if (conn->post->len!=0) {
 			//This byte is a POST byte.
-			conn->postBuff[conn->priv->postPos++]=data[x];
-			if (conn->priv->postPos>=conn->postLen) {
-				//Received post stuff.
-				conn->postBuff[conn->priv->postPos]=0; //zero-terminate
-				conn->priv->postPos=-1;
-				os_printf("Post data: %s\n", conn->postBuff);
+			conn->post->buff[conn->post->buffLen++]=data[x];
+			conn->post->received++;
+			if (conn->post->buffLen >= conn->post->buffSize || conn->post->received == conn->post->len) {
+				//Received a chunk of post data
+				conn->post->buff[conn->post->buffLen]=0; //zero-terminate, in case the cgi handler knows it can use strings
 				//Send the response.
-				httpdSendResp(conn);
-				break;
+				httpdProcessRequest(conn);
+				conn->post->buffLen = 0;
 			}
 		}
 	}
-	xmitSendBuff(conn);
 }
 
 static void ICACHE_FLASH_ATTR httpdReconCb(void *arg, sint8 err) {
@@ -449,15 +531,8 @@ static void ICACHE_FLASH_ATTR httpdReconCb(void *arg, sint8 err) {
 }
 
 static void ICACHE_FLASH_ATTR httpdDisconCb(void *arg) {
-#if 0
-	//Stupid esp sdk passes through wrong arg here, namely the one of the *listening* socket.
-	//If it ever gets fixed, be sure to update the code in this snippet; it's probably out-of-date.
-	HttpdConnData *conn=httpdFindConnData(arg);
-	os_printf("Disconnected, conn=%p\n", conn);
-	if (conn==NULL) return;
-	conn->conn=NULL;
-	if (conn->cgi!=NULL) conn->cgi(conn); //flush cgi data
-#endif
+	//The esp sdk passes through wrong arg here, namely the one of the *listening* socket.
+	//That is why we can't use (HttpdConnData)arg->sock here.
 	//Just look at all the sockets and kill the slot if needed.
 	int i;
 	for (i=0; i<MAX_CONN; i++) {
@@ -490,9 +565,11 @@ static void ICACHE_FLASH_ATTR httpdConnectCb(void *arg) {
 	connData[i].priv=&connPrivData[i];
 	connData[i].conn=conn;
 	connData[i].priv->headPos=0;
-	connData[i].postBuff=NULL;
-	connData[i].priv->postPos=0;
-	connData[i].postLen=-1;
+	connData[i].post=&connPostData[i];
+	connData[i].post->buff=NULL;
+	connData[i].post->buffLen=0;
+	connData[i].post->received=0;
+	connData[i].post->len=-1;
 
 	espconn_regist_recvcb(conn, httpdRecvCb);
 	espconn_regist_reconcb(conn, httpdReconCb);
@@ -500,7 +577,7 @@ static void ICACHE_FLASH_ATTR httpdConnectCb(void *arg) {
 	espconn_regist_sentcb(conn, httpdSentCb);
 }
 
-
+//Httpd initialization routine. Call this to kick off webserver functionality.
 void ICACHE_FLASH_ATTR httpdInit(HttpdBuiltInUrl *fixedUrls, int port) {
 	int i;
 

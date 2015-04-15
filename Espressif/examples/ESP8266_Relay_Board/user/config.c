@@ -141,7 +141,9 @@ void ICACHE_FLASH_ATTR CFG_Load()
 		sysCfg.thermostat1manualsetpoint=2100;
 		sysCfg.thermostat1mode=THERMOSTAT_MANUAL;
 		sysCfg.thermostat1opmode=THERMOSTAT_HEATING;
-
+		sysCfg.thermostat1hysteresishigh=50; //in tenths of a degree, 50 means 0.5 degrees C
+		sysCfg.thermostat1hysteresislow=50;
+		
 		//Build default schedule for the thermostat
 		for(int dow=0; dow<7; dow++) {
 			sysCfg.thermostat1schedule.weekSched[dow].daySched[0].start=0; //0am
@@ -178,7 +180,9 @@ void ICACHE_FLASH_ATTR CFG_Load()
 		sysCfg.thermostat2manualsetpoint=2100;
 		sysCfg.thermostat2mode=THERMOSTAT_MANUAL;
 		sysCfg.thermostat2opmode=THERMOSTAT_HEATING;
-
+		sysCfg.thermostat1hysteresishigh=50; //in tenths of a degree, 50 means 0.5 degrees C
+		sysCfg.thermostat1hysteresislow=50;
+		
 		//Build default schedule for the thermostat
 		for(int dow=0; dow<7; dow++) {
 			sysCfg.thermostat2schedule.weekSched[dow].daySched[0].start=0; //0am
@@ -214,7 +218,9 @@ void ICACHE_FLASH_ATTR CFG_Load()
 		sysCfg.thermostat3manualsetpoint=2100;
 		sysCfg.thermostat3mode=THERMOSTAT_MANUAL;
 		sysCfg.thermostat3opmode=THERMOSTAT_HEATING;
-
+		sysCfg.thermostat1hysteresishigh=50; //in tenths of a degree, 50 means 0.5 degrees C
+		sysCfg.thermostat1hysteresislow=50;
+		
 		//Build default schedule for the thermostat
 		for(int dow=0; dow<7; dow++) {
 			sysCfg.thermostat3schedule.weekSched[dow].daySched[0].start=0; //0am

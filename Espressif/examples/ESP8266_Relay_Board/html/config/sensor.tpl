@@ -23,6 +23,8 @@
   <option value="4" %selectedserial% >Serial input</option>  
   <option value="5" %selectedfixed% >Fixed value (10)</option>    
 </select>
+<tr><td>Thermostat hysteresis high:</td><td><input type="text" name="thermostat1hysteresishigh" id="thermostat1hysteresishigh" value="%thermostat1hysteresishigh%" /> (in tenths of a degree, 50 means 0.5 degrees)</td></tr>
+<tr><td>Thermostat hysteresis low:</td><td><input type="text" name="thermostat1hysteresislow" id="thermostat1hysteresislow" value="%thermostat1hysteresislow%" /> (in tenths of a degree, 50 means 0.5 degrees)</td></tr>
 
 </table>
 <br/>

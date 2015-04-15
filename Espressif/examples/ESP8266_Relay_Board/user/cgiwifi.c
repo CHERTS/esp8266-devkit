@@ -190,8 +190,8 @@ int ICACHE_FLASH_ATTR cgiWiFiConnect(HttpdConnData *connData) {
 		return HTTPD_CGI_DONE;
 	}
 	
-	httpdFindArg(connData->postBuff, "essid", essid, sizeof(essid));
-	httpdFindArg(connData->postBuff, "passwd", passwd, sizeof(passwd));
+	httpdFindArg(connData->post->buff, "essid", essid, sizeof(essid));
+	httpdFindArg(connData->post->buff, "passwd", passwd, sizeof(passwd));
 
 	os_strncpy((char*)stconf.ssid, essid, 32);
 	os_strncpy((char*)stconf.password, passwd, 64);
@@ -200,25 +200,25 @@ int ICACHE_FLASH_ATTR cgiWiFiConnect(HttpdConnData *connData) {
 	os_sprintf((char *)sysCfg.sta_ssid,essid);
 	os_sprintf((char *)sysCfg.sta_pass,passwd);
 
-	len=httpdFindArg(connData->postBuff, "sta-mode", buff, sizeof(buff));
+	len=httpdFindArg(connData->post->buff, "sta-mode", buff, sizeof(buff));
 	if (len>0) {
 		os_sprintf((char *)sysCfg.sta_mode,buff);
 		gotcmd=1;
 	}
 	
-	len=httpdFindArg(connData->postBuff, "sta-ip", buff, sizeof(buff));
+	len=httpdFindArg(connData->post->buff, "sta-ip", buff, sizeof(buff));
 	if (len>0) {
 		os_sprintf((char *)sysCfg.sta_ip,buff);
 		gotcmd=1;
 	}
 
-	len=httpdFindArg(connData->postBuff, "sta-mask", buff, sizeof(buff));
+	len=httpdFindArg(connData->post->buff, "sta-mask", buff, sizeof(buff));
 	if (len>0) {
 		os_sprintf((char *)sysCfg.sta_mask,buff);
 		gotcmd=1;
 	}
 
-	len=httpdFindArg(connData->postBuff, "sta-gw", buff, sizeof(buff));
+	len=httpdFindArg(connData->post->buff, "sta-gw", buff, sizeof(buff));
 	if (len>0) {
 		os_sprintf((char *)sysCfg.sta_gw,buff);
 		gotcmd=1;

@@ -28,9 +28,7 @@ static int ICACHE_FLASH_ATTR wd(int year, int month, int day) {
 
 void ICACHE_FLASH_ATTR thermostat(int current_t, int setpoint)
 {
-
-	//hardcoded .5 degrees hysteresis
-	if(current_t < setpoint - 50 ) {
+	if(current_t < setpoint - sysCfg.thermostat1hysteresislow ) {
 		os_printf("Current reading (%d) is less than the setpoint.\n",current_t);
 
 		if(sysCfg.thermostat1opmode==THERMOSTAT_HEATING)
@@ -39,7 +37,7 @@ void ICACHE_FLASH_ATTR thermostat(int current_t, int setpoint)
 			currGPIO12State=0;
 			
 		ioGPIO(currGPIO12State,12);
-	} else if(current_t > setpoint + 50 ) {
+	} else if(current_t > setpoint + sysCfg.thermostat1hysteresishigh ) {
 		os_printf("Current reading (%d) is more than the setpoint.\n",current_t);
 
 		if(sysCfg.thermostat1opmode==THERMOSTAT_HEATING)
@@ -101,6 +99,7 @@ static  void ICACHE_FLASH_ATTR pollThermostatCb(void * arg)
 		}
 		
 		if(sysCfg.thermostat1_input==3) { //MQTT input to thermostat
+		// not yet implemented
 		}
 		
 		if(sysCfg.thermostat1_input==4) { //Serial input to thermostat

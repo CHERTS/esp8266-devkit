@@ -108,8 +108,8 @@ int ICACHE_FLASH_ATTR cgiThermostat(HttpdConnData *connData) {
 
 
 		if(os_strcmp(buff,"thermostat_opmode")==0) {
-			if(connData->postLen>0) {
-				sysCfg.thermostat1opmode=(int)atoi(connData->postBuff);		
+			if(connData->post->len>0) {
+				sysCfg.thermostat1opmode=(int)atoi(connData->post->buff);		
 				CFG_Save();
 				os_printf("Handle thermostat opmode (%d) saved\n",(int)sysCfg.thermostat1opmode);
 			} else {
@@ -118,7 +118,7 @@ int ICACHE_FLASH_ATTR cgiThermostat(HttpdConnData *connData) {
 		}
 
 		if(os_strcmp(buff,"thermostat_zonename")==0) {
-			if(connData->postLen>0) {
+			if(connData->post->len>0) {
 				os_printf("N/A\n");
 			} else {
 				os_sprintf(buff, "%s", (char *)sysCfg.relay1name);
@@ -126,7 +126,7 @@ int ICACHE_FLASH_ATTR cgiThermostat(HttpdConnData *connData) {
 		}
 
 		if(os_strcmp(buff,"thermostat_relay1state")==0) {
-			if(connData->postLen>0) {
+			if(connData->post->len>0) {
 				os_printf("N/A\n");
 			} else {
 				os_sprintf(buff, "%d", currGPIO12State);
@@ -134,8 +134,8 @@ int ICACHE_FLASH_ATTR cgiThermostat(HttpdConnData *connData) {
 		}
 
 		if(os_strcmp(buff,"thermostat_state")==0) {
-			if(connData->postLen>0) {
-				sysCfg.thermostat1state=(int)atoi(connData->postBuff);
+			if(connData->post->len>0) {
+				sysCfg.thermostat1state=(int)atoi(connData->post->buff);
 				
 				//Switching off thermostat means force off for relay 1
 				currGPIO12State=0;
@@ -149,8 +149,8 @@ int ICACHE_FLASH_ATTR cgiThermostat(HttpdConnData *connData) {
 		}
 
 		if(os_strcmp(buff,"thermostat_manualsetpoint")==0) {
-			if(connData->postLen>0) {
-				sysCfg.thermostat1manualsetpoint=(int)atoi(connData->postBuff);
+			if(connData->post->len>0) {
+				sysCfg.thermostat1manualsetpoint=(int)atoi(connData->post->buff);
 				CFG_Save();
 				os_printf("Handle thermostat manual setpoint save (%d)\n",(int)sysCfg.thermostat1manualsetpoint);
 			} else {
@@ -159,8 +159,8 @@ int ICACHE_FLASH_ATTR cgiThermostat(HttpdConnData *connData) {
 		}
 
 		if(os_strcmp(buff,"thermostat_mode")==0) {
-			if(connData->postLen>0) {
-				sysCfg.thermostat1mode=(int)atoi(connData->postBuff);
+			if(connData->post->len>0) {
+				sysCfg.thermostat1mode=(int)atoi(connData->post->buff);
 				CFG_Save();
 				os_printf("Handle thermostat mode save (%d)\n",(int)sysCfg.thermostat1mode);
 			} else {
@@ -171,7 +171,7 @@ int ICACHE_FLASH_ATTR cgiThermostat(HttpdConnData *connData) {
 
 		if(os_strcmp(buff,"thermostat_schedule")==0) {
 			char * days[7] = {"mon","tue","wed","thu","fri","sat","sun"};
-			if(connData->postLen>0) {
+			if(connData->post->len>0) {
 				os_printf("Handle thermostat schedule save\n");
 
 					int r;
@@ -179,7 +179,7 @@ int ICACHE_FLASH_ATTR cgiThermostat(HttpdConnData *connData) {
 					jsmntok_t t[64]; /* We expect no more than 64 tokens per day*/
 					
 					jsmn_init(&p);
-					r = jsmn_parse(&p, connData->postBuff, strlen(connData->postBuff) , t, sizeof(t)/sizeof(t[0]));
+					r = jsmn_parse(&p, connData->post->buff, strlen(connData->post->buff) , t, sizeof(t)/sizeof(t[0]));
 
 					if (r < 0) {
 						os_printf("Failed to parse JSON: %d\n", r);
@@ -196,7 +196,7 @@ int ICACHE_FLASH_ATTR cgiThermostat(HttpdConnData *connData) {
 					
 					int found=-1;
 					for(int i=0;i<7;i++) {
-						if(os_memcmp(connData->postBuff + t[1].start,days[i],3)==0)
+						if(os_memcmp(connData->post->buff + t[1].start,days[i],3)==0)
 							found=i;
 					}
 					
@@ -212,17 +212,17 @@ int ICACHE_FLASH_ATTR cgiThermostat(HttpdConnData *connData) {
 				
 					//Number of tokens will be 1 for the day+1 for the day data + (number of schedules * 7 tokens in a schedule element (one for the schedule itself then 6 tokens for start:val,end:val,setpoint:val) 
 										
-						os_memcpy(temp, connData->postBuff + t[i+2].start,t[i+2].end - t[i+2].start);
+						os_memcpy(temp, connData->post->buff + t[i+2].start,t[i+2].end - t[i+2].start);
 						temp[t[i+2].end - t[i+2].start]=0x0;
 						os_sprintf(buff+strlen(buff),"Start = %s\n", temp);
 						sysCfg.thermostat1schedule.weekSched[found].daySched[sched].start=atoi(temp);
 						
-						os_memcpy(temp, connData->postBuff + t[i+4].start,t[i+4].end - t[i+4].start);
+						os_memcpy(temp, connData->post->buff + t[i+4].start,t[i+4].end - t[i+4].start);
 						temp[t[i+4].end - t[i+4].start]=0x0;
 						os_sprintf(buff+strlen(buff),"End = %s\n", temp);
 						sysCfg.thermostat1schedule.weekSched[found].daySched[sched].end=atoi(temp);
 
-						os_memcpy(temp, connData->postBuff + t[i+6].start,t[i+6].end - t[i+6].start);
+						os_memcpy(temp, connData->post->buff + t[i+6].start,t[i+6].end - t[i+6].start);
 						temp[t[i+6].end - t[i+6].start]=0x0;
 						os_sprintf(buff+strlen(buff),"Setpoint = %s\n", temp);
 						sysCfg.thermostat1schedule.weekSched[found].daySched[sched].setpoint=atoi(temp);						

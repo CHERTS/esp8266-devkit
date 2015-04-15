@@ -116,18 +116,24 @@ uint32_t thermostat1state;
 uint32_t thermostat1manualsetpoint;
 uint32_t thermostat1mode;
 uint32_t thermostat1opmode;
+uint32_t thermostat1hysteresishigh;
+uint32_t thermostat1hysteresislow;
 weekSchedule thermostat1schedule;
 
 uint32_t thermostat2state;
 uint32_t thermostat2manualsetpoint;
 uint32_t thermostat2mode;
 uint32_t thermostat2opmode;
+uint32_t thermostat2hysteresishigh;
+uint32_t thermostat2hysteresislow;
 weekSchedule thermostat2schedule;
 
 uint32_t thermostat3state;
 uint32_t thermostat3manualsetpoint;
 uint32_t thermostat3mode;
 uint32_t thermostat3opmode;
+uint32_t thermostat3hysteresishigh;
+uint32_t thermostat3hysteresislow;
 weekSchedule thermostat3schedule;
 
 	

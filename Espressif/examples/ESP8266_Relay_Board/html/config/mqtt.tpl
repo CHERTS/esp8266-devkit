@@ -49,7 +49,7 @@ sd('mqtt-ds18b20-temp-pub-topic',v);
 <tr><td>Keepalive (sec):</td><td><input type="text" name="mqtt-keepalive" id="mqtt-keepalive" value="%mqtt-keepalive%"/> </td></tr>
 <tr><td>Device ID:</td><td><input type="text" name="mqtt-devid" id="mqtt-devid" value="%mqtt-devid%"/>   </td></tr>
 <tr><td>User:</td><td><input type="text" name="mqtt-user" id="mqtt-user" value="%mqtt-user%"/>     </td></tr>
-<tr><td>Password:</td><td><input type="text" name="mqtt-pass" id="mqtt-pass" value="%mqtt-pass%"/>     </td></tr>
+<tr><td>Password:</td><td><input type="password" name="mqtt-pass" id="mqtt-pass" value="%mqtt-pass%"/>     </td></tr>
 <tr><td>Use SSL?:</td><td><input type="checkbox" name="mqtt-use-ssl" id="mqtt-use-ssl" /> (max 1024 bit key size)  </td></tr>
 <tr><td>Relays subs topic:</td><td><input type="text" name="mqtt-relay-subs-topic" id="mqtt-relay-subs-topic" value="%mqtt-relay-subs-topic%">     </td></tr>
 <tr><td>DHT22 temp pub topic:</td><td><input type="text" name="mqtt-dht22-temp-pub-topic" id="mqtt-dht22-temp-pub-topic" value="%mqtt-dht22-temp-pub-topic%">     </td></tr>

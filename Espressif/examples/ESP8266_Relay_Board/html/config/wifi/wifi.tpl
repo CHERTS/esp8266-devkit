@@ -108,7 +108,7 @@ Current IP: %IPAddress%
 </p>
 
 <table>
-<tr><td>WiFi password:</td><td><input type="text" name="passwd" value="%WiFiPasswd%"> </td></tr>
+<tr><td>WiFi password:</td><td><input type="password" name="passwd" value="%WiFiPasswd%"> </td></tr>
 <tr><td>Mode:</td><td>
 
 <select name="sta-mode" id="sta-mode"  onchange='di();' >
