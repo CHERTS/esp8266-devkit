@@ -7,6 +7,8 @@ v2.0.3 (15.04.2015):
 * Update SDK v1.0.1 b2 (folder ESP8266_SDK);
 * Updated examples:
   nodemcu-firmware;
+  ESP8266_Relay_Board;
+  ESPWebFramework;
 
 v2.0.2 (05.04.2015):
 * Update SDK v1.0.1 b1 (folder ESP8266_SDK);
