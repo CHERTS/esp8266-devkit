@@ -1,7 +1,7 @@
 Changelog:
 ----------
 
-v2.0.3 (15.04.2015):
+v2.0.3 (19.04.2015):
 + Added new examples:
   esp8266-ir-remote - Infrared remote control library for ESP8266 RTOS SDK (original source https://github.com/valkuc/esp8266-ir-remote);
 * Update SDK v1.0.1 b2 (folder ESP8266_SDK);
