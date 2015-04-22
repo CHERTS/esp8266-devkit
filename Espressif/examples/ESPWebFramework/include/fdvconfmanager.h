@@ -66,7 +66,7 @@ namespace fdv
 		
 		// can be re-applied
 		static void MTD_FLASHMEM applyUARTServices()
-		{
+		{            
 			// UART and serial services
 			uint32_t baudRate;
 			bool enableSystemOutput;
@@ -101,7 +101,7 @@ namespace fdv
 					s_serialBinary = new SerialBinary;
 					break;
 #endif
-			}
+			}            
 		}
 		
 		

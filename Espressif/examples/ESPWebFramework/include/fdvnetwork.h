@@ -333,96 +333,31 @@ namespace fdv
 			udhcpd_start();			
 		}
     };	
-	
+
 
 	//////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////
-	// TCPServer
-	
-	template <typename ConnectionHandler_T, uint16_t MaxThreads_V, uint16_t ThreadsStackDepth_V>
-	class TCPServer
-	{
-		
-		static uint32_t const ACCEPTWAITTIMEOUTMS = 20000;
-		static uint32_t const SOCKETQUEUESIZE     = 1;	// can queue only one socket (nothing to do with working threads)
-		
-	public:
-		
-		TCPServer(uint16_t port)
-			: m_socketQueue(SOCKETQUEUESIZE)
-		{
-			m_socket = lwip_socket(PF_INET, SOCK_STREAM, 0);
-			sockaddr_in sLocalAddr = {0};
-			sLocalAddr.sin_family = AF_INET;
-			sLocalAddr.sin_len = sizeof(sockaddr_in);
-			sLocalAddr.sin_addr.s_addr = htonl(INADDR_ANY);	// todo: allow other choices other than IP_ADDR_ANY
-			sLocalAddr.sin_port = htons(port);
-			lwip_bind(m_socket, (sockaddr*)&sLocalAddr, sizeof(sockaddr_in));			
-			lwip_listen(m_socket, MaxThreads_V);
-
-			// prepare listener task
-			m_listenerTask.setStackDepth(200);
-			m_listenerTask.setObject(this);
-			m_listenerTask.resume();
-			
-			// prepare handler tasks
-			for (uint16_t i = 0; i != MaxThreads_V; ++i)
-			{
-				m_threads[i].setStackDepth(ThreadsStackDepth_V);
-				m_threads[i].setSocketQueue(&m_socketQueue);
-				m_threads[i].resume();
-			}
-		}
-		
-		virtual ~TCPServer()
-		{
-			lwip_close(m_socket);
-		}
-		
-		void MTD_FLASHMEM listenerTask()
-		{
-			while (true)
-			{
-				sockaddr_in clientAddr;
-				socklen_t addrLen = sizeof(sockaddr_in);
-				int clientSocket = lwip_accept(m_socket, (sockaddr*)&clientAddr, &addrLen);
-				if (clientSocket > 0)
-				{
-					if (!m_socketQueue.send(clientSocket, ACCEPTWAITTIMEOUTMS))
-					{
-						// Timeout, no thread available, disconnecting
-						lwip_close(clientSocket);
-					}
-				}
-			}
-		}
-		
-	private:
-	
-		int                                             m_socket;
-		MethodTask<TCPServer, &TCPServer::listenerTask> m_listenerTask;
-		ConnectionHandler_T                             m_threads[MaxThreads_V];
-		Queue<int>                                      m_socketQueue;
-	};
-	
-	
-	//////////////////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////////////////
-	// TCPConnectionHandler
-	
-	struct TCPConnectionHandler : public Task
-	{
-		
-		TCPConnectionHandler()
-			: m_connected(false)
-		{
-		}
-		
-		void MTD_FLASHMEM setSocketQueue(Queue<int>* socketQueue)
-		{
-			m_socketQueue = socketQueue;
-		}
-				
+    // Socket
+    // The lwip socket wrapper
+   
+    class Socket
+    {
+    public:
+        Socket()
+            : m_socket(0), m_connected(false)
+        {
+        }
+    
+        Socket(int socket)
+            : m_socket(socket), m_connected(socket != 0)
+        {
+        }
+        
+        Socket(Socket const& c)
+            : m_socket(c.m_socket), m_connected(c.m_connected)
+        {
+        }
+        
 		/*
 		Unfortunately FIONREAD has not been compiled into lwip!
 		uint32_t available()
@@ -541,32 +476,128 @@ namespace fdv
 			return m_connected;
 		}
 		
+		void MTD_FLASHMEM setNoDelay(bool value)
+		{
+			int32_t one = (int32_t)value;
+			lwip_setsockopt(m_socket, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+		}
+
+    private:
+        int  m_socket;
+        bool m_connected;
+    };
+	
+
+	//////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+	// TCPServer
+	
+	template <typename ConnectionHandler_T, uint16_t MaxThreads_V, uint16_t ThreadsStackDepth_V>
+	class TCPServer
+	{
+		
+		static uint32_t const ACCEPTWAITTIMEOUTMS = 20000;
+		static uint32_t const SOCKETQUEUESIZE     = 1;	// can queue only one socket (nothing to do with working threads)
+		
+	public:
+		
+		TCPServer(uint16_t port)
+			: m_socketQueue(SOCKETQUEUESIZE)
+		{
+			m_socket = lwip_socket(PF_INET, SOCK_STREAM, 0);
+			sockaddr_in sLocalAddr = {0};
+			sLocalAddr.sin_family = AF_INET;
+			sLocalAddr.sin_len = sizeof(sockaddr_in);
+			sLocalAddr.sin_addr.s_addr = htonl(INADDR_ANY);	// todo: allow other choices other than IP_ADDR_ANY
+			sLocalAddr.sin_port = htons(port);
+			lwip_bind(m_socket, (sockaddr*)&sLocalAddr, sizeof(sockaddr_in));			
+			lwip_listen(m_socket, MaxThreads_V);
+
+			// prepare listener task
+			m_listenerTask.setStackDepth(200);
+			m_listenerTask.setObject(this);
+			m_listenerTask.resume();
+			
+			// prepare handler tasks
+			for (uint16_t i = 0; i != MaxThreads_V; ++i)
+			{
+				m_threads[i].setStackDepth(ThreadsStackDepth_V);
+				m_threads[i].setSocketQueue(&m_socketQueue);
+				m_threads[i].resume();
+			}
+		}
+		
+		virtual ~TCPServer()
+		{
+			lwip_close(m_socket);
+		}
+		
+		void MTD_FLASHMEM listenerTask()
+		{
+			while (true)
+			{
+				sockaddr_in clientAddr;
+				socklen_t addrLen = sizeof(sockaddr_in);
+				Socket clientSocket = lwip_accept(m_socket, (sockaddr*)&clientAddr, &addrLen);
+				if (clientSocket.isConnected())
+				{
+					if (!m_socketQueue.send(clientSocket, ACCEPTWAITTIMEOUTMS))
+					{
+						// Timeout, no thread available, disconnecting
+						clientSocket.close();
+					}
+				}
+			}
+		}
+		
+	private:
+	
+		int                                             m_socket;
+		MethodTask<TCPServer, &TCPServer::listenerTask> m_listenerTask;
+		ConnectionHandler_T                             m_threads[MaxThreads_V];
+		Queue<Socket>                                   m_socketQueue;
+	};
+	
+	
+	//////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+	// TCPConnectionHandler
+	
+	struct TCPConnectionHandler : public Task
+	{
+		
+		TCPConnectionHandler()
+		{
+		}
+		
+		void MTD_FLASHMEM setSocketQueue(Queue<Socket>* socketQueue)
+		{
+			m_socketQueue = socketQueue;
+		}
+        
+        Socket* getSocket()
+        {
+            return &m_socket;
+        }
+						
 		void MTD_FLASHMEM exec()
 		{
 			while (true)
 			{
 				if (m_socketQueue->receive(&m_socket))
 				{
-					m_connected = true;
 					connectionHandler();
-					close();
+					m_socket.close();
 				}
 			}
-		}
-		
-		void MTD_FLASHMEM setNoDelay(bool value)
-		{
-			int32_t one = (int32_t)value;
-			lwip_setsockopt(m_socket, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
 		}
 		
 		// applications override this
 		virtual void connectionHandler() = 0;
 		
 	private:
-		int         m_socket;
-		Queue<int>* m_socketQueue;
-		bool        m_connected;
+		Socket         m_socket;
+		Queue<Socket>* m_socketQueue;
 	};
     
 	
@@ -615,10 +646,10 @@ namespace fdv
 		// implements TCPConnectionHandler
 		void MTD_FLASHMEM connectionHandler()
 		{			
-			while (isConnected())
+			while (getSocket()->isConnected())
 			{
 				CharChunk* chunk = m_receivedData.addChunk(CHUNK_CAPACITY);
-				chunk->items = read(chunk->data, CHUNK_CAPACITY);
+				chunk->items = getSocket()->read(chunk->data, CHUNK_CAPACITY);
 				if (processRequest())
 					break;
 			}
@@ -686,10 +717,10 @@ namespace fdv
 					// download additional content
 					int32_t contentLength = strtol(contentLengthStr, NULL, 10);
 					int32_t missingBytes = headerEnd.getPosition() + contentLength - m_receivedData.getItemsCount();
-					while (isConnected() && missingBytes > 0)
+					while (getSocket()->isConnected() && missingBytes > 0)
 					{
 						CharChunk* chunk = m_receivedData.addChunk(missingBytes);
-						chunk->items = read(chunk->data, missingBytes);		
+						chunk->items = getSocket()->read(chunk->data, missingBytes);		
 						missingBytes -= chunk->items;
 					}
 					m_receivedData.append(0);	// add additional terminating "0"
@@ -886,24 +917,24 @@ namespace fdv
 		virtual void MTD_FLASHMEM flush()
 		{
 			// status line
-			m_httpHandler->writeFmt(FSTR("HTTP/1.1 %s\r\n"), m_status);
+			m_httpHandler->getSocket()->writeFmt(FSTR("HTTP/1.1 %s\r\n"), m_status);
 			// HTTPResponse headers
 			addHeader(FSTR("Connection"), FSTR("close"));			
 			// user headers
 			for (uint32_t i = 0; i != m_headers.getItemsCount(); ++i)
 			{
 				Fields::Item* item = m_headers[i];
-				m_httpHandler->writeFmt(FSTR("%s: %s\r\n"), APtr<char>(t_strdup(item->key)).get(), APtr<char>(t_strdup(item->value)).get());
+				m_httpHandler->getSocket()->writeFmt(FSTR("%s: %s\r\n"), APtr<char>(t_strdup(item->key)).get(), APtr<char>(t_strdup(item->value)).get());
 			}
 			// content length header
-			m_httpHandler->writeFmt(FSTR("%s: %d\r\n\r\n"), STR_Content_Length, m_content.getItemsCount());
+			m_httpHandler->getSocket()->writeFmt(FSTR("%s: %d\r\n\r\n"), STR_Content_Length, m_content.getItemsCount());
 			// actual content
 			if (m_content.getItemsCount() > 0)
 			{				
 				CharChunk* chunk = m_content.getFirstChunk();
 				while (chunk)
 				{
-					m_httpHandler->write((uint8_t const*)chunk->data, chunk->items);
+					m_httpHandler->getSocket()->write((uint8_t const*)chunk->data, chunk->items);
 					chunk = chunk->next;
 				}
 				m_content.clear();
