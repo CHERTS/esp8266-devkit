@@ -87,6 +87,7 @@ int ICACHE_FLASH_ATTR cgiGPIO(HttpdConnData *connData) {
 
 		httpdStartResponse(connData, 200);
 		httpdHeader(connData, "Content-Type", "text/json");
+		httpdHeader(connData, "Access-Control-Allow-Origin", "*");
 		httpdEndHeaders(connData);
 
 		len=os_sprintf(buff, "{\"relay1\": %d\n,\"relay1name\":\"%s\",\n\"relay2\": %d\n,\"relay2name\":\"%s\",\n\"relay3\": %d\n,\"relay3name\":\"%s\" }\n",  currGPIO12State,(char *)sysCfg.relay1name,currGPIO13State,(char *)sysCfg.relay2name,currGPIO15State,(char *)sysCfg.relay3name );
@@ -227,6 +228,7 @@ int ICACHE_FLASH_ATTR cgiDHT22(HttpdConnData *connData) {
 
 	httpdStartResponse(connData, 200);
 	httpdHeader(connData, "Content-Type", "text/json");
+	httpdHeader(connData, "Access-Control-Allow-Origin", "*");
 	httpdEndHeaders(connData);
 
 	dht_temp_str(temp);
@@ -293,6 +295,7 @@ int ICACHE_FLASH_ATTR cgiDS18b20(HttpdConnData *connData) {
 	char tmp[32];
 	httpdStartResponse(connData, 200);
 	httpdHeader(connData, "Content-Type", "text/json");
+	httpdHeader(connData, "Access-Control-Allow-Origin", "*");
 	httpdEndHeaders(connData);
 
 	ds_str(tmp,0);
@@ -313,6 +316,7 @@ int ICACHE_FLASH_ATTR cgiState(HttpdConnData *connData) {
 
 	httpdStartResponse(connData, 200);
 	httpdHeader(connData, "Content-Type", "text/json");
+	httpdHeader(connData, "Access-Control-Allow-Origin", "*");	
 	httpdEndHeaders(connData);
 
 	ds_str(tmp,0);

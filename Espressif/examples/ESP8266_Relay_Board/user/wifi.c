@@ -94,8 +94,7 @@ void ICACHE_FLASH_ATTR WIFI_Connect(WifiCallback cb)
 		if (mask)
 			info.netmask.addr = ipaddr_addr(mask);
 		if (gw)
-			info.gw.addr = ipaddr_addr(gw);
-		
+			info.gw.addr = ipaddr_addr(gw);			
 		wifi_set_ip_info(STATION_IF, &info);
 	}
 

@@ -56,6 +56,7 @@ int ICACHE_FLASH_ATTR cgiThermostat(HttpdConnData *connData) {
 
 	httpdStartResponse(connData, 200);
 	httpdHeader(connData, "Content-Type", "application/json");
+	httpdHeader(connData, "Access-Control-Allow-Origin", "*");
 	httpdEndHeaders(connData);
 	
 	if (connData->conn==NULL) {

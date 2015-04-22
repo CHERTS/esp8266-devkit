@@ -139,12 +139,16 @@ static ICACHE_FLASH_ATTR void MQTTbroadcastReading(void* arg){
 			if(result->success) {
 				char temp[32];
 				char topic[128];
-				int len = dht_temp_str(temp);
+				int len;
+				
+				dht_temp_str(temp);
+				len = os_strlen(temp);
 				os_sprintf(topic,"%s",sysCfg.mqtt_dht22_temp_pub_topic);
 				MQTT_Publish(&mqttClient,topic,temp,len,0,0);
 				os_printf("Published \"%s\" to topic \"%s\"\n",temp,topic);
 				
-				len = dht_humi_str(temp);
+				dht_humi_str(temp);
+				len = os_strlen(temp);
 				os_sprintf(topic,"%s",sysCfg.mqtt_dht22_humi_pub_topic);
 				MQTT_Publish(&mqttClient,topic,temp,len,0,0);
 				os_printf("Published \"%s\" to topic \"%s\"\n",temp,topic);
@@ -157,7 +161,9 @@ static ICACHE_FLASH_ATTR void MQTTbroadcastReading(void* arg){
 			if(result->success) {
 				char temp[32];
 				char topic[128];
-				int len = ds_str(temp,0);
+				int len;
+				ds_str(temp,0);
+				len = os_strlen(temp);
 				os_sprintf(topic,"%s",sysCfg.mqtt_ds18b20_temp_pub_topic);
 				MQTT_Publish(&mqttClient,topic,temp,len,0,0);
 				os_printf("Published \"%s\" to topic \"%s\"\n",temp,topic);
