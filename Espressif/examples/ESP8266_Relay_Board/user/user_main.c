@@ -1,5 +1,3 @@
-
-
 /*
  * ----------------------------------------------------------------------------
  * "THE BEER-WARE LICENSE" (Revision 42):
@@ -9,12 +7,10 @@
  * ----------------------------------------------------------------------------
  */
 
-
 #include "espmissingincludes.h"
 #include "ets_sys.h"
 //#include "lwip/timers.h"
 #include "user_interface.h"
-
 #include "httpd.h"
 #include "io.h"
 #include "httpdespfs.h"
@@ -25,18 +21,16 @@
 #include "auth.h"
 #include "sntp.h"
 #include "time_utils.h"
-
 #include "config.h"
-
 #include "dht22.h"
 #include "ds18b20.h"
 #include "broadcastd.h"
 #include "thermostat.h"
 #include "wifi.h"
 #include "mqtt.h"
+#include "httpclient.h"
+
 //#include "netbios.h"
-
-
 //#include "pwm.h"
 //#include "cgipwm.h"
 
@@ -101,7 +95,8 @@ HttpdBuiltInUrl builtInUrls[]={
 	{"/config/wifi/wifiscan.cgi", cgiWiFiScan, NULL},
 	{"/config/wifi/wifi.tpl", cgiEspFsTemplate, tplWlan},
 	{"/config/wifi/connect.cgi", cgiWiFiConnect, NULL},
-	{"/config/wifi/setmode.cgi", cgiWifiSetMode, NULL},
+	{"/config/wifi/setmode.cgi", cgiWiFiSetMode, NULL},
+	{"/config/wifi/connstatus.cgi", cgiWiFiConnStatus, NULL},
 	{"/config/mqtt.tpl", cgiEspFsTemplate, tplMQTT},
 	{"/config/mqtt.cgi", cgiMQTT, NULL},
 	{"/config/httpd.tpl", cgiEspFsTemplate, tplHTTPD},
@@ -121,10 +116,23 @@ HttpdBuiltInUrl builtInUrls[]={
 };
 
 
+void ICACHE_FLASH_ATTR http_callback_IP(char * response, int http_status, char * full_response)
+{
+	//os_printf("http_status=%d\n", http_status);
+	if (http_status != HTTP_STATUS_GENERIC_ERROR) {
+		//os_printf("strlen(full_response)=%d\n", strlen(full_response));
+		//os_printf("response=%s<EOF>\n", response);
+		os_printf("External IP address=%s\n", response);
+	}
+}
 
 void ICACHE_FLASH_ATTR wifiConnectCb(uint8_t status)
 {
 	if(status == STATION_GOT_IP){
+
+		os_printf("Trying to find external IP address\n");
+		http_get("http://wtfismyip.com/text", http_callback_IP);
+
 		if(sysCfg.mqtt_enable==1) {
 			MQTT_Connect(&mqttClient);
 		} else {

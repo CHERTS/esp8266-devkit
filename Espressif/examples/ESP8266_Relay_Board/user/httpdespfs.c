@@ -109,6 +109,8 @@ int ICACHE_FLASH_ATTR cgiEspFsTemplate(HttpdConnData *connData) {
 		tpd->tplArg=NULL;
 		tpd->tokenPos=-1;
 		if (tpd->file==NULL) {
+			espFsClose(tpd->file);
+			os_free(tpd);
 			return HTTPD_CGI_NOTFOUND;
 		}
 		connData->cgiData=tpd;
@@ -160,6 +162,7 @@ int ICACHE_FLASH_ATTR cgiEspFsTemplate(HttpdConnData *connData) {
 		//We're done.
 		((TplCallback)(connData->cgiArg))(connData, NULL, &tpd->tplArg);
 		espFsClose(tpd->file);
+		os_free(tpd);	
 		return HTTPD_CGI_DONE;
 	} else {
 		//Ok, till next time.

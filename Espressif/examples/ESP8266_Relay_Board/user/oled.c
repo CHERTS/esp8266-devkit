@@ -42,7 +42,7 @@ static void ICACHE_FLASH_ATTR pollOLEDCb(void * arg){
 		epoch=epoch%86400;
 		unsigned int hour=epoch/3600;
 		
-		if(hour > 6 && hour <23) { //Protect the OLED from burning
+		if(hour >= 6 && hour <=23) { //Protect the OLED from burning
  
 			if(sysCfg.sensor_dht22_enable) {
 				dht_temp_str(temp);
@@ -57,7 +57,7 @@ static void ICACHE_FLASH_ATTR pollOLEDCb(void * arg){
 			if(sysCfg.sensor_ds18b20_enable) {
 				ds_str(temp,0);
 				os_sprintf(displaystr, "Temp: %sC    ", temp);
-				OLED_Print(2, 0, (unsigned char *)displaystr, 2);		
+				OLED_Print(2 + rand()%2, rand()%4, (unsigned char *)displaystr, 2);		
 			}
 
 		}
