@@ -1,9 +1,10 @@
 Список изменений:
 -----------------
 
-v2.0.3 (26.04.2015):
+v2.0.3 (27.04.2015):
 + Добавлены новые примеры:
   esp8266-ir-remote - Infrared remote control library for ESP8266 RTOS SDK (компилируется, работа не проверялась), оригинальные исходники https://github.com/valkuc/esp8266-ir-remote;
+  hello_world_optimized - Оптимизация скорости и размера доступного IRAM (Спасибо pvvx);
 * Обновлена SDK до версии 1.0.1 (папка ESP8266_SDK);
 * Обновлены примеры:
   nodemcu-firmware;
