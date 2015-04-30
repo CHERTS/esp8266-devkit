@@ -1,6 +1,9 @@
 Список изменений:
 -----------------
 
+v2.0.4 (17.05.2015):
+* Обновлена утилита "utils\esptool-ck.exe" до версии 0.4.3;
+
 v2.0.3 (27.04.2015):
 + Добавлены новые примеры:
   esp8266-ir-remote - Infrared remote control library for ESP8266 RTOS SDK (компилируется, работа не проверялась), оригинальные исходники https://github.com/valkuc/esp8266-ir-remote;
