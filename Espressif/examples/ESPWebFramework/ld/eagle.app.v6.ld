@@ -208,7 +208,7 @@ SECTIONS
   .irom0.text : ALIGN(4)
   {
     _irom0_text_start = ABSOLUTE(.);
-    *(.irom0.literal .irom.literal .irom.text.literal .irom0.text .irom.text .irom1.text .irom2.text .irom3.text)
+    *(.irom0.literal .irom.literal .irom.text.literal .irom0.text .irom.text .irom1.text .irom2.text .irom3.text .irom4.text)
     _irom0_text_end = ABSOLUTE(.);
   } >irom0_0_seg :irom0_0_phdr
 
