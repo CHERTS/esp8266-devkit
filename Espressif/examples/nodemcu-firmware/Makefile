@@ -89,8 +89,9 @@ CC := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-gcc
 AR := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-ar
 LD := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-gcc
 NM := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-nm
-CPP = $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-cpp
-OBJCOPY = $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-objcopy
+CPP := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-cpp
+OBJCOPY := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-objcopy
+OBJDUMP := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-objdump
 CCFLAGS += -Os -ffunction-sections -fno-jump-tables -fdata-sections
 
 FIRMWAREDIR = ..//bin//
@@ -125,6 +126,15 @@ OIMAGES := $(GEN_IMAGES:%=$(IMAGEODIR)/%)
 
 BINODIR := $(ODIR)/$(TARGET)/$(FLAVOR)/bin
 OBINS := $(GEN_BINS:%=$(BINODIR)/%)
+
+V ?= $(VERBOSE)
+ifeq ("$(V)","1")
+Q :=
+vecho := @true
+else
+Q := @
+vecho := @echo
+endif
 
 CCFLAGS += 			\
 	-g			\
@@ -168,6 +178,13 @@ endef
 $(BINODIR)/%.bin: $(IMAGEODIR)/%.out
 	@mkdir -p $(BINODIR)
 	$(ESPTOOL) elf2image $< -o $(FIRMWAREDIR)
+	$(vecho) "------------------------------------------------------------------------------"
+	$(vecho) "Section info:"
+	$(Q) $(OBJDUMP) -h -j .data -j .rodata -j .bss -j .text -j .irom0.text $<
+	$(vecho) "------------------------------------------------------------------------------"
+	$(vecho) "Section info:"
+	$(Q) $(SDK_TOOLS)/memanalyzer.exe $(OBJDUMP).exe $<
+	$(vecho) "------------------------------------------------------------------------------"
 
 all:	.subdirs $(OBJS) $(OLIBS) $(OIMAGES) $(OBINS) $(SPECIAL_MKTARGETS)
 
