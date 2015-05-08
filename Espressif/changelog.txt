@@ -2,7 +2,19 @@ Changelog:
 ----------
 
 v2.0.4 (17.05.2015):
++ Added official AT firmware from Espressif, directory "ESP8266_SDK\bin\at";
 * Update a utility "utils\esptool-ck.exe" to version 0.4.3;
+* Updated library "libnet80211.a" and header file "user_interface.h" from Espressif SDK 1.0.1;
+* Updated documentation:
+  - Delete files:
+    ESP8266_IOT_Flash_read_write_guide_v0.2.pdf
+    ESP8266_IoT_SDK_Programming Guide_v1.0.1.pdf
+  + Added files:
+    2A-ESP8266__IOT_SDK_User_Manual__EN_v1.0.1.pdf
+    2B-ESP8266__SDK__IOT_Demo__EN_v0.5.pdf
+    2C-ESP8266__SDK__Programming Guide__EN_v1.0.1.pdf
+    4A-ESP8266__AT Instrction Set__EN_v0.23.pdf
+    4B-ESP8266__AT Command Examples__EN_v0.4.pdf
 
 v2.0.3 (27.04.2015):
 + Added new examples:
@@ -16,7 +28,7 @@ v2.0.3 (27.04.2015):
 
 v2.0.2 (05.04.2015):
 * Update SDK v1.0.1 b1 (folder ESP8266_SDK);
-* Update RTOS SDK, directory "C:\Espressif\ESP8266_RTOS_SDK";
+* Update RTOS SDK, directory "ESP8266_RTOS_SDK";
 * Update a utility "utils\esptool-ck.exe";
 * Updated Makefile in all examples. In the Makefile added option to specify the port speed utility esptool.exe (ESPBAUD? = 115200);
 * Updated examples:

@@ -2,7 +2,19 @@
 -----------------
 
 v2.0.4 (17.05.2015):
++ Добавлена официальная AT прошивка от Espressif, каталог "ESP8266_SDK\bin\at";
 * Обновлена утилита "utils\esptool-ck.exe" до версии 0.4.3;
+* Обновлена библиотека "libnet80211.a" и заголовочный файл "user_interface.h" из Espressif SDK 1.0.1;
+* Обновлена документация:
+  - Удалены файлы:
+    ESP8266_IOT_Flash_read_write_guide_v0.2.pdf
+    ESP8266_IoT_SDK_Programming Guide_v1.0.1.pdf
+  + Добавлены файлы:
+    2A-ESP8266__IOT_SDK_User_Manual__EN_v1.0.1.pdf
+    2B-ESP8266__SDK__IOT_Demo__EN_v0.5.pdf
+    2C-ESP8266__SDK__Programming Guide__EN_v1.0.1.pdf
+    4A-ESP8266__AT Instrction Set__EN_v0.23.pdf
+    4B-ESP8266__AT Command Examples__EN_v0.4.pdf
 
 v2.0.3 (27.04.2015):
 + Добавлены новые примеры:
@@ -16,7 +28,7 @@ v2.0.3 (27.04.2015):
 
 v2.0.2 (05.04.2015):
 * Обновлена SDK до версии 1.0.1 b1 (папка ESP8266_SDK);
-* Обновлена RTOS SDK, каталог "C:\Espressif\ESP8266_RTOS_SDK";
+* Обновлена RTOS SDK, каталог "ESP8266_RTOS_SDK";
 * Обновлена утилита "utils\esptool-ck.exe";
 * Обновлены Makefile во всех примерах. В Makefile добавлена опция указания скорости порта для утилиты esptool.exe;
 * Обновлены примеры:
