@@ -159,12 +159,12 @@ namespace fdv
 		{
 		}
 		
-		void setObject(T* object)
+		void MTD_FLASHMEM setObject(T* object)
 		{
 			m_object = object;
 		}
 		
-		void exec()
+		void MTD_FLASHMEM exec()
 		{
 			(m_object->*Method)();
 		}
@@ -188,14 +188,14 @@ namespace fdv
 	
 	
 	template <void (*FP)()>
-	void asyncExec_(void* params)
+	void TMTD_FLASHMEM asyncExec_(void* params)
 	{		
 		FP();
 		vTaskDelete(NULL);
 	}
 	
 	template <void (*FP)()>
-	void asyncExec(uint32_t stackDepth = 256, uint32_t priority = 2)
+	void TMTD_FLASHMEM asyncExec(uint32_t stackDepth = 256, uint32_t priority = 2)
 	{
 		xTaskHandle handle;
 		xTaskCreate(asyncExec_<FP>, (const signed char*)"", stackDepth, NULL, priority, &handle);

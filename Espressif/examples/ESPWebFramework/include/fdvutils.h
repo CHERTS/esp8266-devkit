@@ -82,22 +82,22 @@ public:
 		delete m_ptr;
 	}
 	
-	T& operator*()
+	T& TMTD_FLASHMEM operator*()
 	{
 		return *m_ptr;
 	}
 	
-	T* operator->()
+	T* TMTD_FLASHMEM operator->()
 	{
 		return m_ptr;
 	}
 	
-	T* get()
+	T* TMTD_FLASHMEM get()
 	{
 		return m_ptr;
 	}
 	
-	void reset(T* ptr)
+	void TMTD_FLASHMEM reset(T* ptr)
 	{
 		delete m_ptr;
 		m_ptr = ptr;
@@ -136,27 +136,27 @@ public:
 		delete[] m_ptr;
 	}
 	
-	T& operator*()
+	T& TMTD_FLASHMEM operator*()
 	{
 		return *m_ptr;
 	}
 	
-	T* operator->()
+	T* TMTD_FLASHMEM operator->()
 	{
 		return m_ptr;
 	}
 	
-	T* get()
+	T* TMTD_FLASHMEM get()
 	{
 		return m_ptr;
 	}
 	
-	T& operator[](uint32_t index)
+	T& TMTD_FLASHMEM operator[](uint32_t index)
 	{
 		return m_ptr[index];
 	}
 
-	void reset(T* ptr)
+	void TMTD_FLASHMEM reset(T* ptr)
 	{
 		delete[] m_ptr;
 		m_ptr = ptr;
@@ -172,13 +172,13 @@ private:
 // min / max
 
 template <typename T>
-T min(T const& v1, T const& v2)
+T TMTD_FLASHMEM min(T const& v1, T const& v2)
 {
 	return v1 < v2? v1 : v2;
 }
 
 template <typename T>
-T max(T const& v1, T const& v2)
+T TMTD_FLASHMEM max(T const& v1, T const& v2)
 {
 	return v1 > v2? v1 : v2;
 }

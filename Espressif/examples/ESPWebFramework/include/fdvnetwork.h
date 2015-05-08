@@ -154,7 +154,7 @@ namespace fdv
 			config.ssid_len = f_strlen(SSID);
 			f_strcpy((char *)config.password, securityKey);
 			config.channel = channel;
-			config.authmode = AUTH_MODE(securityProtocol);
+			config.authmode = securityProtocol;
 			config.ssid_hidden = (uint8)hiddenSSID;
 			Critical critical;
 			wifi_softap_set_config(&config);
@@ -344,17 +344,17 @@ namespace fdv
     {
     public:
         Socket()
-            : m_socket(0), m_connected(false)
+            : m_socket(0), m_connected(false), m_remoteAddress()
         {
         }
     
         Socket(int socket)
-            : m_socket(socket), m_connected(socket != 0)
+            : m_socket(socket), m_connected(socket != 0), m_remoteAddress()
         {
         }
         
         Socket(Socket const& c)
-            : m_socket(c.m_socket), m_connected(c.m_connected)
+            : m_socket(c.m_socket), m_connected(c.m_connected), m_remoteAddress()
         {
         }
         
@@ -378,7 +378,7 @@ namespace fdv
 		*/
 		
 		// ret -1 = error, ret 0 = disconnected
-		int32_t read(void* buffer, uint32_t maxLength)
+		int32_t MTD_FLASHMEM read(void* buffer, uint32_t maxLength)
 		{
 			int32_t bytesRecv = lwip_recv(m_socket, buffer, maxLength, 0);
 			if (maxLength > 0)
@@ -387,7 +387,7 @@ namespace fdv
 		}
 		
 		// ret -1 = error, ret 0 = disconnected
-		int32_t peek(void* buffer, uint32_t maxLength)
+		int32_t MTD_FLASHMEM peek(void* buffer, uint32_t maxLength)
 		{
 			int32_t bytesRecv = lwip_recv(m_socket, buffer, maxLength, MSG_PEEK);
 			if (maxLength > 0)
@@ -397,7 +397,7 @@ namespace fdv
 		
 		// buffer can stay in RAM of Flash
 		// ret -1 = error, ret 0 = disconnected
-		int32_t write(void const* buffer, uint32_t length)
+		int32_t MTD_FLASHMEM write(void const* buffer, uint32_t length)
 		{
 			static uint32_t const CHUNKSIZE = 256;
 			
@@ -410,8 +410,9 @@ namespace fdv
 				while (bytesSent < length)
 				{
 					uint32_t bytesToSend = min(CHUNKSIZE, length - bytesSent);
-					f_memcpy(rambuf.get(), src, bytesToSend);			
-					uint32_t chunkBytesSent = lwip_send(m_socket, rambuf.get(), bytesToSend, 0);
+					f_memcpy(rambuf.get(), src, bytesToSend);
+                    uint32_t chunkBytesSent = m_remoteAddress.sin_len == 0? lwip_send(m_socket, rambuf.get(), bytesToSend, 0) :
+                                                                            lwip_sendto(m_socket, rambuf.get(), bytesToSend, 0, (sockaddr*)&m_remoteAddress, sizeof(m_remoteAddress));
 					if (chunkBytesSent == 0)
 					{
 						// error
@@ -425,7 +426,8 @@ namespace fdv
 			else
 			{
 				// just send as is
-				bytesSent = lwip_send(m_socket, buffer, length, 0);
+				bytesSent = m_remoteAddress.sin_len == 0? lwip_send(m_socket, buffer, length, 0) :
+                                                          lwip_sendto(m_socket, buffer, length, 0, (sockaddr*)&m_remoteAddress, sizeof(m_remoteAddress));
 			}
 			if (length > 0)
 				m_connected = (bytesSent > 0);
@@ -434,7 +436,7 @@ namespace fdv
 		
 		// str can stay in RAM of Flash
 		// ret -1 = error, ret 0 = disconnected
-		int32_t write(char const* str)
+		int32_t MTD_FLASHMEM write(char const* str)
 		{
 			return write((uint8_t const*)str, f_strlen(str));
 		}
@@ -481,13 +483,69 @@ namespace fdv
 			int32_t one = (int32_t)value;
 			lwip_setsockopt(m_socket, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
 		}
+        
+        int MTD_FLASHMEM getSocket()
+        {
+            return m_socket;
+        }
+        
+        // from now Socket will use "sendto" instead of "send"
+        void MTD_FLASHMEM setRemoteAddress(char const* remoteAddress, uint16_t remotePort)
+        {
+            memset(&m_remoteAddress, 0, sizeof(sockaddr_in));
+            m_remoteAddress.sin_family      = AF_INET;
+            m_remoteAddress.sin_len         = sizeof(sockaddr_in);
+            m_remoteAddress.sin_addr.s_addr = ipaddr_addr(APtr<char>(f_strdup(remoteAddress)).get());
+            m_remoteAddress.sin_port        = htons(remotePort);
+        }
+        
+        // timeOut in ms (0 = no timeout)
+        void MTD_FLASHMEM setTimeOut(uint32_t timeOut)
+        {
+            lwip_setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, (void *)&timeOut, sizeof(timeOut));
+        }
+        
 
     private:
-        int  m_socket;
-        bool m_connected;
+        int         m_socket;
+        bool        m_connected;
+        sockaddr_in m_remoteAddress;    // used by sendTo
     };
 	
 
+    
+	//////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+	// UDPClient
+    
+    class UDPClient
+    {
+    public:
+        UDPClient(char const* remoteAddress, uint16_t remotePort)
+        {
+            init(remoteAddress, remotePort);
+        }
+        
+        ~UDPClient()
+        {
+            m_socket.close();
+        }
+        
+        Socket* MTD_FLASHMEM getSocket()
+        {
+            return &m_socket;
+        }        
+        
+    private:
+        void MTD_FLASHMEM init(char const* remoteAddress, uint16_t remotePort);        
+        static uint16_t MTD_FLASHMEM getUDPPort();
+        
+    private:
+        Socket m_socket;        
+    };
+    
+    
+    
 	//////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////
 	// TCPServer
@@ -499,11 +557,9 @@ namespace fdv
 		static uint32_t const ACCEPTWAITTIMEOUTMS = 20000;
 		static uint32_t const SOCKETQUEUESIZE     = 1;	// can queue only one socket (nothing to do with working threads)
 		
-	public:
-		
-		TCPServer(uint16_t port)
-			: m_socketQueue(SOCKETQUEUESIZE)
-		{
+        
+        void MTD_FLASHMEM init(uint16_t port)
+        {
 			m_socket = lwip_socket(PF_INET, SOCK_STREAM, 0);
 			sockaddr_in sLocalAddr = {0};
 			sLocalAddr.sin_family = AF_INET;
@@ -525,6 +581,14 @@ namespace fdv
 				m_threads[i].setSocketQueue(&m_socketQueue);
 				m_threads[i].resume();
 			}
+        }
+        
+	public:
+		
+		TCPServer(uint16_t port)
+			: m_socketQueue(SOCKETQUEUESIZE)
+		{
+            init(port);
 		}
 		
 		virtual ~TCPServer()
@@ -575,7 +639,7 @@ namespace fdv
 			m_socketQueue = socketQueue;
 		}
         
-        Socket* getSocket()
+        Socket* MTD_FLASHMEM getSocket()
         {
             return &m_socket;
         }
@@ -746,7 +810,7 @@ namespace fdv
 		}
 
 		
-		CharChunksIterator extractURLEncodedFields(CharChunksIterator begin, CharChunksIterator end, Fields* fields)
+		CharChunksIterator MTD_FLASHMEM extractURLEncodedFields(CharChunksIterator begin, CharChunksIterator end, Fields* fields)
 		{
 			fields->setUrlDecode(true);
 			CharChunksIterator curc = begin;
@@ -780,7 +844,7 @@ namespace fdv
 		}
 		
 
-		CharChunksIterator extractHeaders(CharChunksIterator begin, CharChunksIterator end, Fields* fields)
+		CharChunksIterator MTD_FLASHMEM extractHeaders(CharChunksIterator begin, CharChunksIterator end, Fields* fields)
 		{		
 			CharChunksIterator curc = begin;
 			CharChunksIterator key;
@@ -1082,7 +1146,7 @@ namespace fdv
 		{			
 		}
 		
-		void setFilename(char const* filename)
+		void MTD_FLASHMEM setFilename(char const* filename)
 		{
 			m_filename = filename;
 		}
@@ -1186,6 +1250,27 @@ namespace fdv
 
 
 
+    ////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////
+    // SNTPClient
+    // Gets current date/time from a NTP (SNTP) server (default is ntp1.inrim.it).
+
+    class SNTPClient
+    {
+
+    public:
+
+        // serverIP = NULL then IP is 193.204.114.232 (ntp1.inrim.it)
+        explicit SNTPClient(char const* serverIP = NULL, uint16_t port = 123);
+
+        bool MTD_FLASHMEM query(uint64_t* outValue) const;
+
+
+    private:
+
+        char const* m_server;
+        uint16_t    m_port;
+      };
 
 
 	

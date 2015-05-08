@@ -38,13 +38,13 @@ namespace fdv
 
 	void FUNC_FLASHMEM DisableWatchDog()
 	{
-		//ets_wdt_disable();
+		ets_wdt_disable();
 	}
 	
 	
 	void FUNC_FLASHMEM EnableWatchDog()
 	{
-		//ets_wdt_enable();
+		ets_wdt_enable();
 	}
 	
 	

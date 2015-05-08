@@ -169,11 +169,11 @@ public:
 			: next(NULL), key(KeyIterator()), keyEnd(KeyIterator()), value(ValueIterator()), valueEnd(ValueIterator())
 		{
 		}
-		bool operator==(Item const& rhs)
+		bool MTD_FLASHMEM operator==(Item const& rhs)
 		{
 			return next == rhs.next && key == rhs.key && keyEnd == rhs.keyEnd && value == rhs.value && valueEnd == rhs.valueEnd;
 		}
-		bool operator!=(Item const& rhs)
+		bool MTD_FLASHMEM operator!=(Item const& rhs)
 		{
 			return !(*this == rhs);
 		}
@@ -288,7 +288,7 @@ public:
 	}
 	
 	// debug
-	void dump()
+	void MTD_FLASHMEM dump()
 	{
 		for (uint32_t i = 0; i != m_itemsCount; ++i)
 		{
@@ -333,11 +333,11 @@ struct ObjectDict
 			: next(NULL), key(NULL), keyEnd(NULL), value(T())
 		{
 		}
-		bool operator==(Item const& rhs)
+		bool MTD_FLASHMEM operator==(Item const& rhs)
 		{
 			return next == rhs.next && key == rhs.key && keyEnd == rhs.keyEnd && value == rhs.value;
 		}
-		bool operator!=(Item const& rhs)
+		bool MTD_FLASHMEM operator!=(Item const& rhs)
 		{
 			return !(*this == rhs);
 		}
@@ -353,7 +353,7 @@ struct ObjectDict
 		clear();
 	}
 	
-	void clear()
+	void TMTD_FLASHMEM clear()
 	{
 		Item* item = m_items;
 		while (item)
@@ -366,7 +366,7 @@ struct ObjectDict
 		m_itemsCount = 0;
 	}
 	
-	void add(char const* key, char const* keyEnd, T value)
+	void TMTD_FLASHMEM add(char const* key, char const* keyEnd, T value)
 	{
 		if (m_items)
 		{
@@ -381,13 +381,13 @@ struct ObjectDict
 	}
 	
 	// add zero terminated string
-	void add(char const* key, T value)
+	void TMTD_FLASHMEM add(char const* key, T value)
 	{
 		add(key, key + f_strlen(key), value);
 	}
 	
 	// add all items of source (shallow copy for keys, value copy for values)
-	void add(ObjectDict<T>* source)
+	void TMTD_FLASHMEM add(ObjectDict<T>* source)
 	{
 		Item* srcItem = source->m_items;
 		while (srcItem)
@@ -398,20 +398,20 @@ struct ObjectDict
 	}
 	
 	// add an empty item, returning pointer to the created object value
-	T* add(char const* key)
+	T* TMTD_FLASHMEM add(char const* key)
 	{
 		T value;
 		add(key, value);
 		return &(getItem(key)->value);
 	}
 	
-	uint32_t getItemsCount()
+	uint32_t TMTD_FLASHMEM getItemsCount()
 	{
 		return m_itemsCount;
 	}
 	
 	// warn: this doesn't check "index" range!
-	Item* getItem(uint32_t index)
+	Item* TMTD_FLASHMEM getItem(uint32_t index)
 	{
 		Item* item = m_items;
 		for (; index > 0; --index)
@@ -420,7 +420,7 @@ struct ObjectDict
 	}
 
 	// key stay in RAM or Flash
-	Item* getItem(char const* key, char const* keyEnd)
+	Item* TMTD_FLASHMEM getItem(char const* key, char const* keyEnd)
 	{
 		Item* item = m_items;
 		while (item)
@@ -433,24 +433,24 @@ struct ObjectDict
 	}
 	
 	// key stay in RAM or Flash
-	Item* getItem(char const* key)
+	Item* TMTD_FLASHMEM getItem(char const* key)
 	{
 		return getItem(key, key + f_strlen(key));
 	}
 	
 	// warn: this doesn't check "index" range!
-	Item* operator[](uint32_t index)
+	Item* TMTD_FLASHMEM operator[](uint32_t index)
 	{
 		return getItem(index);
 	}
 		
 	// key can stay in RAM or Flash and must terminate with zero
-	Item* operator[](char const* key)
+	Item* TMTD_FLASHMEM operator[](char const* key)
 	{
 		return getItem(key);
 	}
 	
-	void dump()
+	void TMTD_FLASHMEM dump()
 	{
 		Item* item = m_items;
 		while (item)

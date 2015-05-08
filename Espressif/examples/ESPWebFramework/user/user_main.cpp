@@ -27,6 +27,7 @@ using namespace fdv;
 
 struct MyHTTPHandler : public HTTPHandler
 {
+    
 	MyHTTPHandler()
 	{
 		static const Route routes[] =
@@ -109,9 +110,39 @@ struct MyHTTPHandler : public HTTPHandler
 };
 
 
+/*
+#if (FDV_INCLUDE_SERIALBINARY == 1)
+void testfunc()
+{
+	SerialBinary* sb = ConfigurationManager::getSerialBinary();	
+	while (true)
+	{
+        if (sb)
+        {
+            if (!sb->isReady() && sb->checkReady())
+            {
+                sb->send_CMD_IOCONF(13, SerialBinary::PIN_CONF_OUTPUT);
+            }
+            if (sb->isReady())
+            {
+                sb->send_CMD_IOSET(13, true);
+                //Task::delay(10);
+                sb->send_CMD_IOSET(13, false);
+                //Task::delay(10);
+            }
+        }
+	}
+}
+#endif
+*/
+
+
 extern "C" void FUNC_FLASHMEM user_init(void) 
 {
 	DisableWatchDog();				
 	ConfigurationManager::applyAll< TCPServer<MyHTTPHandler, 2, 512> >();
+    /*#if (FDV_INCLUDE_SERIALBINARY == 1)
+	asyncExec<testfunc>();
+    #endif*/
 }
 

@@ -47,7 +47,7 @@ namespace fdv
 // If str or substr is in RAM or Flash use CharIterator
 // If str or substr is in Chunk use ChunkBuffer<...>::Iterator
 template <typename IteratorSTR, typename IteratorSUBSTR>
-IteratorSTR t_strstr(IteratorSTR str, IteratorSUBSTR substr)
+IteratorSTR TMTD_FLASHMEM t_strstr(IteratorSTR str, IteratorSUBSTR substr)
 {
 	IteratorSTR string(str);
 	IteratorSUBSTR b(substr);
@@ -78,7 +78,7 @@ IteratorSTR t_strstr(IteratorSTR str, IteratorSUBSTR substr)
 // If str or substr is in RAM or Flash use CharIterator
 // If str or substr is in Chunk use ChunkBuffer<...>::Iterator
 template <typename IteratorSTR, typename IteratorSUBSTR>
-IteratorSTR t_strstr(IteratorSTR str, IteratorSTR strEnd, IteratorSUBSTR substr)
+IteratorSTR TMTD_FLASHMEM t_strstr(IteratorSTR str, IteratorSTR strEnd, IteratorSUBSTR substr)
 {
 	IteratorSUBSTR b(substr);
 	if (*b == 0)
@@ -107,7 +107,7 @@ IteratorSTR t_strstr(IteratorSTR str, IteratorSTR strEnd, IteratorSUBSTR substr)
 // If s1 or s2 is in RAM or Flash use CharIterator
 // If s1 or s2 is in Chunk use ChunkBuffer<...>::Iterator
 template <typename IteratorS1, typename IteratorS2>
-int32 t_strcmp(IteratorS1 s1, IteratorS2 s2)
+int32 TMTD_FLASHMEM t_strcmp(IteratorS1 s1, IteratorS2 s2)
 {
 	while(*s1 && (*s1 == *s2))
 		++s1, ++s2;
@@ -119,7 +119,7 @@ int32 t_strcmp(IteratorS1 s1, IteratorS2 s2)
 /////////////////////////////////////////////////////////////////////////
 // t_compare
 template <typename IteratorS1, typename IteratorS2>
-bool t_compare(IteratorS1 s1, IteratorS1 s1End, IteratorS2 s2, IteratorS2 s2End)
+bool TMTD_FLASHMEM t_compare(IteratorS1 s1, IteratorS1 s1End, IteratorS2 s2, IteratorS2 s2End)
 {
 	while(s1 != s1End && s2 != s2End && *s1 == *s2)
 		++s1, ++s2;
@@ -128,7 +128,7 @@ bool t_compare(IteratorS1 s1, IteratorS1 s1End, IteratorS2 s2, IteratorS2 s2End)
 
 // s1 must be zero terminated
 template <typename IteratorS1, typename IteratorS2>
-bool t_compare(IteratorS1 s1, IteratorS2 s2, IteratorS2 s2End)
+bool TMTD_FLASHMEM t_compare(IteratorS1 s1, IteratorS2 s2, IteratorS2 s2End)
 {
 	while(*s1 && s2 != s2End && *s1 == *s2)
 		++s1, ++s2;
@@ -142,7 +142,7 @@ bool t_compare(IteratorS1 s1, IteratorS2 s2, IteratorS2 s2End)
 // If s1 or s2 is in RAM or Flash use CharIterator
 // If s1 or s2 is in Chunk use ChunkBuffer<...>::Iterator
 template <typename IteratorS1, typename IteratorS2>
-int32 t_memcmp(IteratorS1 s1, IteratorS2 s2, uint32_t length)
+int32 TMTD_FLASHMEM t_memcmp(IteratorS1 s1, IteratorS2 s2, uint32_t length)
 {
 	while(length--)
 	{
@@ -160,7 +160,7 @@ int32 t_memcmp(IteratorS1 s1, IteratorS2 s2, uint32_t length)
 // If source is in RAM or Flash use CharIterator
 // If source is in Chunk use ChunkBuffer<...>::Iterator
 template <typename Iterator>
-char* t_strcpy(char* destination, Iterator source)
+char* TMTD_FLASHMEM t_strcpy(char* destination, Iterator source)
 {
 	char* dest = destination;
 	while (*dest++ = *source++);
@@ -174,7 +174,7 @@ char* t_strcpy(char* destination, Iterator source)
 // If source is in RAM or Flash use ByteIterator
 // If source is in Chunk use ChunkBuffer<...>::Iterator
 template <typename Iterator>
-void* t_memcpy(void* destination, Iterator source, uint32_t length)
+void* TMTD_FLASHMEM t_memcpy(void* destination, Iterator source, uint32_t length)
 {
 	uint8_t* dest = (uint8_t*)destination;
 	while(length--)
@@ -189,7 +189,7 @@ void* t_memcpy(void* destination, Iterator source, uint32_t length)
 // If str is in RAM or Flash use CharIterator
 // If str is in Chunk use ChunkBuffer<...>::Iterator
 template <typename Iterator>
-uint32_t t_strlen(Iterator str)
+uint32_t TMTD_FLASHMEM t_strlen(Iterator str)
 {
 	uint32_t len = 0;
 	for (; *str; ++str, ++len);
@@ -203,7 +203,7 @@ uint32_t t_strlen(Iterator str)
 // If str is in RAM or Flash use CharIterator
 // If str is in Chunk use ChunkBuffer<...>::Iterator
 template <typename Iterator>
-uint32_t t_strnlen(Iterator str, uint32_t maxlen)
+uint32_t TMTD_FLASHMEM t_strnlen(Iterator str, uint32_t maxlen)
 {
 	uint32_t len = 0;
 	for (; len != maxlen && *str; ++str, ++len);
@@ -218,14 +218,14 @@ uint32_t t_strnlen(Iterator str, uint32_t maxlen)
 // If source is in Chunk use ChunkBuffer<...>::Iterator
 // use delete[] to free memory
 template <typename Iterator>
-char* t_strdup(Iterator source)
+char* TMTD_FLASHMEM t_strdup(Iterator source)
 {
 	return t_strcpy(new char[t_strlen(source) + 1], source);
 }
 
 // adds automatically ending zero
 template <typename Iterator>
-char* t_strdup(Iterator sourceStart, Iterator sourceEnd)
+char* TMTD_FLASHMEM t_strdup(Iterator sourceStart, Iterator sourceEnd)
 {
 	uint32_t len = sourceEnd - sourceStart;
 	char* str = new char[len + 1];
@@ -243,7 +243,7 @@ char* t_strdup(Iterator sourceStart, Iterator sourceEnd)
 // If source is in Chunk use ChunkBuffer<...>::Iterator
 // use delete[] to free memory
 template <typename Iterator>
-void* t_memdup(Iterator source, uint32_t length)
+void* TMTD_FLASHMEM t_memdup(Iterator source, uint32_t length)
 {
 	return t_memcpy(new uint8_t[length], source, length);
 }
@@ -253,7 +253,7 @@ void* t_memdup(Iterator source, uint32_t length)
 /////////////////////////////////////////////////////////////////////////
 // t_strtol
 template <typename Iterator>
-int32_t t_strtol(Iterator str, int32_t base)
+int32_t TMTD_FLASHMEM t_strtol(Iterator str, int32_t base)
 {
 	APtr<char> tempbuf(t_strdup(str));
 	return strtol(tempbuf.get(), NULL, base);
@@ -281,7 +281,7 @@ int32_t t_strtol(Iterator str, int32_t base)
 ///////////////////////////////////////////////////////////////////////////////////////
 // f_strlen
 // str can be stored in Flash or/and in RAM
-inline uint32_t f_strlen(char const* str)
+inline uint32_t TMTD_FLASHMEM f_strlen(char const* str)
 {
 	return t_strlen(CharIterator(str));
 }
@@ -291,7 +291,7 @@ inline uint32_t f_strlen(char const* str)
 ///////////////////////////////////////////////////////////////////////////////////////
 // f_strnlen
 // str can be stored in Flash or/and in RAM
-inline uint32_t f_strnlen(char const* str, uint32_t maxlen)
+inline uint32_t TMTD_FLASHMEM f_strnlen(char const* str, uint32_t maxlen)
 {
 	return t_strnlen(CharIterator(str), maxlen);
 }
@@ -301,7 +301,7 @@ inline uint32_t f_strnlen(char const* str, uint32_t maxlen)
 ///////////////////////////////////////////////////////////////////////////////////////
 // f_strcpy
 // source can be stored in Flash or/and in RAM
-inline char* f_strcpy(char* destination, char const* source)
+inline char* TMTD_FLASHMEM f_strcpy(char* destination, char const* source)
 {
 	return t_strcpy(destination, CharIterator(source));
 }
@@ -312,13 +312,13 @@ inline char* f_strcpy(char* destination, char const* source)
 // f_strdup
 // use delete[] to free memory
 // str can be stored in Flash or/and in RAM
-inline char* f_strdup(char const* str)
+inline char* TMTD_FLASHMEM f_strdup(char const* str)
 {
 	return t_strdup(CharIterator(str));
 }
 
 // adds automatically ending zero
-inline char* f_strdup(char const* sourceStart, char const* sourceEnd)
+inline char* TMTD_FLASHMEM f_strdup(char const* sourceStart, char const* sourceEnd)
 {
 	return t_strdup(CharIterator(sourceStart), CharIterator(sourceEnd));
 }
@@ -329,7 +329,7 @@ inline char* f_strdup(char const* sourceStart, char const* sourceEnd)
 // f_memdup
 // use delete[] to free memory
 // str can be stored in Flash or/and in RAM
-inline void* f_memdup(void const* buffer, uint32_t length)
+inline void* TMTD_FLASHMEM f_memdup(void const* buffer, uint32_t length)
 {
 	return t_memdup(ByteIterator((uint8_t const*)buffer), length);
 }
@@ -339,7 +339,7 @@ inline void* f_memdup(void const* buffer, uint32_t length)
 ///////////////////////////////////////////////////////////////////////////////////////
 // f_strcmp
 // both s1 and s2 can be stored in Flash or/and in RAM
-inline int32_t f_strcmp(char const* s1, char const* s2)
+inline int32_t TMTD_FLASHMEM f_strcmp(char const* s1, char const* s2)
 {
 	return t_strcmp(CharIterator(s1), CharIterator(s2));
 }
@@ -349,7 +349,7 @@ inline int32_t f_strcmp(char const* s1, char const* s2)
 ///////////////////////////////////////////////////////////////////////////////////////
 // f_memcmp
 // both s1 and s2 can be stored in Flash or/and in RAM
-inline int32_t f_memcmp(void const* s1, void const* s2, uint32_t length)
+inline int32_t TMTD_FLASHMEM f_memcmp(void const* s1, void const* s2, uint32_t length)
 {
 	return t_memcmp(ByteIterator((uint8_t const*)s1), ByteIterator((uint8_t const*)s2), length);
 }
@@ -359,7 +359,7 @@ inline int32_t f_memcmp(void const* s1, void const* s2, uint32_t length)
 ///////////////////////////////////////////////////////////////////////////////////////
 // f_memcpy
 // source can be stored in Flash or/and in RAM
-inline void* f_memcpy(void* destination, void const* source, uint32_t length)
+inline void* TMTD_FLASHMEM f_memcpy(void* destination, void const* source, uint32_t length)
 {
 	return t_memcpy(destination, ByteIterator((uint8_t const*)source), length);
 }
@@ -369,12 +369,12 @@ inline void* f_memcpy(void* destination, void const* source, uint32_t length)
 ///////////////////////////////////////////////////////////////////////////////////////
 // f_strstr
 // both str and substr can be stored in Flash or/and RAM
-inline char const* f_strstr(char const* str, char const* substr)
+inline char const* TMTD_FLASHMEM f_strstr(char const* str, char const* substr)
 {
 	return t_strstr(CharIterator(str), CharIterator(substr)).get();
 }
 
-inline char const* f_strstr(char const* str, char const* strEnd, char const* substr)
+inline char const* TMTD_FLASHMEM f_strstr(char const* str, char const* strEnd, char const* substr)
 {
 	return t_strstr(CharIterator(str), CharIterator(strEnd), CharIterator(substr)).get();
 }
@@ -383,7 +383,7 @@ inline char const* f_strstr(char const* str, char const* strEnd, char const* sub
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 // isspace
-inline bool isspace(char c)
+inline bool TMTD_FLASHMEM isspace(char c)
 {
 	return (c == ' ' || c == '\t' || c == '\n' || c == '\v' || c == '\f' || c == '\r');
 }
@@ -392,7 +392,7 @@ inline bool isspace(char c)
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 // isalpha
-inline bool isalpha(char c)
+inline bool TMTD_FLASHMEM isalpha(char c)
 {
 	return ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'));
 }
@@ -401,7 +401,7 @@ inline bool isalpha(char c)
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 // isdigit
-inline bool isdigit(char c)
+inline bool TMTD_FLASHMEM isdigit(char c)
 {
     return (c >= '0' && c <= '9');
 }
@@ -410,7 +410,7 @@ inline bool isdigit(char c)
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 // isxdigit
-inline bool isxdigit(char c)
+inline bool TMTD_FLASHMEM isxdigit(char c)
 {
     return isdigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
 }
@@ -419,7 +419,7 @@ inline bool isxdigit(char c)
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 // isupper
-inline bool isupper(char c)
+inline bool TMTD_FLASHMEM isupper(char c)
 {
     return c >= 'A' && c <= 'Z';
 }
@@ -428,7 +428,7 @@ inline bool isupper(char c)
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 // islower
-inline bool islower(char c)
+inline bool TMTD_FLASHMEM islower(char c)
 {
     return c >= 'a' && c <= 'z';
 }
@@ -438,7 +438,7 @@ inline bool islower(char c)
 /////////////////////////////////////////////////////////////////////////
 // hexDigitToInt
 // assume x is a valid hex digit
-inline uint32_t hexDigitToInt(char x)
+inline uint32_t TMTD_FLASHMEM hexDigitToInt(char x)
 {
     return isdigit(x)? x - '0' : (islower(x)? x - 'a' + 10 : x - 'A' + 10);
 }

@@ -66,7 +66,7 @@ struct Str
 		: m_buffer(buffer), m_length(0)
 	{
 	}
-	char* operator++(int)
+	char* MTD_FLASHMEM operator++(int)
 	{
 		if (m_buffer)
 			return &m_buffer[m_length++];
@@ -76,7 +76,7 @@ struct Str
 			return &m_dummyChar;
 		}
 	}
-	char& operator=(char const c)
+	char& MTD_FLASHMEM operator=(char const c)
 	{
 		if (m_buffer)
 		{
@@ -86,14 +86,14 @@ struct Str
 		else
 			return m_dummyChar;
 	}
-	char& operator*()
+	char& MTD_FLASHMEM operator*()
 	{
 		if (m_buffer)
 			return m_buffer[m_length];
 		else
 			return m_dummyChar;
 	}
-	uint16_t getLength()
+	uint16_t MTD_FLASHMEM getLength()
 	{
 		return m_length;
 	}

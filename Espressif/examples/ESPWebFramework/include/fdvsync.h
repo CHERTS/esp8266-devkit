@@ -83,23 +83,23 @@ namespace fdv
 				vSemaphoreDelete(m_handle);
 			}
 			
-			bool lock(uint32_t msTimeOut = portMAX_DELAY)
+			bool MTD_FLASHMEM lock(uint32_t msTimeOut = portMAX_DELAY)
 			{
 				return xSemaphoreTake(m_handle, msTimeOut / portTICK_RATE_MS);
 			}
 			
-			bool lockFromISR()
+			bool MTD_FLASHMEM lockFromISR()
 			{
 				signed portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
 				return xSemaphoreTakeFromISR(m_handle, &xHigherPriorityTaskWoken);
 			}
 			
-			void unlock()
+			void MTD_FLASHMEM unlock()
 			{
 				xSemaphoreGive(m_handle);
 			}
 			
-			void unlockFromISR()
+			void MTD_FLASHMEM unlockFromISR()
 			{
 				signed portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
 				xSemaphoreGiveFromISR(m_handle, &xHigherPriorityTaskWoken);				
@@ -130,7 +130,7 @@ namespace fdv
 					m_mutex->unlock();
 			}
 			
-			operator bool()
+			MTD_FLASHMEM operator bool()
 			{
 				return m_acquired;
 			}
@@ -156,7 +156,7 @@ namespace fdv
 					m_mutex->unlockFromISR();
 			}
 			
-			operator bool()
+			MTD_FLASHMEM operator bool()
 			{
 				return m_acquired;
 			}
@@ -181,37 +181,37 @@ namespace fdv
 		{
 		}
 		
-		operator const T() const
+		TMTD_FLASHMEM operator const T() const
 		{
 			MutexLock lock(&m_mutex);
 			return m_value;
 		}
 		
-		void operator =(T const& value)
+		void TMTD_FLASHMEM operator =(T const& value)
 		{
 			MutexLock lock(&m_mutex);
 			m_value = value;
 		}
 		
-		const T operator++()
+		const T TMTD_FLASHMEM operator++()
 		{
 			MutexLock lock(&m_mutex);
 			return ++m_value;
 		}
 		
-		const T operator++(int)
+		const T TMTD_FLASHMEM operator++(int)
 		{
 			MutexLock lock(&m_mutex);
 			return m_value++;
 		}
 			
-		const T operator--()
+		const T TMTD_FLASHMEM operator--()
 		{
 			MutexLock lock(&m_mutex);
 			return --m_value;
 		}
 		
-		const T operator--(int)
+		const T TMTD_FLASHMEM operator--(int)
 		{
 			MutexLock lock(&m_mutex);
 			return m_value--;
@@ -238,7 +238,7 @@ namespace fdv
 		}
 		
 		// decrements counter. Wait if no resource are available.
-		bool get(uint32_t msTimeOut = portMAX_DELAY)
+		bool MTD_FLASHMEM get(uint32_t msTimeOut = portMAX_DELAY)
 		{
 			if (m_gate.lock(msTimeOut))
 			{
@@ -253,7 +253,7 @@ namespace fdv
 		}
 		
 		// increments counter
-		void release()
+		void MTD_FLASHMEM release()
 		{
 			m_mutex.lock();
 			++m_resources;
@@ -289,12 +289,12 @@ namespace fdv
 			{
 			}
 
-			operator bool()
+			MTD_FLASHMEM operator bool()
 			{
 				return millisDiff(m_startTime, millis()) > m_timeOut;
 			}
 			
-			void reset(uint32_t time)
+			void MTD_FLASHMEM reset(uint32_t time)
 			{
 				m_timeOut   = time;
 				m_startTime = millis();				
@@ -335,45 +335,45 @@ namespace fdv
 				vQueueDelete(m_handle);
 			}
 			
-			bool send(T& item, uint32_t msTimeOut = portMAX_DELAY)
+			bool TMTD_FLASHMEM send(T& item, uint32_t msTimeOut = portMAX_DELAY)
 			{
 				return xQueueSend(m_handle, &item, msTimeOut / portTICK_RATE_MS);
 			}
 			
-			bool send(uint32_t msTimeOut = portMAX_DELAY)
+			bool TMTD_FLASHMEM send(uint32_t msTimeOut = portMAX_DELAY)
 			{
 				T dummyItem;
 				return send(dummyItem, msTimeOut);
 			}
 
-			bool sendFromISR(T& item)
+			bool TMTD_FLASHMEM sendFromISR(T& item)
 			{
 				signed portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
 				return xQueueSendFromISR(m_handle, &item, &xHigherPriorityTaskWoken);
 			}
 			
-			bool receive(T* item, uint32_t msTimeOut = portMAX_DELAY)
+			bool TMTD_FLASHMEM receive(T* item, uint32_t msTimeOut = portMAX_DELAY)
 			{
 				return xQueueReceive(m_handle, item, msTimeOut / portTICK_RATE_MS);
 			}
 			
-			bool receive(uint32_t msTimeOut = portMAX_DELAY)
+			bool TMTD_FLASHMEM receive(uint32_t msTimeOut = portMAX_DELAY)
 			{
 				T dummyItem;
 				return receive(&dummyItem, msTimeOut);
 			}
 			
-			bool peek(T* item, uint32_t msTimeOut = portMAX_DELAY)
+			bool TMTD_FLASHMEM peek(T* item, uint32_t msTimeOut = portMAX_DELAY)
 			{
 				return xQueuePeek(m_handle, item, msTimeOut / portTICK_RATE_MS);
 			}			
 			
-			void clear()
+			void TMTD_FLASHMEM clear()
 			{
 				xQueueReset(m_handle);
 			}
 			
-			uint32_t available()
+			uint32_t TMTD_FLASHMEM available()
 			{
 				return uxQueueMessagesWaiting(m_handle);
 			}

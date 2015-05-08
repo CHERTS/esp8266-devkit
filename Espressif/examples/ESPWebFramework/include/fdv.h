@@ -51,6 +51,9 @@ extern "C"
 // used for methods
 #define MTD_FLASHMEM __attribute__((section(".irom1.text")))
 
+// used for template methods
+#define TMTD_FLASHMEM __attribute__((section(".irom4.text")))
+
 // used for static methods
 #define STC_FLASHMEM __attribute__((section(".irom3.text")))
 
@@ -67,6 +70,7 @@ extern "C"
 #include "fdvgpio.h"
 #include "fdvserial.h"
 #include "fdvnetwork.h"
+#include "fdvdatetime.h"
 #include "fdvserialserv.h"
 #include "fdvconfmanager.h"
 
