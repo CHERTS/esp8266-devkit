@@ -208,7 +208,7 @@ echo "Buidling Newlib"
 cd $XTDLP/esp-newlib/build
 if [ $RECONF -gt 0 -o ! -f .configured ]; then
   rm -f .configured
-  ../configure  --prefix=$XTTC --target=$TARGET --enable-multilib --with-gnu-as --with-gnu-ld --disable-nls
+  ../configure  --prefix=$XTTC --target=$TARGET --enable-multilib --with-gnu-as --with-gnu-ld --disable-nls --disable-newlib-io-c99-formats --disable-newlib-io-long-long --disable-newlib-io-float --disable-newlib-io-long-double --disable-newlib-supplied-syscalls --enable-target-optspace
   touch .configured
 fi
 if [ $REBUILD -gt 0 -o ! -f .built ]; then
