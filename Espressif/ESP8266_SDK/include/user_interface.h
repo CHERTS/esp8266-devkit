@@ -249,7 +249,7 @@ bool wifi_softap_dhcps_start(void);
 bool wifi_softap_dhcps_stop(void);
 bool wifi_softap_set_dhcps_lease(struct dhcps_lease *please);
 enum dhcp_status wifi_softap_dhcps_status(void);
-bool wifi_softap_dhcps_set_offer_option(uint8 level, void* optarg);
+bool wifi_softap_set_dhcps_offer_option(uint8 level, void* optarg);
 
 #define STATION_IF      0x00
 #define SOFTAP_IF       0x01
