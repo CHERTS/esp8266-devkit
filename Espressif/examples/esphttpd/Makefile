@@ -22,7 +22,7 @@ SDK_EXTRA_LIBS ?= c:/Espressif/ESP8266_SDK/lib
 
 # esptool path and port
 ESPTOOL		?=$(SDK_TOOLS)/esptool.exe
-ESPPORT		?=COM3
+ESPPORT		?=COM2
 ESPBAUD		?= 115200
 # old - use c:/Espressif/utils/esptool.exe util
 # new - use c:/Espressif/utils/esptool-ck.exe util
