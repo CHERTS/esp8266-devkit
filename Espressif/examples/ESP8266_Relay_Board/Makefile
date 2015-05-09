@@ -237,7 +237,7 @@ $1/%.o: %.c
 	$(Q) $(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS)  -c $$< -o $$@
 endef
 
-.PHONY: all checkdirs clean
+.PHONY: all checkdirs clean flash flashinit flashonefile rebuild
 
 all: checkdirs $(TARGET_OUT)
 

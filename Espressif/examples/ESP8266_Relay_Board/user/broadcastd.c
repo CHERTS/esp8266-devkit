@@ -84,7 +84,7 @@ static ICACHE_FLASH_ATTR void MQTTbroadcastReading(void* arg){
 		}
 		
 		if(sysCfg.sensor_ds18b20_enable) {
-			struct sensor_reading* result = read_ds18b20(0);
+			struct sensor_reading* result = read_ds18b20();
 			if(result->success) {
 				char temp[32];
 				char topic[128];
