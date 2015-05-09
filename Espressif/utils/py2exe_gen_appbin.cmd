@@ -2,8 +2,8 @@
 
 title Build program...
 @set curdir=%cd%
-@set pythondir="C:\Python27"
-@set prgname="gen_appbin"
+@set pythondir=C:\Python27
+@set prgname=gen_appbin
 
 if exist %pythondir% (
   if not exist "%pythondir%\Scripts\pip.exe" (
@@ -29,8 +29,13 @@ if exist %pythondir% (
         pip install argparse
       )
       if not exist "%pythondir%\Lib\site-packages\py2exe\__init__.py" (
-        echo Installing py2exe...
-        pip.exe install py2exe
+        echo Downloading py2exe for Python 2.7...
+	"%curdir%\wget.exe" "http://kent.dl.sourceforge.net/project/py2exe/py2exe/0.6.9/py2exe-0.6.9.win32-py2.7.exe" -O "%curdir%\py2exe-0.6.9.win32-py2.7.exe"
+	if exist "%curdir%\py2exe-0.6.9.win32-py2.7.exe" (
+	        echo Installing py2exe...
+		"%curdir%\py2exe-0.6.9.win32-py2.7.exe"
+	)
+        rem pip.exe install py2exe
       )
       cd ..
     ) else (

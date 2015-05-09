@@ -7,7 +7,9 @@ v2.0.4 (09.05.2015):
   Changed build option newlib, resulting in increased amount of free firmware IRAM.
   In the example "examples\nodemcu-firmware\" on the old compiler Free IRam was 810 Byte, the new compiler Free IRam was 2986 bytes.
 * Update a utility "utils\esptool-ck.exe" to version 0.4.3;
+* Update a utility "utils\esptool.exe";
 * Updated library "libnet80211.a" and header file "user_interface.h" from Espressif SDK 1.0.1;
+* Update RTOS SDK, directory "ESP8266_RTOS_SDK";
 * Updated documentation:
   - Delete files:
     ESP8266_IOT_Flash_read_write_guide_v0.2.pdf
