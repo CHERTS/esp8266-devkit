@@ -21,7 +21,7 @@ LOCAL double scale_inc = 0.01;
 
 LOCAL uint16_t count = 0;
 
-static void test(void)
+LOCAL void ICACHE_FLASH_ATTR  test(void)
 {
 	char time[10];
 	uint8_t size = 2;
@@ -51,7 +51,7 @@ LOCAL void ICACHE_FLASH_ATTR sendMsgToHandler(void *arg)
 	system_os_post(USER_TASK_PRIO_0, RUN_TEST, 'a');
 }
 
-void handler_task (os_event_t *e)
+LOCAL void ICACHE_FLASH_ATTR handler_task (os_event_t *e)
 {
 	switch (e->sig)
 	{
