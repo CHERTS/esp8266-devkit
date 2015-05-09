@@ -24,6 +24,10 @@ v2.0.4 (09.05.2015):
   ESPWebFramework;
   esp_mqtt;
   nodemcu-firmware;
+  esphttpd;
+  ESP8266_Relay_Board;
+  esp8266_ili9341;
+  lwip_lib;
 
 v2.0.3 (27.04.2015):
 + Added new examples:
