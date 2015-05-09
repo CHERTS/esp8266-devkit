@@ -12,6 +12,14 @@ XTENSA_TOOLS_ROOT ?= c:/Espressif/xtensa-lx106-elf/bin
 # base directory of the ESP8266 SDK package, absolute
 SDK_BASE	?= c:/Espressif/ESP8266_SDK_095
 
+FIRMWAREDIR = ..//bin//
+
+SDK_TOOLS	?= c:/Espressif/utils
+ESPTOOL		?= $(SDK_TOOLS)/esptool.exe
+ESPTOOL-CK	?= $(SDK_TOOLS)/esptool-ck.exe
+ESPPORT		?= COM2
+ESPBAUD		?= 115200
+
 # SPI_SPEED = 20MHz, 26.7MHz, 40MHz, 80MHz
 SPI_SPEED?=40
 # SPI_MODE: QIO, QOUT, DIO, DOUT
@@ -89,18 +97,9 @@ CC := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-gcc
 AR := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-ar
 LD := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-gcc
 NM := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-nm
-CPP := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-cpp
-OBJCOPY := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-objcopy
-OBJDUMP := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-objdump
+CPP = $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-cpp
+OBJCOPY = $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-objcopy
 CCFLAGS += -Os -ffunction-sections -fno-jump-tables -fdata-sections
-
-FIRMWAREDIR = ..//bin//
-
-SDK_TOOLS	?= c:/Espressif/utils
-ESPTOOL		?= $(SDK_TOOLS)/esptool.exe
-ESPTOOL-CK	?= $(SDK_TOOLS)/esptool-ck.exe
-ESPPORT		?= COM2
-ESPBAUD		?= 115200
 
 CSRCS ?= $(wildcard *.c)
 ASRCs ?= $(wildcard *.s)
@@ -126,15 +125,6 @@ OIMAGES := $(GEN_IMAGES:%=$(IMAGEODIR)/%)
 
 BINODIR := $(ODIR)/$(TARGET)/$(FLAVOR)/bin
 OBINS := $(GEN_BINS:%=$(BINODIR)/%)
-
-V ?= $(VERBOSE)
-ifeq ("$(V)","1")
-Q :=
-vecho := @true
-else
-Q := @
-vecho := @echo
-endif
 
 CCFLAGS += 			\
 	-g			\
@@ -178,13 +168,6 @@ endef
 $(BINODIR)/%.bin: $(IMAGEODIR)/%.out
 	@mkdir -p $(BINODIR)
 	$(ESPTOOL) elf2image $< -o $(FIRMWAREDIR)
-	$(vecho) "------------------------------------------------------------------------------"
-	$(vecho) "Section info:"
-	$(Q) $(OBJDUMP) -h -j .data -j .rodata -j .bss -j .text -j .irom0.text $<
-	$(vecho) "------------------------------------------------------------------------------"
-	$(vecho) "Section info:"
-	$(Q) $(SDK_TOOLS)/memanalyzer.exe $(OBJDUMP).exe $<
-	$(vecho) "------------------------------------------------------------------------------"
 
 all:	.subdirs $(OBJS) $(OLIBS) $(OIMAGES) $(OBINS) $(SPECIAL_MKTARGETS)
 
