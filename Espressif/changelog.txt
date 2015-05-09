@@ -20,6 +20,10 @@ v2.0.4 (09.05.2015):
     2C-ESP8266__SDK__Programming Guide__EN_v1.0.1.pdf
     4A-ESP8266__AT Instrction Set__EN_v0.23.pdf
     4B-ESP8266__AT Command Examples__EN_v0.4.pdf
+* Updated examples:
+  ESPWebFramework;
+  esp_mqtt;
+  nodemcu-firmware;
 
 v2.0.3 (27.04.2015):
 + Added new examples:

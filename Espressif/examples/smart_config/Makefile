@@ -58,7 +58,7 @@ endif
 
 ifeq ($(SPI_SPEED), 26.7)
     freqdiv = 1
-	flashimageoptions = -ff 26m
+    flashimageoptions = -ff 26m
 else
     ifeq ($(SPI_SPEED), 20)
         freqdiv = 2
@@ -66,28 +66,28 @@ else
     else
         ifeq ($(SPI_SPEED), 80)
             freqdiv = 15
-			flashimageoptions = -ff 80m
+            flashimageoptions = -ff 80m
         else
             freqdiv = 0
-			flashimageoptions = -ff 40m
+            flashimageoptions = -ff 40m
         endif
     endif
 endif
 
 ifeq ($(SPI_MODE), QOUT)
     mode = 1
-	flashimageoptions += -fm qout
+    flashimageoptions += -fm qout
 else
     ifeq ($(SPI_MODE), DIO)
         mode = 2
-		flashimageoptions += -fm dio
+        flashimageoptions += -fm dio
     else
         ifeq ($(SPI_MODE), DOUT)
             mode = 3
-			flashimageoptions += -fm dout
+            flashimageoptions += -fm dout
         else
             mode = 0
-			flashimageoptions += -fm qio
+            flashimageoptions += -fm qio
         endif
     endif
 endif
@@ -96,26 +96,26 @@ endif
 ifeq ($(SPI_SIZE), 256)
     size = 1
     flash = 256
-	flashimageoptions += -fs 2m
+    flashimageoptions += -fs 2m
 else
     ifeq ($(SPI_SIZE), 1024)
         size = 2
         flash = 1024
-		flashimageoptions += -fs 8m
+        flashimageoptions += -fs 8m
     else
         ifeq ($(SPI_SIZE), 2048)
             size = 3
             flash = 1024
-			flashimageoptions += -fs 16m
+            flashimageoptions += -fs 16m
         else
             ifeq ($(SPI_SIZE), 4096)
                 size = 4
                 flash = 1024
-				flashimageoptions += -fs 32m
+                flashimageoptions += -fs 32m
             else
                 size = 0
                 flash = 512
-				flashimageoptions += -fs 4m
+                flashimageoptions += -fs 4m
             endif
         endif
     endif
@@ -149,7 +149,7 @@ MODULES		= driver user
 EXTRA_INCDIR    = include $(SDK_BASE)/../include
 
 # libraries used in this project, mainly provided by the SDK
-LIBS		= c gcc hal phy pp net80211 lwip wpa main json upgrade smartconfig
+LIBS		= c gcc hal phy pp net80211 lwip wpa main
 
 # compiler flags using during compilation of source files
 CFLAGS		= -Os -g -O2 -Wpointer-arith -Wundef -Werror -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
@@ -217,7 +217,7 @@ $1/%.o: %.c
 	$(Q) $(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS)  -c $$< -o $$@
 endef
 
-.PHONY: all checkdirs clean
+.PHONY: all checkdirs clean flash flashinit flashonefile rebuild
 
 all: checkdirs $(TARGET_OUT)
 
