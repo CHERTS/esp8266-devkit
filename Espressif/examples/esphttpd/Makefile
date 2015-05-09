@@ -22,11 +22,23 @@ SDK_EXTRA_LIBS ?= c:/Espressif/ESP8266_SDK/lib
 
 # esptool path and port
 ESPTOOL		?=$(SDK_TOOLS)/esptool.exe
-ESPPORT		?=COM2
+ESPPORT		?=COM3
 ESPBAUD		?= 115200
 # old - use c:/Espressif/utils/esptool.exe util
 # new - use c:/Espressif/utils/esptool-ck.exe util
 ESPTOOLMODE	?=old
+
+#Position and maximum length of espfs in flash memory
+ESPFS_POS = 0x12000
+ESPFS_SIZE = 0x2E000
+
+#Static gzipping is disabled by default.
+GZIP_COMPRESSION ?= no
+
+#If USE_HEATSHRINK is set to "yes" then the espfs files will be compressed with Heatshrink and decompressed
+#on the fly while reading the file. Because the decompression is done in the esp8266, it does not require
+#any support in the browser.
+USE_HEATSHRINK ?= yes
 
 # BOOT = none
 # BOOT = old - boot_v1.1
@@ -158,7 +170,7 @@ endif
 TARGET		= app
 
 # which modules (subdirectories) of the project to include in compiling
-MODULES		= user
+MODULES		= espfs httpd user
 EXTRA_INCDIR	= include \
 		. \
 		lib/heatshrink/ \
@@ -168,7 +180,9 @@ EXTRA_INCDIR	= include \
 LIBS		= c gcc hal phy pp net80211 lwip wpa main
 
 # compiler flags using during compilation of source files
-CFLAGS		= -Os -g -O2 -std=c99 -Wpointer-arith -Wundef -Werror -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
+CFLAGS		= -Os -ggdb -std=c99 -Werror -Wpointer-arith -Wundef -Wall -Wl,-EL -fno-inline-functions \
+		-nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH -D_STDINT_H \
+		-Wno-address -DESPFS_POS=$(ESPFS_POS) -DESPFS_SIZE=$(ESPFS_SIZE)
 
 # linker flags used to generate the main object file
 LDFLAGS		= -nostdlib -Wl,--no-check-sections -u call_user_start -Wl,-static
@@ -229,6 +243,14 @@ Q := @
 vecho := @echo
 endif
 
+ifeq ("$(GZIP_COMPRESSION)","yes")
+CFLAGS		+= -DGZIP_COMPRESSION
+endif
+
+ifeq ("$(USE_HEATSHRINK)","yes")
+CFLAGS		+= -DESPFS_HEATSHRINK
+endif
+
 vpath %.c $(SRC_DIR)
 
 define compile-objects
@@ -237,7 +259,7 @@ $1/%.o: %.c
 	$(Q) $(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS)  -c $$< -o $$@
 endef
 
-.PHONY: all checkdirs clean
+.PHONY: all checkdirs clean flash flashinit flashonefile htmlfiles 
 
 all: checkdirs $(TARGET_OUT)
 
@@ -393,14 +415,15 @@ else
 endif
 
 webpages.espfs: $(FW_BASE) cleanwebpages
-	cd html; find | ../mkespfsimage/mkespfsimage.exe > ../$(FW_BASE)/webpages.espfs; cd ..
+	cd html; find | ../espfs/mkespfsimage/mkespfsimage.exe > ../$(FW_BASE)/webpages.espfs; cd ..
 
 htmlflash: webpages.espfs
-	if [ $$(stat -c '%s' $(FW_BASE)/webpages.espfs) -gt $$(( 0x2E000 )) ]; then echo "$(FW_BASE)/webpages.espfs too big!"; false; fi
+	if [ $$(stat -c '%s' $(FW_BASE)/webpages.espfs) -gt $$(( $(ESPFS_SIZE) )) ]; then echo "$(FW_BASE)/webpages.espfs too big!"; false; fi
+	
 ifeq ($(esptoolmode), new)
-	$(ESPTOOL) -cp $(ESPPORT) -cd ck -cb 256000 -ca 0x12000 -cf $(FW_BASE)/webpages.espfs -v
+	$(ESPTOOL) -cp $(ESPPORT) -cd ck -cb 256000 -ca $(ESPFS_POS) -cf $(FW_BASE)/webpages.espfs -v
 else
-	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x12000 $(FW_BASE)/webpages.espfs
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) $(ESPFS_POS) $(FW_BASE)/webpages.espfs
 endif
 
 rebuild: clean all

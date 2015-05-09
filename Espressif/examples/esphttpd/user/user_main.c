@@ -10,17 +10,18 @@
  */
 
 
-#include "espmissingincludes.h"
-#include "ets_sys.h"
-#include "osapi.h"
+#include <esp8266.h>
 #include "httpd.h"
 #include "io.h"
 #include "httpdespfs.h"
 #include "cgi.h"
 #include "cgiwifi.h"
+#include "cgiflash.h"
 #include "stdout.h"
 #include "auth.h"
-#include "wifi.h"
+#include "espfs.h"
+
+//#define SHOW_HEAP_USE
 
 //Function that tells the authentication system what users/passwords live on the system.
 //This is disabled in the default build; if you want to try it, enable the authBasic line in
@@ -68,18 +69,35 @@ HttpdBuiltInUrl builtInUrls[]={
 	{"/wifi/wifiscan.cgi", cgiWiFiScan, NULL},
 	{"/wifi/wifi.tpl", cgiEspFsTemplate, tplWlan},
 	{"/wifi/connect.cgi", cgiWiFiConnect, NULL},
-	{"/wifi/setmode.cgi", cgiWifiSetMode, NULL},
+	{"/wifi/connstatus.cgi", cgiWiFiConnStatus, NULL},
+	{"/wifi/setmode.cgi", cgiWiFiSetMode, NULL},
 
 	{"*", cgiEspFsHook, NULL}, //Catch-all cgi function for the filesystem
 	{NULL, NULL, NULL}
 };
 
 
-//Main routine. Initialize stdout, the I/O and the webserver and we're done.
+#ifdef SHOW_HEAP_USE
+static ETSTimer prHeapTimer;
+
+static void ICACHE_FLASH_ATTR prHeapTimerCb(void *arg) {
+	os_printf("Heap: %ld\n", (unsigned long)system_get_free_heap_size());
+}
+#endif
+
+//Main routine. Initialize stdout, the I/O, filesystem and the webserver and we're done.
 void user_init(void) {
 	stdoutInit();
 	ioInit();
-	wifiInit();
+
+	// 0x40200000 is the base address for spi flash memory mapping, ESPFS_POS is the position
+	// where image is written in flash that is defined in Makefile.
+	espFsInit((void*)(0x40200000 + ESPFS_POS));
 	httpdInit(builtInUrls, 80);
+#ifdef SHOW_HEAP_USE
+	os_timer_disarm(&prHeapTimer);
+	os_timer_setfn(&prHeapTimer, prHeapTimerCb, NULL);
+	os_timer_arm(&prHeapTimer, 3000, 1);
+#endif
 	os_printf("\nReady\n");
 }

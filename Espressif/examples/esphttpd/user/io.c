@@ -9,13 +9,7 @@
  */
 
 
-#include "c_types.h"
-#include "user_interface.h"
-#include "espconn.h"
-#include "mem.h"
-#include "osapi.h"
-#include "gpio.h"
-#include "espmissingincludes.h"
+#include <esp8266.h>
 
 #define LEDGPIO 2
 #define BTNGPIO 0
