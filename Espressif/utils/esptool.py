@@ -242,12 +242,37 @@ class ESPROM:
             raise Exception('Failed to leave RAM download mode')
 
     """ Start downloading to Flash (performs an erase) """
-    def flash_begin(self, size, offset):
+    def flash_begin(self, _size, offset):
         old_tmo = self._port.timeout
-        num_blocks = (size + ESPROM.ESP_FLASH_BLOCK - 1) / ESPROM.ESP_FLASH_BLOCK
         self._port.timeout = 10
+
+	area_len = int(_size)
+	sector_no = offset/4096;
+	sector_num_per_block = 16;
+	#total_sector_num = (0== (area_len%4096))? area_len/4096 :  1+(area_len/4096);
+	if 0== (area_len%4096):
+	    total_sector_num = area_len/4096
+	else:
+	    total_sector_num = 1+(area_len/4096)
+	#check if erase area reach over block boundary
+	head_sector_num = sector_num_per_block - (sector_no%sector_num_per_block);
+	#head_sector_num = (head_sector_num>=total_sector_num)? total_sector_num : head_sector_num;
+	if head_sector_num>=total_sector_num :
+	    head_sector_num = total_sector_num
+	else:
+	    head_sector_num = head_sector_num
+
+	if (total_sector_num - 2 * head_sector_num)> 0:
+	    size = (total_sector_num-head_sector_num)*4096
+	    print "head: ",head_sector_num,";total:",total_sector_num
+	    print "erase size : ",size
+	else:
+	    size = int( math.ceil( total_sector_num/2.0) * 4096 )
+	    print "head:",head_sector_num,";total:",total_sector_num
+	    print "erase size :",size
+
         if self.command(ESPROM.ESP_FLASH_BEGIN,
-                struct.pack('<IIII', size, num_blocks, ESPROM.ESP_FLASH_BLOCK, offset))[1] != "\0\0":
+                struct.pack('<IIII', size, 0x200, ESPROM.ESP_FLASH_BLOCK, offset))[1] != "\0\0":
             raise Exception('Failed to enter Flash download mode')
         self._port.timeout = old_tmo
 
@@ -259,9 +284,14 @@ class ESPROM:
 
     """ Leave flash mode and run/reboot """
     def flash_finish(self, reboot = False):
-        pkt = struct.pack('<I', int(not reboot))
-        if self.command(ESPROM.ESP_FLASH_END, pkt)[1] != "\0\0":
-            raise Exception('Failed to leave Flash mode')
+        res = self.command(ESPROM.ESP_FLASH_END,
+                struct.pack('<I', int(not reboot)))[1]
+        #if self.command(ESPROM.ESP_FLASH_END,
+                #struct.pack('<I', int(not reboot)))[1] != "\0\0":
+        #print res
+        if res[1] != "\0\0":
+            pass
+            #raise Exception('Failed to leave Flash mode')
 
     """ Run application code in flash """
     def run(self, reboot = False):
@@ -477,8 +507,8 @@ if __name__ == '__main__':
             'make_image',
             help = 'Create an application image from binary files')
     parser_make_image.add_argument('output', help = 'Output image file')
-    parser_make_image.add_argument('--segfile', '-f', action = 'append', help = 'Segment input file') 
-    parser_make_image.add_argument('--segaddr', '-a', action = 'append', help = 'Segment base address', type = arg_auto_int) 
+    parser_make_image.add_argument('--segfile', '-f', action = 'append', help = 'Segment input file')
+    parser_make_image.add_argument('--segaddr', '-a', action = 'append', help = 'Segment base address', type = arg_auto_int)
     parser_make_image.add_argument('--entrypoint', '-e', help = 'Address of entry point', type = arg_auto_int, default = 0)
 
     parser_elf2image = subparsers.add_parser(

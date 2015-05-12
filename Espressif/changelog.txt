@@ -1,6 +1,9 @@
 Changelog:
 ----------
 
+v2.0.5 (19.05.2015):
+* Update a utility "utils\esptool.exe";
+
 v2.0.4 (09.05.2015):
 + Added official AT firmware from Espressif, directory "ESP8266_SDK\bin\at";
 * Updated compiler xtensa-lx106-gcc and xtensa-lx106-g++
