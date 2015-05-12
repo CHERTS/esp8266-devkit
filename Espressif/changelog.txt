@@ -3,6 +3,7 @@ Changelog:
 
 v2.0.5 (19.05.2015):
 * Update a utility "utils\esptool.exe";
+* Update a utility "utils\esptool-ck.exe" to version 0.4.3-2-g333f584;
 * Updated documentation:
   + Added files:
     0A-ESP8266__WiFi_Specifications__EN_v4.2.pdf
