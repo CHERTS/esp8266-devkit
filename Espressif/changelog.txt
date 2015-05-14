@@ -2,6 +2,11 @@ Changelog:
 ----------
 
 v2.0.5 (19.05.2015):
++ Added command line mode.
+  In command line mode, the open console with set compiler environment variables to build the projects from the command line.
+  To run the command line in the Start menu -> Espressif run "Command line Unofficial Development Kit for Espressif ESP8266"
+  or run "C:\Espressif\utils\console.bat", then go to the examples directory (cd hello_world)
+  and run make - must compile the firmware, make flash - firmware will be burn.
 * Update a utility "utils\esptool.exe";
 * Update a utility "utils\esptool-ck.exe" to version 0.4.3-2-g333f584;
 * Updated documentation:
