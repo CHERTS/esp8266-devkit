@@ -1,5 +1,5 @@
 ﻿;InnoSetupVersion=5.5.0
-#define DevKitVersion "2.0.4"
+#define DevKitVersion "2.0.5"
 #define DevKitSDKVersion "1.0.1"
 #define DevKitAppName "Unofficial Development Kit for Espressif ESP8266"
 #define DevKitAppURL "http://www.programs74.ru"
@@ -46,6 +46,8 @@ Source: "Espressif\ESP8266_SDK_094\*"; DestDir: "{app}\ESP8266_SDK_094"; Flags: 
 Source: "Espressif\ESP8266_SDK_095\*"; DestDir: "{app}\ESP8266_SDK_095"; Flags: ignoreversion createallsubdirs recursesubdirs; Components: sdk
 Source: "Espressif\Espressif web site.url"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Espressif\DevKit web site.url"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Espressif\Command line Unofficial Development Kit for Espressif ESP8266.lnk"; DestDir: "{app}"; Flags: ignoreversion; Languages: english turkish; Components: utils
+Source: "Espressif\Командная строка Unofficial Development Kit for Espressif ESP8266.lnk"; DestDir: "{app}"; Flags: ignoreversion; Languages: russian; Components: utils
 Source: "Espressif\changelog.txt"; DestDir: "{app}"; Flags: ignoreversion; Languages: english turkish
 Source: "Espressif\changelog_ru.txt"; DestDir: "{app}"; Flags: ignoreversion; Languages: russian
 Source: "Install.ico"; DestDir: "{app}"; Flags: ignoreversion
@@ -82,6 +84,8 @@ Name: "{group}\Örnekleri firmware"; Filename: "{app}\examples"; WorkingDir: "{a
 Name: "{group}\Run terminal"; Filename: "{app}\utils\Terminal.exe"; WorkingDir: "{app}\utils\"; IconFilename: "{app}\utils\Terminal.exe"; MinVersion: 0.0,5.0; Languages: english; Components: utils
 Name: "{group}\Запустить Terminal"; Filename: "{app}\utils\Terminal.exe"; WorkingDir: "{app}\utils\"; IconFilename: "{app}\utils\Terminal.exe"; MinVersion: 0.0,5.0; Languages: russian; Components: utils
 Name: "{group}\Programı Terminal"; Filename: "{app}\utils\Terminal.exe"; WorkingDir: "{app}\utils\"; IconFilename: "{app}\utils\Terminal.exe"; MinVersion: 0.0,5.0; Languages: turkish; Components: utils
+Name: "{group}\Command line Unofficial Development Kit for Espressif ESP8266"; Filename: "{app}\Command line Unofficial Development Kit for Espressif ESP8266.lnk"; WorkingDir: "{app}\"; MinVersion: 0.0,5.0; Languages: english turkish; Components: utils
+Name: "{group}\Командная строка Unofficial Development Kit for Espressif ESP8266"; Filename: "{app}\Командная строка Unofficial Development Kit for Espressif ESP8266.lnk"; WorkingDir: "{app}\"; MinVersion: 0.0,5.0; Languages: russian; Components: utils
 Name: "{group}\Espressif Web site"; Filename: "{app}\Espressif web site.url"; WorkingDir: "{app}"; IconFilename: "%SystemRoot%\system32\SHELL32.dll"; IconIndex: 13; MinVersion: 0.0,5.0; Languages: english
 Name: "{group}\Beб-сайт Espressif"; Filename: "{app}\Espressif web site.url"; WorkingDir: "{app}"; IconFilename: "%SystemRoot%\system32\SHELL32.dll"; IconIndex: 13; MinVersion: 0.0,5.0; Languages: russian
 Name: "{group}\Web sitesi Espressif"; Filename: "{app}\Espressif web site.url"; WorkingDir: "{app}"; IconFilename: "%SystemRoot%\system32\SHELL32.dll"; IconIndex: 13; MinVersion: 0.0,5.0; Languages: turkish
@@ -100,6 +104,8 @@ Type: filesandordirs; Name: "{app}\ESP8266_RTOS_SDK\*"; Components: sdk
 Type: filesandordirs; Name: "{app}\ESP8266_SDK\*"; Components: sdk
 Type: filesandordirs; Name: "{app}\ESP8266_SDK_094\*"; Components: sdk
 Type: filesandordirs; Name: "{app}\ESP8266_SDK_095\*"; Components: sdk
+Type: files; Name: "{app}\Command line Unofficial Development Kit for Espressif ESP8266.lnk"; Languages: english turkish; Components: utils
+Type: files; Name: "{app}\Командная строка Unofficial Development Kit for Espressif ESP8266.lnk"; Languages: russian; Components: utils
 Type: files; Name: "{app}\DevKit web site.url"
 Type: files; Name: "{app}\Espressif web site.url"
 Type: files; Name: "{app}\changelog.txt"; Languages: english turkish
