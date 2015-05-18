@@ -18,6 +18,8 @@ v2.0.5 (19.05.2015):
     8F-ESP8266__Interface__UART_Registers_v0.1.xls
     99A-ESP8266__Flash_RW_Operation__EN_v0.2.pdf
     99C-ESP8266__OTA_Upgrade__EN_v1.5.pdf
+* Updated examples:
+  nodemcu-firmware;
 
 v2.0.4 (09.05.2015):
 + Added official AT firmware from Espressif, directory "ESP8266_SDK\bin\at";
