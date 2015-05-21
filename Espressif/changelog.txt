@@ -11,6 +11,7 @@ v2.0.5 (19.05.2015):
 * Update a utility "utils\esptool-ck.exe" to version 0.4.4:
   + add flash size options for 8M, 16M, 32M;
   * fix uploading with CH340;
+* Update RTOS SDK, directory "ESP8266_RTOS_SDK";
 * Updated documentation:
   + Added files:
     0A-ESP8266__WiFi_Specifications__EN_v4.2.pdf
@@ -22,6 +23,7 @@ v2.0.5 (19.05.2015):
     99C-ESP8266__OTA_Upgrade__EN_v1.5.pdf
 * Updated examples:
   nodemcu-firmware;
+  sysinfo;
 
 v2.0.4 (09.05.2015):
 + Added official AT firmware from Espressif, directory "ESP8266_SDK\bin\at";
