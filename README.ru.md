@@ -1,7 +1,7 @@
 Unofficial Development Kit for Espressif ESP8266
 ================================================
 
-[In Russian / По-английски](README.md)
+[In English / По-английски](README.md)
 
 <b>Unofficial Development Kit for Espressif ESP8266</b> - это неофициальный комплект для разработки прошивок под SoC Espressif ESP8266.<br>
 

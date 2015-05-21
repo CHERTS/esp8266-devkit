@@ -1,7 +1,7 @@
 Changelog:
 ----------
 
-v2.0.5 (19.05.2015):
+v2.0.5 (22.05.2015):
 + Added command line mode.
   In command line mode, the open console with set compiler environment variables to build the projects from the command line.
   To run the command line in the Start menu -> Espressif run "Command line Unofficial Development Kit for Espressif ESP8266"
