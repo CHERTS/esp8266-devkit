@@ -1,6 +1,10 @@
 Changelog:
 ----------
 
+v2.0.6 (05.06.2015):
+* Update SDK v1.1.0 (folder ESP8266_SDK);
+* SDK version 1.0.1 moved to a folder ESP8266_SDK_101;
+
 v2.0.5 (22.05.2015):
 + Added command line mode.
   In command line mode, the open console with set compiler environment variables to build the projects from the command line.
