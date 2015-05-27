@@ -43,10 +43,6 @@ smartconfig_done(sc_status status, void *pdata)
 	
 }
 
-void user_rf_pre_init(void)
-{
-}
-
 void user_init(void)
 {
     os_printf("SDK version:%s\n", system_get_sdk_version());
