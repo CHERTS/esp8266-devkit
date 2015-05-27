@@ -254,7 +254,7 @@ light_status_get(struct jsontree_context *js_ctx)
     } else if (os_strncmp(path, "blue", 4) == 0) {
         jsontree_write_int(js_ctx, user_light_get_duty(LIGHT_BLUE));
     } else if (os_strncmp(path, "freq", 4) == 0) {
-        jsontree_write_int(js_ctx, user_light_get_freq());
+        jsontree_write_int(js_ctx, user_light_get_period());
     }
 
     return 0;
@@ -264,43 +264,64 @@ LOCAL int ICACHE_FLASH_ATTR
 light_status_set(struct jsontree_context *js_ctx, struct jsonparse_state *parser)
 {
     int type;
+    static uint32 r,g,b;
 
+    extern uint8 light_sleep_flg;
+    
     while ((type = jsonparse_next(parser)) != 0) {
         if (type == JSON_TYPE_PAIR_NAME) {
             if (jsonparse_strcmp_value(parser, "red") == 0) {
-                uint8 status;
+                uint32 status;
                 jsonparse_next(parser);
                 jsonparse_next(parser);
                 status = jsonparse_get_value_as_int(parser);
-                //                os_printf("R: %d \n",status);
-                user_light_set_duty(status, LIGHT_RED);
+                r=status;
+                os_printf("R: %d \n",status);
+                //user_light_set_duty(status, LIGHT_RED);
+                //light_set_aim_r( r);
             } else if (jsonparse_strcmp_value(parser, "green") == 0) {
-                uint8 status;
+                uint32 status;
                 jsonparse_next(parser);
                 jsonparse_next(parser);
                 status = jsonparse_get_value_as_int(parser);
-                //                os_printf("G: %d \n",status);
-                user_light_set_duty(status, LIGHT_GREEN);
+                g=status;
+                os_printf("G: %d \n",status);
+                //user_light_set_duty(status, LIGHT_GREEN);
+                //light_set_aim_g( g);
             } else if (jsonparse_strcmp_value(parser, "blue") == 0) {
-                uint8 status;
+                uint32 status;
                 jsonparse_next(parser);
                 jsonparse_next(parser);
                 status = jsonparse_get_value_as_int(parser);
-                //                os_printf("B: %d \n",status);
-                user_light_set_duty(status, LIGHT_BLUE);
+                b=status;
+                os_printf("B: %d \n",status);
+                //user_light_set_duty(status, LIGHT_BLUE);
+                //set_aim_b( b);
             } else if (jsonparse_strcmp_value(parser, "freq") == 0) {
-                uint16 status;
+                uint32 status;
                 jsonparse_next(parser);
                 jsonparse_next(parser);
                 status = jsonparse_get_value_as_int(parser);
-                //                os_printf("FREQ: %d \n",status);
-                user_light_set_freq(status);
+                os_printf("PERIOD: %d \n",status);
+                user_light_set_period(status);
             }
         }
     }
 
-    user_light_restart();
+    if((r|g|b) == 0){
+        if(light_sleep_flg==0){
 
+        }
+        
+    }else{
+        if(light_sleep_flg==1){
+            os_printf("modem sleep en\r\n");
+            wifi_set_sleep_type(MODEM_SLEEP_T);
+            light_sleep_flg =0;
+        }
+    }
+    light_set_aim(r,g,b,0);
+    //user_light_restart();
     return 0;
 }
 
@@ -1179,32 +1200,35 @@ local_upgrade_download(void * arg,char *pusrdata, unsigned short length)
     char lengthbuffer[32];
     static uint32 totallength = 0;
     static uint32 sumlength = 0;
+    char A_buf[2] = {0xE9 ,0x03}; char	B_buf[2] = {0xEA,0x04};
     struct espconn *pespconn = arg;
-
     if (totallength == 0 && (ptr = (char *)os_strstr(pusrdata, "\r\n\r\n")) != NULL &&
             (ptr = (char *)os_strstr(pusrdata, "Content-Length")) != NULL) {
+    	ptr = (char *)os_strstr(pusrdata, "Content-Length: ");
+		if (ptr != NULL) {
+			ptr += 16;
+			ptmp2 = (char *)os_strstr(ptr, "\r\n");
+
+			if (ptmp2 != NULL) {
+				os_memset(lengthbuffer, 0, sizeof(lengthbuffer));
+				os_memcpy(lengthbuffer, ptr, ptmp2 - ptr);
+				sumlength = atoi(lengthbuffer);
+			} else {
+				os_printf("sumlength failed\n");
+			}
+		} else {
+			os_printf("Content-Length: failed\n");
+		}
+		if (sumlength != 0) {
+			system_upgrade_erase_flash(sumlength);
+		}
         ptr = (char *)os_strstr(pusrdata, "\r\n\r\n");
         length -= ptr - pusrdata;
         length -= 4;
         totallength += length;
         os_printf("upgrade file download start.\n");
         system_upgrade(ptr + 4, length);
-        ptr = (char *)os_strstr(pusrdata, "Content-Length: ");
 
-        if (ptr != NULL) {
-            ptr += 16;
-            ptmp2 = (char *)os_strstr(ptr, "\r\n");
-
-            if (ptmp2 != NULL) {
-                os_memset(lengthbuffer, 0, sizeof(lengthbuffer));
-                os_memcpy(lengthbuffer, ptr, ptmp2 - ptr);
-                sumlength = atoi(lengthbuffer);
-            } else {
-                os_printf("sumlength failed\n");
-            }
-        } else {
-            os_printf("Content-Length: failed\n");
-        }
     } else {
         totallength += length;
         system_upgrade(pusrdata, length);
@@ -1321,6 +1345,7 @@ webserver_recv(void *arg, char *pusrdata, unsigned short length)
                     else if (os_strcmp(pURL_Frame->pFilename, "light") == 0) {
                         json_send(ptrespconn, LIGHT_STATUS);
                     }
+                    
 
 #endif
 
@@ -1465,6 +1490,15 @@ webserver_recv(void *arg, char *pusrdata, unsigned short length)
                         } else {
                             response_send(ptrespconn, false);
                         }
+                    }
+                    else if (os_strcmp(pURL_Frame->pFilename, "reset") == 0) {
+                            response_send(ptrespconn, true);
+                            extern  struct esp_platform_saved_param esp_param;
+                            esp_param.activeflag = 0;
+                            user_esp_platform_save_param(&esp_param);
+                            
+                            system_restore();
+                            system_restart();
                     }
 
 #endif

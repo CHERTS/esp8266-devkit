@@ -121,7 +121,7 @@ at_upDate_recv(void *arg, char *pusrdata, unsigned short len)
 
   os_memcpy(upServer->ip, pespconn->proto.tcp->remote_ip, 4);
 
-  upServer->port = 80;
+  upServer->port = pespconn->proto.tcp->remote_port;
 
   upServer->check_cb = at_upDate_rsp;
   upServer->check_times = 60000;

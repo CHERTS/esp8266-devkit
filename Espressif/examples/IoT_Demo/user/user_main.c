@@ -32,6 +32,10 @@ unsigned int default_private_key_len = 0;
 #endif
 #endif
 
+void user_rf_pre_init(void)
+{
+}
+
 /******************************************************************************
  * FunctionName : user_init
  * Description  : entry of user application, init user function here
