@@ -125,13 +125,13 @@ static void ICACHE_FLASH_ATTR
 easygpio_setupPullsByName(uint32_t gpio_name, EasyGPIO_PullStatus pullStatus) {
 
   if (EASYGPIO_PULLUP == pullStatus){
-    PIN_PULLDWN_DIS(gpio_name);
+    //PIN_PULLDWN_DIS(gpio_name);
     PIN_PULLUP_EN(gpio_name);
   } else if (EASYGPIO_PULLDOWN == pullStatus){
     PIN_PULLUP_DIS(gpio_name);
-    PIN_PULLDWN_EN(gpio_name);
+    //PIN_PULLDWN_EN(gpio_name);
   } else {
-    PIN_PULLDWN_DIS(gpio_name);
+    //PIN_PULLDWN_DIS(gpio_name);
     PIN_PULLUP_DIS(gpio_name);
   }
 }

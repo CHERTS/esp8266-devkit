@@ -24,6 +24,8 @@ LOCAL void ICACHE_FLASH_ATTR info_cb(void *arg)
 	ets_uart_printf(temp);
 	os_sprintf(temp, "Chip id = 0x%x\r\n", system_get_chip_id());
 	ets_uart_printf(temp);
+	os_sprintf(temp, "CPU freq = %d MHz\r\n", system_get_cpu_freq());
+	ets_uart_printf(temp);
 	os_sprintf(temp, "Free heap size = %d\r\n", system_get_free_heap_size());
 	ets_uart_printf(temp);
 	ets_uart_printf("==========================================\r\n");

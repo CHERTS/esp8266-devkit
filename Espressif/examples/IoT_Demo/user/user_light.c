@@ -18,7 +18,7 @@
 
 #if LIGHT_DEVICE
 
-LOCAL struct light_saved_param light_param;
+struct light_saved_param light_param;
 
 /******************************************************************************
  * FunctionName : user_light_get_duty
@@ -26,7 +26,7 @@ LOCAL struct light_saved_param light_param;
  * Parameters   : uint8 channel : LIGHT_RED/LIGHT_GREEN/LIGHT_BLUE
  * Returns      : NONE
 *******************************************************************************/
-uint8 ICACHE_FLASH_ATTR
+uint32 ICACHE_FLASH_ATTR
 user_light_get_duty(uint8 channel)
 {
     return light_param.pwm_duty[channel];
@@ -40,7 +40,7 @@ user_light_get_duty(uint8 channel)
  * Returns      : NONE
 *******************************************************************************/
 void ICACHE_FLASH_ATTR
-user_light_set_duty(uint8 duty, uint8 channel)
+user_light_set_duty(uint32 duty, uint8 channel)
 {
     if (duty != light_param.pwm_duty[channel]) {
         pwm_set_duty(duty, channel);
@@ -50,15 +50,15 @@ user_light_set_duty(uint8 duty, uint8 channel)
 }
 
 /******************************************************************************
- * FunctionName : user_light_get_freq
- * Description  : get pwm frequency
+ * FunctionName : user_light_get_period
+ * Description  : get pwm period
  * Parameters   : NONE
- * Returns      : uint16 : pwm frequency
+ * Returns      : uint32 : pwm period
 *******************************************************************************/
-uint16 ICACHE_FLASH_ATTR
-user_light_get_freq(void)
+uint32 ICACHE_FLASH_ATTR
+user_light_get_period(void)
 {
-    return light_param.pwm_freq;
+    return light_param.pwm_period;
 }
 
 /******************************************************************************
@@ -68,12 +68,12 @@ user_light_get_freq(void)
  * Returns      : NONE
 *******************************************************************************/
 void ICACHE_FLASH_ATTR
-user_light_set_freq(uint16 freq)
+user_light_set_period(uint32 period)
 {
-    if (freq != light_param.pwm_freq) {
-        pwm_set_freq(freq);
+    if (period != light_param.pwm_period) {
+        pwm_set_period(period);
 
-        light_param.pwm_freq = pwm_get_freq();
+        light_param.pwm_period = pwm_get_period();
     }
 }
 
@@ -93,13 +93,26 @@ user_light_restart(void)
  * Parameters   : none
  * Returns      : none
 *******************************************************************************/
+#include "gpio.h"
 void ICACHE_FLASH_ATTR
 user_light_init(void)
 {
     spi_flash_read((PRIV_PARAM_START_SEC + PRIV_PARAM_SAVE) * SPI_FLASH_SEC_SIZE,
-    		(uint32 *)&light_param, sizeof(struct light_saved_param));
+                               (uint32 *)&light_param, sizeof(struct light_saved_param));
+    light_param.pwm_period = 1000;
 
-    pwm_init(light_param.pwm_freq, light_param.pwm_duty);
+	uint32 io_info[][3] = {{PWM_0_OUT_IO_MUX,PWM_0_OUT_IO_FUNC,PWM_0_OUT_IO_NUM},
+		                      {PWM_1_OUT_IO_MUX,PWM_1_OUT_IO_FUNC,PWM_1_OUT_IO_NUM},
+		                      {PWM_2_OUT_IO_MUX,PWM_2_OUT_IO_FUNC,PWM_2_OUT_IO_NUM}};
+       uint32 pwm_duty_init[3] = {0,0,0};
+pwm_init(light_param.pwm_period,  pwm_duty_init ,PWM_CHANNEL,io_info);
+
+light_set_aim(light_param.pwm_duty[LIGHT_RED],
+	                light_param.pwm_duty[LIGHT_GREEN],
+	                light_param.pwm_duty[LIGHT_BLUE], 
+	                0);
+    set_pwm_debug_en(0);
+    os_printf("PWM version : %08x \r\n",get_pwm_version());
 }
 #endif
 

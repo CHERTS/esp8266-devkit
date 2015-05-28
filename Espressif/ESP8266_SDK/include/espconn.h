@@ -126,7 +126,7 @@ struct mdns_info {
 	char *server_name;
 	uint16 server_port;
 	unsigned long ipAddr;
-	char *txt_data;
+	char *txt_data[10];
 };
 /******************************************************************************
  * FunctionName : espconn_connect
@@ -578,5 +578,15 @@ void espconn_mdns_disable(void);
  * Returns      : none
 *******************************************************************************/
 void espconn_mdns_enable(void);
+/******************************************************************************
+ * FunctionName : espconn_dns_setserver
+ * Description  : Initialize one of the DNS servers.
+ * Parameters   : numdns -- the index of the DNS server to set must
+ * 				  be < DNS_MAX_SERVERS = 2
+ * 			      dnsserver -- IP address of the DNS server to set
+ *  Returns     : none
+*******************************************************************************/
+void espconn_dns_setserver(char numdns, ip_addr_t *dnsserver);
+
 #endif
 

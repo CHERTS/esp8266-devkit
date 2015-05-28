@@ -17,8 +17,6 @@
 extern void ets_wdt_enable (void);
 extern void ets_wdt_disable (void);
 
-extern void wdt_feed (void);
-
 void user_init(void)
 {
 	uint8_t state=0;
@@ -31,6 +29,5 @@ void user_init(void)
 		GPIO_OUTPUT_SET(LED_GPIO, state);
 		os_delay_us(DELAY);
 		state ^=1;
-		wdt_feed();
 	}
 }

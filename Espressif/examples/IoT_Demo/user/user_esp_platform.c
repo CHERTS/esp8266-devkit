@@ -84,7 +84,7 @@ ip_addr_t esp_server_ip;
 LOCAL struct espconn user_conn;
 LOCAL struct _esp_tcp user_tcp;
 LOCAL os_timer_t client_timer;
-LOCAL struct esp_platform_saved_param esp_param;
+ struct esp_platform_saved_param esp_param;
 LOCAL uint8 device_status;
 LOCAL uint8 device_recon_count = 0;
 LOCAL uint32 active_nonce = 0;
@@ -285,7 +285,7 @@ user_esp_platform_get_info(struct espconn *pconn, uint8 *pbuffer)
 #if PLUG_DEVICE
         os_sprintf(pbuf, RESPONSE_FRAME, user_plug_get_status(), nonce);
 #elif LIGHT_DEVICE
-        os_sprintf(pbuf, RESPONSE_FRAME, nonce, user_light_get_freq(),
+        os_sprintf(pbuf, RESPONSE_FRAME, nonce, user_light_get_period(),
                    user_light_get_duty(LIGHT_RED), user_light_get_duty(LIGHT_GREEN),
                    user_light_get_duty(LIGHT_BLUE), 50);
 #endif
@@ -334,7 +334,9 @@ user_esp_platform_set_info(struct espconn *pconn, uint8 *pbuffer)
     char *pbuf = NULL;
     char recvbuf[10];
     uint16 length = 0;
-    uint16 data = 0;
+    uint32 data = 0;
+    static uint32 rr,gg,bb;
+    extern uint8 light_sleep_flg;
     pstr = (char *)os_strstr(pbuffer, "\"path\": \"/v1/datastreams/light/datapoint/\"");
 
     if (pstr != NULL) {
@@ -358,7 +360,8 @@ user_esp_platform_set_info(struct espconn *pconn, uint8 *pbuffer)
                     os_memset(recvbuf, 0, 10);
                     os_memcpy(recvbuf, pstr, length);
                     data = atoi(recvbuf);
-                    user_light_set_freq(data);
+                    
+                    user_light_set_period(data);
                 }
             }
 
@@ -373,7 +376,9 @@ user_esp_platform_set_info(struct espconn *pconn, uint8 *pbuffer)
                     os_memset(recvbuf, 0, 10);
                     os_memcpy(recvbuf, pstr, length);
                     data = atoi(recvbuf);
-                    user_light_set_duty(data, 0);
+                    rr=data;
+                    os_printf("r: %d\r\n",rr);
+                    //user_light_set_duty(data, 0);
                 }
             }
 
@@ -388,7 +393,9 @@ user_esp_platform_set_info(struct espconn *pconn, uint8 *pbuffer)
                     os_memset(recvbuf, 0, 10);
                     os_memcpy(recvbuf, pstr, length);
                     data = atoi(recvbuf);
-                    user_light_set_duty(data, 1);
+                    gg=data;
+                    os_printf("g: %d\r\n",gg);
+                    //user_light_set_duty(data, 1);
                 }
             }
 
@@ -403,15 +410,33 @@ user_esp_platform_set_info(struct espconn *pconn, uint8 *pbuffer)
                     os_memset(recvbuf, 0, 10);
                     os_memcpy(recvbuf, pstr, length);
                     data = atoi(recvbuf);
-                    user_light_set_duty(data, 2);
+                    bb=data;
+                    os_printf("b: %d\r\n",bb);
+                    //user_light_set_duty(data, 2);
                 }
             }
 
             os_free(pdata);
         }
     }
+    
+    if((rr|gg|bb) == 0){
+        if(light_sleep_flg==0){
+            //os_printf("light sleep en\r\n");
+            //fi_set_sleep_type(LIGHT_SLEEP_T);
+            //ght_sleep_flg_2 = 1;
+        }
+        
+    }else{
+        if(light_sleep_flg==1){
+                        os_printf("modem sleep en\r\n");
+            wifi_set_sleep_type(MODEM_SLEEP_T);
+            light_sleep_flg =0;
+        }
+    }
 
-    user_light_restart();
+    light_set_aim(rr,gg,bb,0);
+    //user_light_restart();
 
 #endif
 
@@ -870,6 +895,9 @@ user_esp_platform_recv_cb(void *arg, char *pusrdata, unsigned short length)
                 esp_param.activeflag = 1;
                 user_esp_platform_save_param(&esp_param);
                 user_esp_platform_sent(pespconn);
+		  if(LIGHT_DEVICE){
+                    system_restart();
+                }
             } else {
                 ESP_DBG("device activates failed.\n");
                 device_status = DEVICE_ACTIVE_FAIL;
@@ -1185,6 +1213,26 @@ user_esp_platform_start_dns(struct espconn *pespconn)
 }
 #endif
 
+
+#if LIGHT_DEVICE
+void user_mdns_conf()
+{
+
+struct ip_info ipconfig;
+wifi_get_ip_info(STATION_IF, &ipconfig);
+
+struct mdns_info *info = (struct mdns_info *)os_zalloc(sizeof(struct mdns_info));
+info->host_name = "espressif_light_demo";
+info->ipAddr= ipconfig.ip.addr; //sation ip
+info->server_name = "espLight";
+info->server_port = 80;
+info->txt_data[0] = "version = 1.0.1";
+espconn_mdns_init(info);
+
+
+}
+#endif
+
 /******************************************************************************
  * FunctionName : user_esp_platform_check_ip
  * Description  : espconn struct parame init when get ip addr
@@ -1205,6 +1253,11 @@ user_esp_platform_check_ip(uint8 reset_flag)
         user_link_led_timer_init();
 #endif
 
+//***************************
+#if LIGHT_DEVICE
+	user_mdns_conf();
+#endif
+//***************************
         user_conn.proto.tcp = &user_tcp;
         user_conn.type = ESPCONN_TCP;
         user_conn.state = ESPCONN_NONE;
@@ -1268,9 +1321,9 @@ user_esp_platform_init(void)
     user_esp_platform_load_param(&esp_param);
 
     system_rtc_mem_read(0,&rtc_info,sizeof(struct rst_info));
-     if(rtc_info.flag == 1 || rtc_info.flag == 2) {
+     if(rtc_info.reason == 1 || rtc_info.reason == 2) {
     	 ESP_DBG("flag = %d,epc1 = 0x%08x,epc2=0x%08x,epc3=0x%08x,excvaddr=0x%08x,depc=0x%08x,\nFatal \
-exception (%d): \n",rtc_info.flag,rtc_info.epc1,rtc_info.epc2,rtc_info.epc3,rtc_info.excvaddr,rtc_info.depc,rtc_info.exccause);
+exception (%d): \n",rtc_info.reason,rtc_info.epc1,rtc_info.epc2,rtc_info.epc3,rtc_info.excvaddr,rtc_info.depc,rtc_info.exccause);
      }
     struct rst_info info = {0};
     system_rtc_mem_write(0,&info,sizeof(struct rst_info));

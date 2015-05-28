@@ -15,8 +15,6 @@
 
 #define DELAY 100 /* milliseconds */
 
-extern void wdt_feed (void);
-
 LOCAL os_timer_t blink_timer;
 LOCAL uint8_t led_state=0;
 
@@ -24,7 +22,6 @@ LOCAL void ICACHE_FLASH_ATTR blink_cb(void *arg)
 {
 	GPIO_OUTPUT_SET(LED_GPIO, led_state);
 	led_state ^=1;
-	wdt_feed();
 }
 
 void user_init(void)

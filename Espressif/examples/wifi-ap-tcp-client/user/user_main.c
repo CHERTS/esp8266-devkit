@@ -102,8 +102,6 @@ static void ICACHE_FLASH_ATTR BtnTimerCb(void *arg)
 void BtnInit() {
 	// Select pin function
 	PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0);
-	// Disable pulldown
-	PIN_PULLDWN_DIS(PERIPHS_IO_MUX_GPIO0_U);
 	// Enable pull up R
 	PIN_PULLUP_EN(PERIPHS_IO_MUX_GPIO0_U);  
 	// Set GPIO0 as input mode

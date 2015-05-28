@@ -30,8 +30,6 @@ void ICACHE_FLASH_ATTR ds_init()
 {
 	// Set DS18B20_PIN as gpio pin
 	PIN_FUNC_SELECT(DS18B20_MUX,  DS18B20_FUNC);
-	// Disable pull-down
-	PIN_PULLDWN_DIS(DS18B20_MUX);
 	// Enable pull-up
 	PIN_PULLUP_EN(DS18B20_MUX);
 	// Set DS18B20_PIN pin as an input

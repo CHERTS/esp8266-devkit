@@ -99,108 +99,91 @@ uint8 ICACHE_FLASH_ATTR gpio16_input_get(void)
 
 int ICACHE_FLASH_ATTR set_gpio_mode(unsigned pin, unsigned mode, unsigned pull)
 {
-	int value = 1;
-
-	if (pin >= GPIO_PIN_NUM) {
-		value = -1;
-	}
-	else if (pin == 0) {
-		if (mode == GPIO_INPUT)
+	if (pin >= GPIO_PIN_NUM)
+		return -1;
+	if(pin == 0) {
+		if(mode == GPIO_INPUT)
 			gpio16_input_conf();
 		else
 			gpio16_output_conf();
-	}
-	else {
-		switch (mode) {
-			case GPIO_INPUT:
-				GPIO_DIS_OUTPUT(pin_num[pin]);
-				break;
-			case GPIO_OUTPUT:
-				ETS_GPIO_INTR_DISABLE();
-#ifdef GPIO_INTERRUPT_ENABLE
-				pin_int_type[pin] = GPIO_PIN_INTR_DISABLE;
-#endif
-				PIN_FUNC_SELECT(pin_mux[pin], pin_func[pin]);
-				//disable interrupt
-				gpio_pin_intr_state_set(GPIO_ID_PIN(pin_num[pin]),
-					GPIO_PIN_INTR_DISABLE);
-				//clear interrupt status
-				GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(pin_num[pin]));
-				GPIO_REG_WRITE(GPIO_PIN_ADDR(GPIO_ID_PIN(pin_num[pin])),
-						GPIO_REG_READ(GPIO_PIN_ADDR(GPIO_ID_PIN(pin_num[pin]))) & (~ GPIO_PIN_PAD_DRIVER_SET(GPIO_PAD_DRIVER_ENABLE))); //disable open drain;
-				ETS_GPIO_INTR_ENABLE();
-				break;
-#ifdef GPIO_INTERRUPT_ENABLE
-			case GPIO_INT:
-				ETS_GPIO_INTR_DISABLE();
-				PIN_FUNC_SELECT(pin_mux[pin], pin_func[pin]);
-				GPIO_DIS_OUTPUT(pin_num[pin]);
-				gpio_register_set(GPIO_PIN_ADDR(GPIO_ID_PIN(pin_num[pin])),
-					GPIO_PIN_INT_TYPE_SET(
-						GPIO_PIN_INTR_DISABLE) | GPIO_PIN_PAD_DRIVER_SET(GPIO_PAD_DRIVER_DISABLE)
-							| GPIO_PIN_SOURCE_SET(GPIO_AS_PIN_SOURCE));
-				ETS_GPIO_INTR_ENABLE();
-				break;
-#endif
-			default:
-				break;
-		}
-
-		switch (pull) {
-			case GPIO_PULLUP:
-				PIN_PULLDWN_DIS(pin_mux[pin]);
-				PIN_PULLUP_EN(pin_mux[pin]);
-				break;
-			case GPIO_PULLDOWN:
-				PIN_PULLUP_DIS(pin_mux[pin]);
-				PIN_PULLDWN_EN(pin_mux[pin]);
-				break;
-			case GPIO_FLOAT:
-				PIN_PULLUP_DIS(pin_mux[pin]);
-				PIN_PULLDWN_DIS(pin_mux[pin]);
-				break;
-			default:
-				PIN_PULLUP_DIS(pin_mux[pin]);
-				PIN_PULLDWN_DIS(pin_mux[pin]);
-				break;
-		}
+		return 1;
 	}
 
-	return value;
+	switch(pull) {
+		case GPIO_PULLUP:
+			//PIN_PULLDWN_DIS(pin_mux[pin]);
+			PIN_PULLUP_EN(pin_mux[pin]);
+			break;
+		case GPIO_PULLDOWN:
+			PIN_PULLUP_DIS(pin_mux[pin]);
+			//PIN_PULLDWN_EN(pin_mux[pin]);
+			break;
+		case GPIO_FLOAT:
+			PIN_PULLUP_DIS(pin_mux[pin]);
+			//PIN_PULLDWN_DIS(pin_mux[pin]);
+			break;
+		default:
+			PIN_PULLUP_DIS(pin_mux[pin]);
+			//PIN_PULLDWN_DIS(pin_mux[pin]);
+			break;
+	}
+
+	switch(mode) {
+		case GPIO_INPUT:
+			GPIO_DIS_OUTPUT(pin_num[pin]);
+			break;
+		case GPIO_OUTPUT:
+			ETS_GPIO_INTR_DISABLE();
+#ifdef GPIO_INTERRUPT_ENABLE
+			pin_int_type[pin] = GPIO_PIN_INTR_DISABLE;
+#endif
+			PIN_FUNC_SELECT(pin_mux[pin], pin_func[pin]);
+			//disable interrupt
+			gpio_pin_intr_state_set(GPIO_ID_PIN(pin_num[pin]), GPIO_PIN_INTR_DISABLE);
+			//clear interrupt status
+			GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(pin_num[pin]));
+			GPIO_REG_WRITE(GPIO_PIN_ADDR(GPIO_ID_PIN(pin_num[pin])), GPIO_REG_READ(GPIO_PIN_ADDR(GPIO_ID_PIN(pin_num[pin]))) & (~ GPIO_PIN_PAD_DRIVER_SET(GPIO_PAD_DRIVER_ENABLE))); //disable open drain;
+			ETS_GPIO_INTR_ENABLE();
+			break;
+#ifdef GPIO_INTERRUPT_ENABLE
+		case GPIO_INT:
+			ETS_GPIO_INTR_DISABLE();
+			PIN_FUNC_SELECT(pin_mux[pin], pin_func[pin]);
+			GPIO_DIS_OUTPUT(pin_num[pin]);
+			gpio_register_set(GPIO_PIN_ADDR(GPIO_ID_PIN(pin_num[pin])), GPIO_PIN_INT_TYPE_SET(GPIO_PIN_INTR_DISABLE)
+                        | GPIO_PIN_PAD_DRIVER_SET(GPIO_PAD_DRIVER_DISABLE)
+                        | GPIO_PIN_SOURCE_SET(GPIO_AS_PIN_SOURCE));
+			ETS_GPIO_INTR_ENABLE();
+			break;
+#endif
+		default:
+			break;
+	}
+	return 1;
 }
 
 int ICACHE_FLASH_ATTR gpio_write(unsigned pin, unsigned level)
 {
-	int value = 1;
-
-	if (pin >= GPIO_PIN_NUM) {
-		value = -1;
-	}
-	else if (pin == 0) {
+	if (pin >= GPIO_PIN_NUM)
+		return -1;
+	if(pin == 0){
 		gpio16_output_conf();
 		gpio16_output_set(level);
-	} else {
-		GPIO_OUTPUT_SET(GPIO_ID_PIN(pin_num[pin]), level);
+		return 1;
 	}
-	return value;
+	GPIO_OUTPUT_SET(GPIO_ID_PIN(pin_num[pin]), level);
 }
 
 int ICACHE_FLASH_ATTR gpio_read(unsigned pin)
 {
-	int value = 1;
-
-	if (pin >= GPIO_PIN_NUM) {
-		value = -1;
+	if (pin >= GPIO_PIN_NUM)
+		return -1;
+	if(pin == 0){
+		// gpio16_input_conf();
+		return 0x1 & gpio16_input_get();
 	}
-	else if (pin == 0) {
-		value = (0x1 & gpio16_input_get());
-	}
-	else {
-		// GPIO_DIS_OUTPUT(pin_num[pin]);
-		value = (0x1 & GPIO_INPUT_GET(GPIO_ID_PIN(pin_num[pin])));
-	}
-
-	return value;
+	// GPIO_DIS_OUTPUT(pin_num[pin]);
+	return 0x1 & GPIO_INPUT_GET(GPIO_ID_PIN(pin_num[pin]));
 }
 
 #ifdef GPIO_INTERRUPT_ENABLE
@@ -235,45 +218,33 @@ void ICACHE_FLASH_ATTR gpio_intr_attach(gpio_intr_handler cb)
 
 int ICACHE_FLASH_ATTR gpio_intr_deattach(unsigned pin)
 {
-	int value = 1;
-
-	if (pin >= GPIO_PIN_NUM) {
-		value = -1;
-	}
-	else {
-		//disable global interrupt
-		ETS_GPIO_INTR_DISABLE();
-		//clear interrupt status
-		GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(pin_num[pin]));
-		pin_int_type[pin] = GPIO_PIN_INTR_DISABLE;
-		//disable interrupt
-		gpio_pin_intr_state_set(GPIO_ID_PIN(pin_num[pin]), pin_int_type[pin]);
-		//enable global interrupt
-		ETS_GPIO_INTR_ENABLE();
-	}
-
-	return value;
+	if (pin >= GPIO_PIN_NUM)
+		return -1;
+	//disable global interrupt
+	ETS_GPIO_INTR_DISABLE();
+	//clear interrupt status
+	GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(pin_num[pin]));
+	pin_int_type[pin] = GPIO_PIN_INTR_DISABLE;
+	//disable interrupt
+	gpio_pin_intr_state_set(GPIO_ID_PIN(pin_num[pin]), pin_int_type[pin]);
+	//enable global interrupt
+	ETS_GPIO_INTR_ENABLE();
+	return 1;
 }
 
 int ICACHE_FLASH_ATTR gpio_intr_init(unsigned pin, GPIO_INT_TYPE type)
 {
-	int value = 1;
-
-	if (pin >= GPIO_PIN_NUM) {
-		value = -1;
-	}
-	else {
-		//disable global interrupt
-		ETS_GPIO_INTR_DISABLE();
-		//clear interrupt status
-		GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(pin_num[pin]));
-		pin_int_type[pin] = type;
-		//enable interrupt
-		gpio_pin_intr_state_set(GPIO_ID_PIN(pin_num[pin]), type);
-		//enable global interrupt
-		ETS_GPIO_INTR_ENABLE();
-	}
-
-	return value;
+	if (pin >= GPIO_PIN_NUM)
+		return -1;
+	//disable global interrupt
+	ETS_GPIO_INTR_DISABLE();
+	//clear interrupt status
+	GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(pin_num[pin]));
+	pin_int_type[pin] = type;
+	//enable interrupt
+	gpio_pin_intr_state_set(GPIO_ID_PIN(pin_num[pin]), type);
+	//enable global interrupt
+	ETS_GPIO_INTR_ENABLE();
+	return 1;
 }
 #endif
