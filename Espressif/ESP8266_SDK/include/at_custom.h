@@ -35,6 +35,8 @@ typedef struct
 
 typedef void (*at_custom_uart_rx_intr)(uint8* data,int32 len);
 
+typedef void (*at_custom_response_func_type)(const char *str);
+
 extern uint8 at_customLinkMax;
 
 /**
@@ -45,10 +47,24 @@ extern uint8 at_customLinkMax;
 void at_response_ok(void);
 /**
   * @brief  Response "ERROR" to uart.
-  * @param  events: no used
+  * @param  None
   * @retval None
   */
 void at_response_error(void);
+/**
+  * @brief  Response string.
+  *  It is equivalent to at_port_print,if not call at_register_response_func or call at_register_response_func(NULL);
+  *  It will run custom response function,if call at_register_response_func and parameter is not NULL.
+  * @param  string
+  * @retval None
+  */
+void at_response(const char *str);
+/**
+  * @brief  register custom response function.
+  * @param  response_func: the function that will run when call at_response
+  * @retval None
+  */
+void at_register_response_func(at_custom_response_func_type response_func);
 /**
   * @brief  Task of process command or txdata.
   * @param  custom_at_cmd_array: the array of at cmd that custom defined
