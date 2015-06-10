@@ -498,8 +498,6 @@ if __name__ == '__main__':
             choices = ['qio', 'qout', 'dio', 'dout'], default = 'qio')
     parser_write_flash.add_argument('--flash_size', '-fs', help = 'SPI Flash size in Mbit',
             choices = ['4m', '2m', '8m', '16m', '32m', '16m-c1', '32m-c1', '32m-c2'], default = '4m')
-    parser_elf2image.add_argument('--entry-symbol', '-es', help = 'Entry point symbol name (default \'call_user_start\')',
-                                  default = 'call_user_start')
 
     parser_run = subparsers.add_parser(
             'run',
@@ -529,6 +527,8 @@ if __name__ == '__main__':
             choices = ['qio', 'qout', 'dio', 'dout'], default = 'qio')
     parser_elf2image.add_argument('--flash_size', '-fs', help = 'SPI Flash size in Mbit',
             choices = ['4m', '2m', '8m', '16m', '32m', '16m-c1', '32m-c1', '32m-c2'], default = '4m')
+    parser_elf2image.add_argument('--entry-symbol', '-es', help = 'Entry point symbol name (default \'call_user_start\')',
+                                  default = 'call_user_start')
 
     parser_read_mac = subparsers.add_parser(
             'read_mac',
