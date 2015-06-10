@@ -498,6 +498,8 @@ if __name__ == '__main__':
             choices = ['qio', 'qout', 'dio', 'dout'], default = 'qio')
     parser_write_flash.add_argument('--flash_size', '-fs', help = 'SPI Flash size in Mbit',
             choices = ['4m', '2m', '8m', '16m', '32m', '16m-c1', '32m-c1', '32m-c2'], default = '4m')
+    parser_elf2image.add_argument('--entry-symbol', '-es', help = 'Entry point symbol name (default \'call_user_start\')',
+                                  default = 'call_user_start')
 
     parser_run = subparsers.add_parser(
             'run',
@@ -657,7 +659,7 @@ if __name__ == '__main__':
             args.output = args.input + '-'
         e = ELFFile(args.input)
         image = ESPFirmwareImage()
-        image.entrypoint = e.get_symbol_addr("call_user_start")
+        image.entrypoint = e.get_symbol_addr(args.entry_symbol)
         for section, start in ((".text", "_text_start"), (".data", "_data_start"), (".rodata", "_rodata_start")):
             data = e.load_section(section)
             image.add_segment(e.get_symbol_addr(start), data)
