@@ -52,7 +52,7 @@ namespace fdv
 		
 	
 		SerialConsole()
-			: Task(false, 256)
+			: Task(false, 300)
 		{		
 		}
 
@@ -144,6 +144,7 @@ namespace fdv
 				{FSTR("free"),       &SerialConsole::cmd_free},
 				{FSTR("ifconfig"),   &SerialConsole::cmd_ifconfig},
 				{FSTR("iwlist"),     &SerialConsole::cmd_iwlist},
+                {FSTR("date"),       &SerialConsole::cmd_date},
                 {FSTR("ntpdate"),    &SerialConsole::cmd_ntpdate},
 				{FSTR("test"),       &SerialConsole::cmd_test},
 			};
@@ -166,14 +167,15 @@ namespace fdv
 		
 		void MTD_FLASHMEM cmd_help()
 		{
-			m_serial->writeln(FSTR("ESP Console:"));
+			m_serial->writeln(FSTR("\r\nESP Console:"));
 			m_serial->writeln(FSTR("help          : Show this help"));
 			m_serial->writeln(FSTR("reboot [ms]   : Restart system in [ms] milliseconds"));
 			m_serial->writeln(FSTR("restore       : Erase Flash stored settings"));
 			m_serial->writeln(FSTR("free          : Display amount of free and used memory"));
 			m_serial->writeln(FSTR("ifconfig      : Display network info"));
 			m_serial->writeln(FSTR("iwlist [scan] : Display or scan for available wireless networks"));
-            m_serial->writeln(FSTR("ntpdate       : Display date from NTP server"));
+            m_serial->writeln(FSTR("date          : Display current date/time"));
+            m_serial->writeln(FSTR("ntpdate       : Display date/time from NTP server"));
 		}
 
 		
@@ -279,6 +281,14 @@ namespace fdv
 				m_serial->printf(FSTR("       Security: %s\r\n"), WiFi::convSecurityProtocolToString(infos[i].AuthMode));
 			}
 		}
+
+
+        void MTD_FLASHMEM cmd_date()
+        {
+            char buf[30];
+            DateTime::now().format(buf, FSTR("%c"));
+            m_serial->writeln(buf);
+        }
         
         
         void MTD_FLASHMEM cmd_ntpdate()
@@ -297,6 +307,10 @@ namespace fdv
         
 		void MTD_FLASHMEM cmd_test()
 		{
+            NSLookup::setDNSServer(0, IPAddress(FSTR("1.2.3.4")));
+            NSLookup::setDNSServer(1, IPAddress(FSTR("8.8.8.8")));
+            m_serial->writeln(NSLookup::lookup(FSTR("ntp1.inrim.it")).get_str());
+            m_serial->writeln(NSLookup::lookup(FSTR("www.google.com")).get_str());
 		}
 		
 		

@@ -14,6 +14,8 @@
 #include "user_interface.h"
 #include "smartconfig.h"
 
+sc_type SC_Type = 0;
+
 void ICACHE_FLASH_ATTR
 smartconfig_done(sc_status status, void *pdata)
 {
@@ -37,16 +39,27 @@ smartconfig_done(sc_status status, void *pdata)
             break;
         case SC_STATUS_LINK_OVER:
             os_printf("SC_STATUS_LINK_OVER\n");
+            if (SC_Type == SC_TYPE_ESPTOUCH) {
+                uint8 phone_ip[4] = {0};
+
+                os_memcpy(phone_ip, (uint8*)pdata, 4);
+                os_printf("Phone ip: %d.%d.%d.%d\n",phone_ip[0],phone_ip[1],phone_ip[2],phone_ip[3]);
+            }
             smartconfig_stop();
             break;
     }
 	
 }
 
+void user_rf_pre_init(void)
+{
+}
+
 void user_init(void)
 {
     os_printf("SDK version:%s\n", system_get_sdk_version());
-
+	
+	SC_Type = SC_TYPE_ESPTOUCH;
     wifi_set_opmode(STATION_MODE);
-    smartconfig_start(SC_TYPE_ESPTOUCH, smartconfig_done);
+    smartconfig_start(SC_Type, smartconfig_done);
 }

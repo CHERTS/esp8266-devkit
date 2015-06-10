@@ -101,6 +101,10 @@ at_funcationType at_custom_cmd[] = {
     {"+CIUPDATE", 9,       NULL,            NULL,            NULL, at_exeCmdCiupdate}
 };
 
+void user_rf_pre_init(void)
+{
+}
+
 void user_init(void)
 {
     char buf[64] = {0};

@@ -75,7 +75,15 @@ namespace fdv
 	static char const STR_HI[] FLASHMEM             = "HI";
 	static char const STR_LO[] FLASHMEM             = "LO";
 	static char const STR_BINPRORDY[] FLASHMEM      = "BINPRORDY";
-	
+    static char const STR_TZHH[] FLASHMEM           = "TZHH";
+    static char const STR_TZMM[] FLASHMEM           = "TZMM";
+    static char const STR_DEFNTPSRV[] FLASHMEM      = "DEFNTPSRV";
+    static char const STR_date[] FLASHMEM           = "date";
+    static char const STR_time[] FLASHMEM           = "time";
+    static char const STR_tzh[] FLASHMEM            = "tzh";
+    static char const STR_tzm[] FLASHMEM            = "tzm";
+	static char const STR_ntpsrv[] FLASHMEM         = "ntpsrv";
+    static char const STR_now[] FLASHMEM            = "now";
 }
 
 #endif

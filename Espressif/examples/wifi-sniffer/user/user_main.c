@@ -37,9 +37,12 @@ loop(os_event_t *events)
     os_delay_us(10);
 }
 
+void user_rf_pre_init(void)
+{
+}
+
 //Init function 
-void ICACHE_FLASH_ATTR
-user_init()
+void ICACHE_FLASH_ATTR user_init()
 {
     uart_init(115200, 115200);
     os_delay_us(100);

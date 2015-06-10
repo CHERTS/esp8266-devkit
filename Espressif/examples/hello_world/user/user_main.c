@@ -18,6 +18,10 @@ LOCAL void ICACHE_FLASH_ATTR hello_cb(void *arg)
 	ets_uart_printf("Hello World!\r\n");
 }
 
+void user_rf_pre_init(void)
+{
+}
+
 void user_init(void)
 {
 	// Configure the UART

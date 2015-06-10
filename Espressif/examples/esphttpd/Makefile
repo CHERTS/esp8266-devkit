@@ -1,207 +1,49 @@
-#############################################################
-#
-# Root Level Makefile
-#
-# (c) by CHERTS <sleuthhound@gmail.com>
-#
-#############################################################
+#Position and maximum length of espfs in flash memory. This can be undefined. In this case 
+#the webpages will be linked in into the executable file. If this is defined, please do a 
+#'make htmlflash' to flash the espfs into the ESPs memory.
+ESPFS_POS = 0x12000
+ESPFS_SIZE = 0x2E000
 
+# Output directors to store intermediate compiled files
+# relative to the project directory
 BUILD_BASE	= build
 FW_BASE		= firmware
 
-# Base directory for the compiler
+# Base directory for the compiler. Needs a / at the end; if not set it'll use the tools that are in
+# the PATH.
 XTENSA_TOOLS_ROOT ?= c:/Espressif/xtensa-lx106-elf/bin
 
 # base directory of the ESP8266 SDK package, absolute
 SDK_BASE	?= c:/Espressif/ESP8266_SDK
 SDK_TOOLS	?= c:/Espressif/utils
 
-#Extra Tensilica includes from the ESS VM
-SDK_EXTRA_INCLUDES ?= c:/Espressif/ESP8266_SDK/include
-SDK_EXTRA_LIBS ?= c:/Espressif/ESP8266_SDK/lib
-
-# esptool path and port
+#Esptool.py path and port
 ESPTOOL		?=$(SDK_TOOLS)/esptool.exe
 ESPPORT		?=COM2
 ESPBAUD		?= 115200
-# old - use c:/Espressif/utils/esptool.exe util
-# new - use c:/Espressif/utils/esptool-ck.exe util
-ESPTOOLMODE	?=old
-
-#Position and maximum length of espfs in flash memory
-ESPFS_POS = 0x12000
-ESPFS_SIZE = 0x2E000
-
-#Static gzipping is disabled by default.
-GZIP_COMPRESSION ?= no
-
-#If USE_HEATSHRINK is set to "yes" then the espfs files will be compressed with Heatshrink and decompressed
-#on the fly while reading the file. Because the decompression is done in the esp8266, it does not require
-#any support in the browser.
-USE_HEATSHRINK ?= yes
-
-# BOOT = none
-# BOOT = old - boot_v1.1
-# BOOT = new - boot_v1.2+
-BOOT?=none
-# APP = 0 - eagle.flash.bin + eagle.irom0text.bin
-# APP = 1 - user1.bin
-# APP = 2 - user2.bin
-APP?=0
-# SPI_SPEED = 20MHz, 26.7MHz, 40MHz, 80MHz
-SPI_SPEED?=40
-# SPI_MODE: QIO, QOUT, DIO, DOUT
-SPI_MODE?=QIO
-# SPI_SIZE: 256KB, 512KB, 1024KB, 2048KB, 4096KB
-SPI_SIZE?=512
-
-ifeq ($(ESPTOOLMODE), new)
-    esptoolmode = new
-else
-    esptoolmode = old
-endif
-
-ifeq ($(BOOT), new)
-    boot = new
-else
-    ifeq ($(BOOT), old)
-        boot = old
-    else
-        boot = none
-    endif
-endif
-
-ifeq ($(APP), 1)
-    app = 1
-else
-    ifeq ($(APP), 2)
-        app = 2
-    else
-        app = 0
-    endif
-endif
-
-ifeq ($(SPI_SPEED), 26.7)
-    freqdiv = 1
-	flashimageoptions = -ff 26m
-else
-    ifeq ($(SPI_SPEED), 20)
-        freqdiv = 2
-        flashimageoptions = -ff 20m
-    else
-        ifeq ($(SPI_SPEED), 80)
-            freqdiv = 15
-			flashimageoptions = -ff 80m
-        else
-            freqdiv = 0
-			flashimageoptions = -ff 40m
-        endif
-    endif
-endif
-
-ifeq ($(SPI_MODE), QOUT)
-    mode = 1
-	flashimageoptions += -fm qout
-else
-    ifeq ($(SPI_MODE), DIO)
-        mode = 2
-		flashimageoptions += -fm dio
-    else
-        ifeq ($(SPI_MODE), DOUT)
-            mode = 3
-			flashimageoptions += -fm dout
-        else
-            mode = 0
-			flashimageoptions += -fm qio
-        endif
-    endif
-endif
-
-# flash larger than 1024KB only use 1024KB to storage user1.bin and user2.bin
-ifeq ($(SPI_SIZE), 256)
-    size = 1
-    flash = 256
-	flashimageoptions += -fs 2m
-else
-    ifeq ($(SPI_SIZE), 1024)
-        size = 2
-        flash = 1024
-		flashimageoptions += -fs 8m
-    else
-        ifeq ($(SPI_SIZE), 2048)
-            size = 3
-            flash = 1024
-			flashimageoptions += -fs 16m
-        else
-            ifeq ($(SPI_SIZE), 4096)
-                size = 4
-                flash = 1024
-				flashimageoptions += -fs 32m
-            else
-                size = 0
-                flash = 512
-				flashimageoptions += -fs 4m
-            endif
-        endif
-    endif
-endif
-
-ifeq ($(flash), 512)
-  ifeq ($(app), 1)
-    addr = 0x01000
-  else
-    ifeq ($(app), 2)
-      addr = 0x41000
-    endif
-  endif
-else
-  ifeq ($(flash), 1024)
-    ifeq ($(app), 1)
-      addr = 0x01000
-    else
-      ifeq ($(app), 2)
-        addr = 0x81000
-      endif
-    endif
-  endif
-endif
 
 # name for the target project
-TARGET		= app
+TARGET		= httpd
 
 # which modules (subdirectories) of the project to include in compiling
-MODULES		= espfs httpd user
-EXTRA_INCDIR	= include \
-		. \
-		lib/heatshrink/ \
-		$(SDK_EXTRA_INCLUDES)
+MODULES		= user
+EXTRA_INCDIR	= include libesphttpd/include
 
 # libraries used in this project, mainly provided by the SDK
-LIBS		= c gcc hal phy pp net80211 lwip wpa main
+LIBS		= c gcc hal phy pp net80211 wpa main lwip
+#Add in esphttpd lib
+LIBS += esphttpd
 
 # compiler flags using during compilation of source files
 CFLAGS		= -Os -ggdb -std=c99 -Werror -Wpointer-arith -Wundef -Wall -Wl,-EL -fno-inline-functions \
 		-nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH -D_STDINT_H \
-		-Wno-address -DESPFS_POS=$(ESPFS_POS) -DESPFS_SIZE=$(ESPFS_SIZE)
+		-Wno-address
 
 # linker flags used to generate the main object file
 LDFLAGS		= -nostdlib -Wl,--no-check-sections -u call_user_start -Wl,-static
 
 # linker script used for the above linkier step
 LD_SCRIPT	= eagle.app.v6.ld
-
-ifneq ($(boot), none)
-ifneq ($(app),0)
-	LD_SCRIPT = eagle.app.v6.$(boot).$(flash).app$(app).ld
-	BIN_NAME = user$(app).$(flash).$(boot)
-endif
-else
-    app = 0
-endif
-
-ifeq ($(esptoolmode), new)
-    ESPTOOL	= $(SDK_TOOLS)/esptool-ck.exe
-endif
 
 # various paths from the SDK used in this project
 SDK_LIBDIR	= lib
@@ -215,7 +57,9 @@ LD		:= $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-gcc
 OBJCOPY := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-objcopy
 OBJDUMP := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-objdump
 
-# no user configurable options below here
+####
+#### no user configurable options below here
+####
 SRC_DIR		:= $(MODULES)
 BUILD_DIR	:= $(addprefix $(BUILD_BASE)/,$(MODULES))
 
@@ -251,6 +95,14 @@ ifeq ("$(USE_HEATSHRINK)","yes")
 CFLAGS		+= -DESPFS_HEATSHRINK
 endif
 
+ifeq ("$(ESPFS_POS)","")
+#No hardcoded espfs position: link it in with the binaries.
+LIBS += -lwebpages-espfs
+else
+#Hardcoded espfs location: Pass espfs position to rest of code
+CFLAGS += -DESPFS_POS=$(ESPFS_POS) -DESPFS_SIZE=$(ESPFS_SIZE)
+endif
+
 vpath %.c $(SRC_DIR)
 
 define compile-objects
@@ -259,13 +111,21 @@ $1/%.o: %.c
 	$(Q) $(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS)  -c $$< -o $$@
 endef
 
-.PHONY: all checkdirs clean flash flashinit flashonefile htmlfiles 
+.PHONY: all checkdirs clean libesphttpd
 
-all: checkdirs $(TARGET_OUT)
+all: checkdirs $(TARGET_OUT) $(FW_BASE)
+
+libesphttpd/Makefile:
+	$(Q) echo "No libesphttpd submodule found. Using git to fetch it..."
+	$(Q) git submodule init
+	$(Q) git submodule update
+
+libesphttpd: libesphttpd/Makefile
+	$(Q) make -C libesphttpd
 
 $(TARGET_OUT): $(APP_AR)
 	$(vecho) "LD $@"
-	$(Q) $(LD) -L$(SDK_LIBDIR) $(LD_SCRIPT) $(LDFLAGS) -Wl,--start-group $(LIBS) $(APP_AR) -Wl,--end-group -o $@
+	$(Q) $(LD) -Llibesphttpd -L$(SDK_LIBDIR) $(LD_SCRIPT) $(LDFLAGS) -Wl,--start-group $(LIBS) $(APP_AR) -Wl,--end-group -o $@
 	$(vecho) "------------------------------------------------------------------------------"
 	$(vecho) "Section info:"
 	$(Q) $(OBJDUMP) -h -j .data -j .rodata -j .bss -j .text -j .irom0.text $@
@@ -273,170 +133,42 @@ $(TARGET_OUT): $(APP_AR)
 	$(vecho) "Section info:"
 	$(Q) $(SDK_TOOLS)/memanalyzer.exe $(OBJDUMP).exe $@
 	$(vecho) "------------------------------------------------------------------------------"
-	$(vecho) "Run objcopy, please wait..."
-	$(Q) $(OBJCOPY) --only-section .text -O binary $@ eagle.app.v6.text.bin
-	$(Q) $(OBJCOPY) --only-section .data -O binary $@ eagle.app.v6.data.bin
-	$(Q) $(OBJCOPY) --only-section .rodata -O binary $@ eagle.app.v6.rodata.bin
-	$(Q) $(OBJCOPY) --only-section .irom0.text -O binary $@ eagle.app.v6.irom0text.bin
-	$(vecho) "objcopy done"
-	$(vecho) "Run gen_appbin.exe"
-ifeq ($(app), 0)
-	$(Q) $(SDK_TOOLS)/gen_appbin.exe $@ 0 $(mode) $(freqdiv) $(size)
-	$(Q) mv eagle.app.flash.bin $(FW_BASE)/eagle.flash.bin
-	$(Q) mv eagle.app.v6.irom0text.bin $(FW_BASE)/eagle.irom0text.bin
-	$(Q) rm eagle.app.v6.*
-	$(vecho) "No boot needed."
-	$(vecho) "Generate eagle.flash.bin and eagle.irom0text.bin successully in folder $(FW_BASE)."
-	$(vecho) "eagle.flash.bin-------->0x00000"
-	$(vecho) "eagle.irom0text.bin---->0x40000"
-else
-    ifeq ($(boot), new)
-		$(Q) $(SDK_TOOLS)/gen_appbin.exe $@ 2 $(mode) $(freqdiv) $(size)
-		$(vecho) "Support boot_v1.2 and +"
-    else
-		$(Q) $(SDK_TOOLS)/gen_appbin.exe $@ 1 $(mode) $(freqdiv) $(size)
-		$(vecho) "Support boot_v1.1 and +"
-    endif
-	$(Q) mv eagle.app.flash.bin $(FW_BASE)/upgrade/$(BIN_NAME).bin
-	$(Q) rm eagle.app.v6.*
-	$(vecho) "Generate $(BIN_NAME).bin successully in folder $(FW_BASE)/upgrade."
-	$(vecho) "boot_v1.x.bin------->0x00000"
-	$(vecho) "$(BIN_NAME).bin--->$(addr)"
-endif
-	$(vecho) "Done"
 
-$(APP_AR): $(OBJ)
+$(FW_BASE): $(TARGET_OUT)
+	$(vecho) "FW $@"
+	$(Q) mkdir -p $@
+	$(Q) $(ESPTOOL) elf2image $(TARGET_OUT) --output $@/
+
+$(APP_AR):  libesphttpd $(OBJ)
 	$(vecho) "AR $@"
-	$(Q) $(AR) cru $@ $^
+	$(Q) $(AR) cru $@ $(OBJ)
 
-checkdirs: $(BUILD_DIR) $(FW_BASE)
+checkdirs: $(BUILD_DIR)
 
 $(BUILD_DIR):
 	$(Q) mkdir -p $@
 
-$(FW_BASE):
-	$(Q) mkdir -p $@
-	$(Q) mkdir -p $@/upgrade
 
-flashonefile: all webpages.espfs
-	$(vecho) "Run objcopy, please wait..."
-	$(OBJCOPY) --only-section .text -O binary $(TARGET_OUT) eagle.app.v6.text.bin
-	$(OBJCOPY) --only-section .data -O binary $(TARGET_OUT) eagle.app.v6.data.bin
-	$(OBJCOPY) --only-section .rodata -O binary $(TARGET_OUT) eagle.app.v6.rodata.bin
-	$(OBJCOPY) --only-section .irom0.text -O binary $(TARGET_OUT) eagle.app.v6.irom0text.bin
-	$(vecho) "objcopy done"
-	$(SDK_TOOLS)/gen_appbin_old.exe $(TARGET_OUT) v6
-	$(SDK_TOOLS)/gen_flashbin.exe eagle.app.v6.flash.bin $(FW_BASE)/webpages.espfs 0x12000
-	rm -f eagle.app.v6.flash.bin
-	mv eagle.app.flash.bin eagle.app.v6.flash.bin
-	$(SDK_TOOLS)/gen_flashbin.exe eagle.app.v6.flash.bin eagle.app.v6.irom0text.bin 0x40000
-	rm -f eagle.app.v6.data.bin
-	rm -f eagle.app.v6.flash.bin
-	rm -f eagle.app.v6.irom0text.bin
-	rm -f eagle.app.v6.rodata.bin
-	rm -f eagle.app.v6.text.bin
-	rm -f eagle.app.sym
-	mv eagle.app.flash.bin $(FW_BASE)/
-	$(vecho) "No boot needed."
-	$(vecho) "Generate eagle.app.flash.bin successully in folder $(FW_BASE)."
-	$(vecho) "eagle.app.flash.bin-------->0x00000"
-ifeq ($(esptoolmode), new)
-	$(ESPTOOL) -cp $(ESPPORT) -cd ck -cb 256000 -ca 0x00000 -cf $(FW_BASE)/eagle.app.flash.bin -v
-else
-	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x00000 $(FW_BASE)/eagle.app.flash.bin
-endif
+flash: $(TARGET_OUT) $(FW_BASE)
+	$(Q) $(ESPTOOL) --port $(ESPPORT) --baud $(ESPBAUD) write_flash 0x00000 $(FW_BASE)/0x00000.bin 0x40000 $(FW_BASE)/0x40000.bin
 
-flashboot: all
-ifeq ($(boot), new)
-	$(vecho) "Flash boot_v1.2 and +"
-ifeq ($(esptoolmode), new)
-	$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x00000 -cf $(SDK_BASE)/bin/boot_v1.2.bin -v
-else
-	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x00000 $(SDK_BASE)/bin/boot_v1.2.bin
-endif
-endif
-ifeq ($(boot), old)
-	$(vecho) "Flash boot_v1.1 and +"
-ifeq ($(esptoolmode), new)
-	$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x00000 -cf $(SDK_BASE)/bin/boot_v1.1.bin -v
-else
-	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x00000 $(SDK_BASE)/bin/boot_v1.1.bin
-endif
-endif
-ifeq ($(boot), none)
-	$(vecho) "No boot needed."
-endif
-
-flash: all
-ifeq ($(app), 0) 
-ifeq ($(esptoolmode), new)
-	$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x00000 -cf $(FW_BASE)/eagle.flash.bin -v
-	$(ESPTOOL) -cp $(ESPPORT) -cd ck -cb 256000 -ca 0x40000 -cf $(FW_BASE)/eagle.irom0text.bin -v
-else
-	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x00000 $(FW_BASE)/eagle.flash.bin 0x40000 $(FW_BASE)/eagle.irom0text.bin
-endif
-else
-ifeq ($(boot), none)
-	ifeq ($(esptoolmode), new)
-		$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x00000 -cf $(FW_BASE)/eagle.flash.bin -v
-		$(ESPTOOL) -cp $(ESPPORT) -cd ck -cb 256000 -ca 0x40000 -cf $(FW_BASE)/eagle.irom0text.bin -v
-	else
-		$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x00000 $(FW_BASE)/eagle.flash.bin 0x40000 $(FW_BASE)/eagle.irom0text.bin
-	endif
-else
-ifeq ($(esptoolmode), new)
-	$(ESPTOOL) -cp $(ESPPORT) -cd ck -cb 256000 -ca $(addr) -cf $(FW_BASE)/upgrade/$(BIN_NAME).bin -v
-else
-	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) $(addr) $(FW_BASE)/upgrade/$(BIN_NAME).bin
-endif
-endif
-endif
-ifeq ($(esptoolmode), new)
-	$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x79000 -cf $(SDK_BASE)/bin/clear_eep.bin -v
-	$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x7c000 -cf $(SDK_BASE)/bin/esp_init_data_default.bin -v
-	$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x7e000 -cf $(SDK_BASE)/bin/blank.bin -v
-else
-	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x79000 $(SDK_BASE)/bin/clear_eep.bin 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
-endif
+htmlflash: libesphttpd
+	$(Q) if [ $$(stat -c '%s' libesphttpd/webpages.espfs) -gt $$(( $(ESPFS_SIZE) )) ]; then echo "webpages.espfs too big!"; false; fi
+	$(Q) $(ESPTOOL) --port $(ESPPORT) --baud $(ESPBAUD) write_flash $(ESPFS_POS) libesphttpd/webpages.espfs
 
 flashinit:
 	$(vecho) "Flash init data:"
-	$(vecho) "Clear old settings (EEP area):"
-	$(vecho) "clear_eep.bin-------->0x79000"
 	$(vecho) "Default config (Clear SDK settings):"
 	$(vecho) "blank.bin-------->0x7E000"
 	$(vecho) "esp_init_data_default.bin-------->0x7C000"
-ifeq ($(esptoolmode), new)
-	$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x79000 -cf $(SDK_BASE)/bin/clear_eep.bin -v
-	$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x7c000 -cf $(SDK_BASE)/bin/esp_init_data_default.bin -v
-	$(ESPTOOL) -cp $(ESPPORT) -cd ck -ca 0x7e000 -cf $(SDK_BASE)/bin/blank.bin -v
-else
-	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x79000 $(SDK_BASE)/bin/clear_eep.bin 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
-endif
-
-webpages.espfs: $(FW_BASE) cleanwebpages
-	cd html; find | ../espfs/mkespfsimage/mkespfsimage.exe > ../$(FW_BASE)/webpages.espfs; cd ..
-
-htmlflash: webpages.espfs
-	if [ $$(stat -c '%s' $(FW_BASE)/webpages.espfs) -gt $$(( $(ESPFS_SIZE) )) ]; then echo "$(FW_BASE)/webpages.espfs too big!"; false; fi
-	
-ifeq ($(esptoolmode), new)
-	$(ESPTOOL) -cp $(ESPPORT) -cd ck -cb 256000 -ca $(ESPFS_POS) -cf $(FW_BASE)/webpages.espfs -v
-else
-	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) $(ESPFS_POS) $(FW_BASE)/webpages.espfs
-endif
-
-rebuild: clean all
+	$(Q) $(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
 
 clean:
+	$(Q) make -C libesphttpd clean
 	$(Q) rm -f $(APP_AR)
 	$(Q) rm -f $(TARGET_OUT)
-	$(Q) rm -rf $(BUILD_DIR)
 	$(Q) rm -rf $(BUILD_BASE)
+	$(Q) find $(BUILD_BASE) -type f | xargs rm -f
 	$(Q) rm -rf $(FW_BASE)
-	$(Q) rm -f webpages.espfs
-
-cleanwebpages:
-	$(Q) rm -f $(FW_BASE)/webpages.espfs
 
 $(foreach bdir,$(BUILD_DIR),$(eval $(call compile-objects,$(bdir))))

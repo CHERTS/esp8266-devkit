@@ -45,6 +45,10 @@ static void ICACHE_FLASH_ATTR user_procTask(os_event_t *events)
     os_delay_us(5000);
 }
 
+void user_rf_pre_init(void)
+{
+}
+
 void user_init(void)
 {
     // Init uart

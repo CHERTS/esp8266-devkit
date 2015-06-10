@@ -1,5 +1,3 @@
-
-
 /*
  * ----------------------------------------------------------------------------
  * "THE BEER-WARE LICENSE" (Revision 42):
@@ -9,6 +7,11 @@
  * ----------------------------------------------------------------------------
  */
 
+/*
+This is example code for the esphttpd library. It's a small-ish demo showing off 
+the server, including WiFi connection management capabilities, some IO and
+some pictures of cats.
+*/
 
 #include <esp8266.h>
 #include "httpd.h"
@@ -20,7 +23,10 @@
 #include "stdout.h"
 #include "auth.h"
 #include "espfs.h"
+#include "captdns.h"
+#include "webpages-espfs.h"
 
+//The example can print out the heap use every 3 seconds. You can use this to catch memory leaks.
 //#define SHOW_HEAP_USE
 
 //Function that tells the authentication system what users/passwords live on the system.
@@ -40,6 +46,12 @@ int myPassFn(HttpdConnData *connData, int no, char *user, int userLen, char *pas
 	return 0;
 }
 
+#ifdef ESPFS_POS
+CgiUploadEspfsParams espfsParams={
+	.espFsPos=ESPFS_POS,
+	.espFsSize=ESPFS_SIZE
+};
+#endif
 
 /*
 This is the main url->function dispatching data struct.
@@ -52,13 +64,15 @@ general ones. Authorization things (like authBasic) act as a 'barrier' and
 should be placed above the URLs they protect.
 */
 HttpdBuiltInUrl builtInUrls[]={
+	{"*", cgiRedirectApClientToHostname, "esp8266.local"},
 	{"/", cgiRedirect, "/index.tpl"},
 	{"/flash.bin", cgiReadFlash, NULL},
 	{"/led.tpl", cgiEspFsTemplate, tplLed},
 	{"/index.tpl", cgiEspFsTemplate, tplCounter},
 	{"/led.cgi", cgiLed, NULL},
-	{"/updateweb.cgi", cgiUploadEspfs, NULL},
-
+#ifdef ESPFS_POS
+	{"/updateweb.cgi", cgiUploadEspfs, &espfsParams},
+#endif
 	//Routines to make the /wifi URL and everything beneath it work.
 
 //Enable the line below to protect the WiFi configuration with an username/password combo.
@@ -89,10 +103,15 @@ static void ICACHE_FLASH_ATTR prHeapTimerCb(void *arg) {
 void user_init(void) {
 	stdoutInit();
 	ioInit();
+	captdnsInit();
 
 	// 0x40200000 is the base address for spi flash memory mapping, ESPFS_POS is the position
 	// where image is written in flash that is defined in Makefile.
+#ifdef ESPFS_POS
 	espFsInit((void*)(0x40200000 + ESPFS_POS));
+#else
+	espFsInit((void*)(webpages_espfs_start));
+#endif
 	httpdInit(builtInUrls, 80);
 #ifdef SHOW_HEAP_USE
 	os_timer_disarm(&prHeapTimer);
@@ -100,4 +119,8 @@ void user_init(void) {
 	os_timer_arm(&prHeapTimer, 3000, 1);
 #endif
 	os_printf("\nReady\n");
+}
+
+void user_rf_pre_init() {
+	//Not needed, but some SDK versions want this defined.
 }

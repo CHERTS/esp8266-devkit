@@ -86,6 +86,10 @@ LOCAL void ICACHE_FLASH_ATTR dht22_cb(void *arg)
 	os_timer_arm(&dht22_timer, DELAY, 1);
 }
 
+void user_rf_pre_init(void)
+{
+}
+
 void user_init(void)
 {
 	UARTInit(BIT_RATE_115200);

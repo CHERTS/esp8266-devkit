@@ -1,12 +1,25 @@
 Changelog:
 ----------
 
-v2.0.6 (08.06.2015):
+v2.0.6 (10.06.2015):
 * Update SDK v1.1.1 (folder ESP8266_SDK);
 * SDK version 1.1.0 moved to a folder ESP8266_SDK_110;
 * SDK version 1.0.1 moved to a folder ESP8266_SDK_101;
 * Update a utility "utils\esptool.exe";
+  - Added patch: write_flash: Show actual flash write speed.
+  - Add optional '--entry-symbol' option to override entry point symbol name.
+  - Fixed wrong size erase region for recording (Patch by Viktor aka pvvx).
+  - Fixed creation of superfluous segments for the loader, if the no data in segments rodata and etc (Patch by Viktor aka pvvx).
 * Update a utility "utils\esptool-ck.exe" to version 0.4.5:
+* Updated documentation:
+  - Delete files:
+    2C-ESP8266__SDK__Programming Guide__EN_v1.0.1.pdf
+  + Added files:
+    2C-ESP8266__SDK__Programming Guide__EN_v1.1.1.pdf
+* Updated examples:
+  ESPWebFramework;
+  dht22_thingspeak;
+  esphttpd;
 
 v2.0.5 (22.05.2015):
 + Added command line mode.

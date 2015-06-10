@@ -52,8 +52,7 @@ static void loop(os_event_t *events);
 static void nop_procTask(os_event_t *events);
 
 //Main code function
-static void ICACHE_FLASH_ATTR
-loop(os_event_t *events) {
+static void ICACHE_FLASH_ATTR loop(os_event_t *events) {
   static uint32_t loopIterations = 0;
   loopIterations+=1;
   if (loopIterations < 3) {
@@ -109,8 +108,7 @@ loop(os_event_t *events) {
  * Setup program. When user_init runs the debug printouts will not always
  * show on the serial console. So i run the inits in here, 2 seconds later.
  */
-static void ICACHE_FLASH_ATTR
-setup(void) {
+static void ICACHE_FLASH_ATTR setup(void) {
   pcd8544_settings.lcdVop = 0xB1;
   pcd8544_settings.tempCoeff = 0x04;
   pcd8544_settings.biasMode = 0x14;
@@ -133,14 +131,16 @@ setup(void) {
 }
 
 //Do nothing function
-static void ICACHE_FLASH_ATTR
-nop_procTask(os_event_t *events) {
+static void ICACHE_FLASH_ATTR nop_procTask(os_event_t *events) {
   os_delay_us(10);
 }
 
+void user_rf_pre_init(void)
+{
+}
+
 //Init function 
-void ICACHE_FLASH_ATTR
-user_init(void)
+void ICACHE_FLASH_ATTR user_init(void)
 {
   // Make uart0 work with just the TX pin. Baud:115200,n,8,1
   // The RX pin is now free for GPIO use.

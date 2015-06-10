@@ -59,6 +59,10 @@ void ICACHE_FLASH_ATTR intr_callback(unsigned pin, unsigned level)
 	gpio_write(GPIO_LED_PIN, ~gpio_read(GPIO_LED_PIN));
 }
 
+void user_rf_pre_init(void)
+{
+}
+
 void user_init(void)
 {
 	GPIO_INT_TYPE gpio_type;

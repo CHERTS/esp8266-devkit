@@ -128,6 +128,10 @@ void ICACHE_FLASH_ATTR setup_wifi_st_mode(void)
 	#endif
 }
 
+void user_rf_pre_init(void)
+{
+}
+
 //Init function
 void ICACHE_FLASH_ATTR user_init()
 {

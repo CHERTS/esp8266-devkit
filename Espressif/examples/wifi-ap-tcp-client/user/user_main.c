@@ -111,8 +111,11 @@ void BtnInit() {
 	os_timer_arm(&BtnTimer, 500, 1);
 }
 
-void ICACHE_FLASH_ATTR
-user_init()
+void user_rf_pre_init(void)
+{
+}
+
+void ICACHE_FLASH_ATTR user_init()
 {
 	uart_init(BIT_RATE_115200, BIT_RATE_115200);
 	os_delay_us(100);

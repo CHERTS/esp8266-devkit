@@ -39,13 +39,17 @@ int ICACHE_FLASH_ATTR cgiReadFlash(HttpdConnData *connData) {
 	if (*pos>=0x40200000+(512*1024)) return HTTPD_CGI_DONE; else return HTTPD_CGI_MORE;
 }
 
+
 //Cgi that allows the ESPFS image to be replaced via http POST
 int ICACHE_FLASH_ATTR cgiUploadEspfs(HttpdConnData *connData) {
+	const CgiUploadEspfsParams *up=(CgiUploadEspfsParams*)connData->cgiArg;
+
 	if (connData->conn==NULL) {
 		//Connection aborted. Clean up.
 		return HTTPD_CGI_DONE;
 	}
-	if(connData->post->len > ESPFS_SIZE){
+
+	if(connData->post->len > up->espFsSize){
 		// The uploaded file is too large
 		os_printf("ESPFS file too large\n");
 		httpdSend(connData, "HTTP/1.0 500 Internal Server Error\r\nServer: esp8266-httpd/0.3\r\nConnection: close\r\nContent-Type: text/plain\r\nContent-Length: 24\r\n\r\nESPFS image loo large.\r\n", -1);
@@ -53,7 +57,7 @@ int ICACHE_FLASH_ATTR cgiUploadEspfs(HttpdConnData *connData) {
 	}
 	
 	// The source should be 4byte aligned, so go ahead and flash whatever we have
-	int address = ESPFS_POS + connData->post->received - connData->post->buffLen;
+	int address = up->espFsPos + connData->post->received - connData->post->buffLen;
 	if(address % SPI_FLASH_SEC_SIZE == 0){
 		// We need to erase this block
 		os_printf("Erasing flash at %d\n", address/SPI_FLASH_SEC_SIZE);

@@ -20,6 +20,10 @@ user_procTask(os_event_t *events)
 {
 }
 
+void user_rf_pre_init(void)
+{
+}
+
 void user_init(void)
 {
     char ssid[32] = SSID;
