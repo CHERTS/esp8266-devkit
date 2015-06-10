@@ -369,7 +369,8 @@ class ESPFirmwareImage:
                 (offset, size) = struct.unpack('<II', f.read(8))
                 if offset > 0x40200000 or offset < 0x3ffe0000 or size > 65536:
                     raise Exception('Suspicious segment %x,%d' % (offset, size))
-                self.segments.append((offset, size, f.read(size)))
+                if size > 0:
+                    self.segments.append((offset, size, f.read(size)))
 
             # Skip the padding. The checksum is stored in the last byte so that the
             # file is a multiple of 16 bytes.
@@ -381,8 +382,9 @@ class ESPFirmwareImage:
     def add_segment(self, addr, data):
         # Data should be aligned on word boundary
         l = len(data)
-        if l % 4:
-            data += b"\x00" * (4 - l % 4)
+        if l > 0:
+            if l % 4:
+                data += b"\x00" * (4 - l % 4)
         self.segments.append((addr, len(data), data))
 
     def save(self, filename):
