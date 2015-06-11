@@ -149,6 +149,10 @@ static void ICACHE_FLASH_ATTR eeprom_dump(uint8_t devaddr, uint32_t addr, uint32
     }
 }
 
+void user_rf_pre_init(void)
+{
+}
+
 void user_init(void)
 {
 	int i;

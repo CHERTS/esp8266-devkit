@@ -31,6 +31,32 @@
 namespace fdv
 {
 
+    // static members
+    int8_t      DateTime::s_defaultTimezoneHours    = 0;
+    uint8_t     DateTime::s_defaultTimezoneMinutes  = 0;
+    IPAddress   DateTime::s_defaultNTPServer        = IPAddress(193, 204, 114, 232);    // default is ntp1.inrim.it
+
+    
+    // a local copy of defaultNTPServer string is perfomed
+    void DateTime::setDefaults(int8_t timezoneHours, uint8_t timezoneMinutes, char const* defaultNTPServer)
+    {
+        s_defaultNTPServer       = IPAddress(defaultNTPServer);
+        s_defaultTimezoneHours   = timezoneHours;
+        s_defaultTimezoneMinutes = s_defaultTimezoneMinutes;
+        if (s_defaultNTPServer != IPAddress(0, 0, 0, 0))
+        {
+            // this will force NTP synchronization
+            lastMillis() = 0;
+        }
+    }
+    
+    
+    void DateTime::setCurrentDateTime(DateTime const& dateTime)
+    {
+        lastDateTime() = dateTime;
+        lastMillis()   = millis();
+    }
+
 
     // 0=sunday...6=saturday
     uint8_t MTD_FLASHMEM DateTime::dayOfWeek() const
@@ -97,33 +123,129 @@ namespace fdv
     }
     
     
-    bool MTD_FLASHMEM DateTime::getFromNTPServer(char const* serverIP)
+    bool MTD_FLASHMEM DateTime::getFromNTPServer()
     {
-        SNTPClient sntp(serverIP);
-        uint64_t v = 0;
-        if (sntp.query(&v))
+        if (s_defaultNTPServer != IPAddress(0, 0, 0, 0))
         {
-            setNTPDateTime((uint8_t*)&v);
-            return true;
+            SNTPClient sntp(s_defaultNTPServer);
+            uint64_t v = 0;
+            if (sntp.query(&v))
+            {
+                setNTPDateTime((uint8_t*)&v);
+                return true;
+            }
         }
         return false;
     }
 
 
-    // must be updated before 50 days using adjustNow()
+    // if this is the first time calling now() or after 6 hours an NTP update is perfomed
+    // warn: now() should be called within 50 days from the last call
+    // warn: loses about 3 seconds every 10 hours
     DateTime MTD_FLASHMEM DateTime::now()
     {
         uint32_t currentMillis = millis();
         uint32_t locLastMillis = lastMillis();
         uint32_t diff = (currentMillis < locLastMillis) ? (0xFFFFFFFF - locLastMillis + currentMillis) : (currentMillis - locLastMillis);
-        return DateTime().setUnixDateTime( lastDateTime().getUnixDateTime() + (diff / 1000) );
+        
+        if (locLastMillis == 0 || diff > 6 * 3600 * 1000)
+        {
+            if (lastDateTime().getFromNTPServer())
+            {
+                lastMillis() = currentMillis;
+                return lastDateTime();
+            }
+        }
+        
+        DateTime result;
+        result.setUnixDateTime( lastDateTime().getUnixDateTime() + (diff / 1000) );
+        
+        if (s_defaultNTPServer == IPAddress(0, 0, 0, 0))
+        {
+            // NTP synchronizatin is disabled. Take care for millis overflow.
+            if (diff > 10 * 24 * 3600 * 1000)   // past 10 days?
+            {
+                // reset millis counter to avoid overflow (actually it overflows after 50 days)
+                lastMillis()   = currentMillis;
+                lastDateTime() = result;
+            }
+        }
+        
+        return result;
     }
 
 
-    void MTD_FLASHMEM DateTime::adjustNow(DateTime const& currentDateTime)
+    DateTime& MTD_FLASHMEM DateTime::lastDateTime()
     {
-        lastMillis()   = millis();
-        lastDateTime() = currentDateTime;
+        static DateTime s_lastDateTime;
+        return s_lastDateTime;
+    }
+
+
+    uint32_t& MTD_FLASHMEM DateTime::lastMillis()
+    {
+        static uint32_t s_lastMillis = 0;
+        return s_lastMillis;
+    }
+    
+    
+    // inbuf can stay only in RAM
+    // formatstr can stay in RAM or Flash
+    // warn: doesn't check correctness and size of input string!
+    // Format:
+    //    '%d' : Day of the month, 2 digits with leading zeros (01..31)
+    //    '%m' : Numeric representation of a month, with leading zeros (01..12)
+    //    '%Y' : A full numeric representation of a year, 4 digits (1999, 2000...)
+    //    '%H' : 24-hour format of an hour with leading zeros (00..23)
+    //    '%M' : Minutes with leading zeros (00..59)
+    //    '%S' : Seconds, with leading zeros (00..59)
+    // Returns position of the next character to process
+    char const* MTD_FLASHMEM DateTime::decode(char const* inbuf, char const* formatstr)
+    {
+        for (; inbuf && getChar(formatstr); ++formatstr)
+        {
+            if (getChar(formatstr) == '%')
+            {
+                ++formatstr;
+                switch (getChar(formatstr))
+                {
+                    case '%':
+                        ++inbuf;
+                        break;
+                    case 'd':
+                        day =  (*inbuf++ - '0') * 10;
+                        day += (*inbuf++ - '0');
+                        break;
+                    case 'm':
+                        month =  (*inbuf++ - '0') * 10;
+                        month += (*inbuf++ - '0');
+                        break;
+                    case 'Y':
+                        year =  (*inbuf++ - '0') * 1000;
+                        year += (*inbuf++ - '0') * 100;
+                        year += (*inbuf++ - '0') * 10;
+                        year += (*inbuf++ - '0');
+                        break;
+                    case 'H':
+                        hours =  (*inbuf++ - '0') * 10;
+                        hours += (*inbuf++ - '0');
+                        break;
+                    case 'M':
+                        minutes =  (*inbuf++ - '0') * 10;
+                        minutes += (*inbuf++ - '0');
+                        break;
+                    case 'S':
+                        seconds =  (*inbuf++ - '0') * 10;
+                        seconds += (*inbuf++ - '0');
+                        break;
+                    default:
+                        return inbuf;   // error!
+                }
+            }
+            else
+                ++inbuf;
+        }
+        return inbuf;
     }
     
     
@@ -254,20 +376,6 @@ namespace fdv
         if (m > 2 && y % 4 == 0)
             ++days;
         return days + 365 * y + (y + 3) / 4 - 1;
-    }
-
-
-    DateTime& MTD_FLASHMEM DateTime::lastDateTime()
-    {
-        static DateTime s_lastDateTime;
-        return s_lastDateTime;
-    }
-
-
-    uint32_t& MTD_FLASHMEM DateTime::lastMillis()
-    {
-        static uint32_t s_lastMillis = millis();
-        return s_lastMillis;
     }
 
 

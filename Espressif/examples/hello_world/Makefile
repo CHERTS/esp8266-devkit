@@ -18,7 +18,7 @@ SDK_TOOLS	?= c:/Espressif/utils
 
 # esptool path and port
 ESPTOOL ?= $(SDK_TOOLS)/esptool.exe
-ESPPORT ?= COM3
+ESPPORT ?= COM2
 # old - use c:/Espressif/utils/esptool.exe util
 # new - use c:/Espressif/utils/esptool-ck.exe util
 ESPTOOLMODE ?= new

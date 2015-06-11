@@ -56,6 +56,105 @@ sint8 FUNC_FLASHMEM udhcpd_stop(void);
 namespace fdv
 {
 	
+	//////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+    // IPAddress
+    
+    struct IPAddress
+    {
+        
+        uint8_t address[4];
+        
+        
+        // a wrapper for IPAddress.get_str()
+        struct IPAddressStr
+        {
+            char address[16];
+            
+            operator char*()
+            {
+                return address;
+            }
+        };
+        
+        
+        IPAddress()
+        {
+            address[0] = 0;
+            address[1] = 0;
+            address[2] = 0;
+            address[3] = 0;
+        }
+        
+        IPAddress(uint8_t v1, uint8_t v2, uint8_t v3, uint8_t v4)
+        {
+            address[0] = v1;
+            address[1] = v2;
+            address[2] = v3;
+            address[3] = v4;
+        }
+        
+        IPAddress(IPAddress const& c)            
+        {
+            *((uint32_t*)&address) = *((uint32_t*)&c.address);
+        }
+        
+        // empty string generates "0.0.0.0"
+        IPAddress(char const* str)
+        {
+            if (!str || f_strlen(str) == 0)
+                *this = IPAddress(0, 0, 0, 0);
+            else
+                *((in_addr_t*)(&address)) = ipaddr_addr(APtr<char>(f_strdup(str)).get());
+        }
+        
+        IPAddress(in_addr inaddr)
+        {
+            *((in_addr_t*)(&address)) = inaddr.s_addr;
+        }
+        
+        IPAddress(in_addr_t inaddr)
+        {
+            *((in_addr_t*)(&address)) = inaddr;
+        }
+        
+        IPAddress(ip_addr_t ipaddr)
+        {
+            *((u32_t*)(&address)) = ipaddr.addr;
+        }
+        
+        in_addr_t get_in_addr_t()
+        {
+            return *((in_addr_t*)(&address));
+        }
+        
+        ip_addr_t get_ip_addr_t()
+        {
+            ip_addr_t addr;
+            addr.addr = *((u32_t*)(&address));
+            return addr;
+        }
+        
+        IPAddressStr get_str()
+        {
+            IPAddressStr str;
+            ip_addr_t a = get_ip_addr_t();
+            ipaddr_ntoa_r(&a, str, 16);
+            return str;
+        }
+        
+        bool operator==(IPAddress const& rhs)
+        {
+            return *((uint32_t*)&address) == *((uint32_t*)&rhs.address);
+        }
+        
+        bool operator!=(IPAddress const& rhs)
+        {
+            return !(*this == rhs);
+        }
+    };
+    
+   
 	
 	//////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////
@@ -154,7 +253,7 @@ namespace fdv
 			config.ssid_len = f_strlen(SSID);
 			f_strcpy((char *)config.password, securityKey);
 			config.channel = channel;
-			config.authmode = AUTH_MODE(securityProtocol);
+			config.authmode = (AUTH_MODE)securityProtocol;
 			config.ssid_hidden = (uint8)hiddenSSID;
 			Critical critical;
 			wifi_softap_set_config(&config);
@@ -256,10 +355,6 @@ namespace fdv
 			return s_queue;
 		}
 		
-		
-		
-		
-
 	};
 	
 
@@ -335,6 +430,35 @@ namespace fdv
     };	
 
 
+   	//////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+    // NSLookup (DNS client)
+    //
+    // Two ways to use NSLookup. First:
+    //    NSLookup lookup("www.google.com");
+    //    char const* ipaddr = strdup(lookup.get().get_str());   // ipaddr will contain a string like "149.3.176.24" (zero terminated). Resulting string has the same lifetime as NSLookup object.
+    // Second:
+    //    IPAddress ipaddr = NSLookup::lookup("www.google.com");
+
+    
+    struct NSLookup
+    {
+        NSLookup(char const* hostname);        
+        IPAddress get();
+        
+        // returns IPAddress(0, 0, 0, 0) on fail
+        static IPAddress lookup(char const* hostname);
+
+        // configuration
+        // num = 0 or 1 (which dns server to set or get)
+        static void setDNSServer(uint32_t num, IPAddress server);
+        static IPAddress getDNSServer(uint32_t num);
+    private:
+                
+        IPAddress m_ipaddr;
+    };
+
+    
 	//////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////
     // Socket
@@ -358,131 +482,34 @@ namespace fdv
         {
         }
         
-		/*
-		Unfortunately FIONREAD has not been compiled into lwip!
-		uint32_t available()
-		{
-			int n = 0;
-			if (lwip_ioctl(m_socket, FIONREAD, &n) < 0 || n < 0)
-				n = 0;
-			return n;
-		}
-		
-		// as available() but wait for at least one byte to be available
-		uint32_t availableWait()
-		{
-			char c;
-			peek(&c, 1);
-			return available();
-		}
-		*/
+		// ret -1 = error, ret 0 = disconnected
+		int32_t read(void* buffer, uint32_t maxLength);
 		
 		// ret -1 = error, ret 0 = disconnected
-		int32_t MTD_FLASHMEM read(void* buffer, uint32_t maxLength)
-		{
-			int32_t bytesRecv = lwip_recv(m_socket, buffer, maxLength, 0);
-			if (maxLength > 0)
-				m_connected = (bytesRecv > 0);
-			return bytesRecv;
-		}
-		
-		// ret -1 = error, ret 0 = disconnected
-		int32_t MTD_FLASHMEM peek(void* buffer, uint32_t maxLength)
-		{
-			int32_t bytesRecv = lwip_recv(m_socket, buffer, maxLength, MSG_PEEK);
-			if (maxLength > 0)
-				m_connected = (bytesRecv > 0);
-			return bytesRecv;
-		}
+		int32_t peek(void* buffer, uint32_t maxLength);
 		
 		// buffer can stay in RAM of Flash
 		// ret -1 = error, ret 0 = disconnected
-		int32_t MTD_FLASHMEM write(void const* buffer, uint32_t length)
-		{
-			static uint32_t const CHUNKSIZE = 256;
-			
-			int32_t bytesSent = 0;
-			if (isStoredInFlash(buffer))
-			{
-				// copy from Flash, send in chunks of CHUNKSIZE bytes
-				APtr<uint8_t> rambuf(new uint8_t[length]);
-				uint8_t const* src = (uint8_t const*)buffer;
-				while (bytesSent < length)
-				{
-					uint32_t bytesToSend = min(CHUNKSIZE, length - bytesSent);
-					f_memcpy(rambuf.get(), src, bytesToSend);
-                    uint32_t chunkBytesSent = m_remoteAddress.sin_len == 0? lwip_send(m_socket, rambuf.get(), bytesToSend, 0) :
-                                                                            lwip_sendto(m_socket, rambuf.get(), bytesToSend, 0, (sockaddr*)&m_remoteAddress, sizeof(m_remoteAddress));
-					if (chunkBytesSent == 0)
-					{
-						// error
-						bytesSent = 0;
-						break;
-					}
-					bytesSent += chunkBytesSent;
-					src += chunkBytesSent;
-				}
-			}
-			else
-			{
-				// just send as is
-				bytesSent = m_remoteAddress.sin_len == 0? lwip_send(m_socket, buffer, length, 0) :
-                                                          lwip_sendto(m_socket, buffer, length, 0, (sockaddr*)&m_remoteAddress, sizeof(m_remoteAddress));
-			}
-			if (length > 0)
-				m_connected = (bytesSent > 0);
-			return bytesSent;
-		}
+		int32_t write(void const* buffer, uint32_t length);
 		
 		// str can stay in RAM of Flash
 		// ret -1 = error, ret 0 = disconnected
-		int32_t MTD_FLASHMEM write(char const* str)
-		{
-			return write((uint8_t const*)str, f_strlen(str));
-		}
+		int32_t write(char const* str);
+
 		
 		// like printf
 		// buf can stay in RAM or Flash
 		// "strings" of args can stay in RAM or Flash
-		uint16_t MTD_FLASHMEM writeFmt(char const *fmt, ...)
-		{
-			va_list args;
-			
-			va_start(args, fmt);
-			uint16_t len = vsprintf(NULL, fmt, args);
-			va_end(args);
-
-			char buf[len + 1];
-			
-			va_start(args, fmt);
-			vsprintf(buf, fmt, args);
-			va_end(args);
-			
-			write(buf, len);
-
-			return len;
-		}
+		uint16_t writeFmt(char const *fmt, ...);
 		
-		void MTD_FLASHMEM close()
-		{
-			if (m_socket > 0)
-			{
-				lwip_close(m_socket);
-				m_socket = 0;
-			}
-			m_connected = false;
-		}
+		void close();
 		
 		bool MTD_FLASHMEM isConnected()
 		{
 			return m_connected;
 		}
 		
-		void MTD_FLASHMEM setNoDelay(bool value)
-		{
-			int32_t one = (int32_t)value;
-			lwip_setsockopt(m_socket, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
-		}
+		void setNoDelay(bool value);
         
         int MTD_FLASHMEM getSocket()
         {
@@ -490,20 +517,10 @@ namespace fdv
         }
         
         // from now Socket will use "sendto" instead of "send"
-        void MTD_FLASHMEM setRemoteAddress(char const* remoteAddress, uint16_t remotePort)
-        {
-            memset(&m_remoteAddress, 0, sizeof(sockaddr_in));
-            m_remoteAddress.sin_family      = AF_INET;
-            m_remoteAddress.sin_len         = sizeof(sockaddr_in);
-            m_remoteAddress.sin_addr.s_addr = ipaddr_addr(APtr<char>(f_strdup(remoteAddress)).get());
-            m_remoteAddress.sin_port        = htons(remotePort);
-        }
+        void setRemoteAddress(IPAddress remoteAddress, uint16_t remotePort);
         
         // timeOut in ms (0 = no timeout)
-        void MTD_FLASHMEM setTimeOut(uint32_t timeOut)
-        {
-            lwip_setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, (void *)&timeOut, sizeof(timeOut));
-        }
+        void setTimeOut(uint32_t timeOut);
         
 
     private:
@@ -521,7 +538,7 @@ namespace fdv
     class UDPClient
     {
     public:
-        UDPClient(char const* remoteAddress, uint16_t remotePort)
+        UDPClient(IPAddress remoteAddress, uint16_t remotePort)
         {
             init(remoteAddress, remotePort);
         }
@@ -537,8 +554,8 @@ namespace fdv
         }        
         
     private:
-        void MTD_FLASHMEM init(char const* remoteAddress, uint16_t remotePort);        
-        static uint16_t MTD_FLASHMEM getUDPPort();
+        void init(IPAddress remoteAddress, uint16_t remotePort);        
+        static uint16_t getUDPPort();
         
     private:
         Socket m_socket;        
@@ -939,10 +956,7 @@ namespace fdv
 			return m_httpHandler;
 		}
 		
-		HTTPHandler::Request& MTD_FLASHMEM getRequest()
-		{
-			return m_httpHandler->getRequest();
-		}
+		HTTPHandler::Request& getRequest();
 		
 		void MTD_FLASHMEM setStatus(char const* status)
 		{
@@ -950,60 +964,23 @@ namespace fdv
 		}
 		
 		// accept RAM or Flash strings
-		void MTD_FLASHMEM addHeader(char const* key, char const* value)
-		{
-			m_headers.add(key, value);
-		}
+		void addHeader(char const* key, char const* value);
 		
 		// accept RAM or Flash data
 		// WARN: data is not copied! Just a pointer is stored
-		void MTD_FLASHMEM addContent(void const* data, uint32_t length)
-		{
-			CharChunk* chunk = m_content.addChunk((char*)data, length, false);
-		}
+		void addContent(void const* data, uint32_t length);
 		
 		// accept RAM or Flash strings
 		// WARN: data is not copied! Just a pointer is stored
 		// can be called many times
-		void MTD_FLASHMEM addContent(char const* str)
-		{
-			addContent(str, f_strlen(str));
-		}
+		void addContent(char const* str);
 				
 		// can be called many times
 		// WARN: src content is not copied! Just data pointers are stored
-		void MTD_FLASHMEM addContent(LinkedCharChunks* src)
-		{
-			m_content.addChunks(src);
-		}
+		void addContent(LinkedCharChunks* src);
 				
 		// should be called only after setStatus, addHeader and addContent
-		virtual void MTD_FLASHMEM flush()
-		{
-			// status line
-			m_httpHandler->getSocket()->writeFmt(FSTR("HTTP/1.1 %s\r\n"), m_status);
-			// HTTPResponse headers
-			addHeader(FSTR("Connection"), FSTR("close"));			
-			// user headers
-			for (uint32_t i = 0; i != m_headers.getItemsCount(); ++i)
-			{
-				Fields::Item* item = m_headers[i];
-				m_httpHandler->getSocket()->writeFmt(FSTR("%s: %s\r\n"), APtr<char>(t_strdup(item->key)).get(), APtr<char>(t_strdup(item->value)).get());
-			}
-			// content length header
-			m_httpHandler->getSocket()->writeFmt(FSTR("%s: %d\r\n\r\n"), STR_Content_Length, m_content.getItemsCount());
-			// actual content
-			if (m_content.getItemsCount() > 0)
-			{				
-				CharChunk* chunk = m_content.getFirstChunk();
-				while (chunk)
-				{
-					m_httpHandler->getSocket()->write((uint8_t const*)chunk->data, chunk->items);
-					chunk = chunk->next;
-				}
-				m_content.clear();
-			}
-		}
+		virtual void flush();
 		
 	private:
 		HTTPHandler*     m_httpHandler;
@@ -1151,101 +1128,23 @@ namespace fdv
 			m_filename = filename;
 		}
 		
-		void MTD_FLASHMEM addParamStr(char const* key, char const* value)
-		{
-			LinkedCharChunks linkedCharChunks;
-			linkedCharChunks.addChunk(value, f_strlen(value), false);
-			m_params.add(key, linkedCharChunks);
-		}
+		void addParamStr(char const* key, char const* value);		
+		void addParamInt(char const* key, int32_t value);
+		void addParamFmt(char const* key, char const *fmt, ...);
+		void addParamCharChunks(char const* key, LinkedCharChunks* value);
+		void addParams(Params* params);
+
+		Params* getParams();
 		
-		void MTD_FLASHMEM addParamInt(char const* key, int32_t value)
-		{
-			char* valueStr = f_printf(FSTR("%d"), value);
-			LinkedCharChunks* linkedCharChunks = m_params.add(key);
-			linkedCharChunks->addChunk(valueStr, f_strlen(valueStr), true);	// true = need to free
-		}
-		
-		void MTD_FLASHMEM addParamFmt(char const* key, char const *fmt, ...)
-		{
-			va_list args;			
-			va_start(args, fmt);
-			uint16_t len = vsprintf(NULL, fmt, args);
-			va_end(args);
-			char buf[len + 1];			
-			va_start(args, fmt);
-			vsprintf(buf, fmt, args);
-			va_end(args);
-			
-			LinkedCharChunks* linkedCharChunks = m_params.add(key);
-			linkedCharChunks->addChunk(buf, len, true);	// true = need to free
-		}
-		
-		void MTD_FLASHMEM addParamCharChunks(char const* key, LinkedCharChunks* value)
-		{
-			m_params.add(key, *value);
-		}
-		
-		void MTD_FLASHMEM addParams(Params* params)
-		{
-			m_params.add(params);
-		}
-		
-		Params* MTD_FLASHMEM getParams()
-		{
-			return &m_params;
-		}
-		
-		virtual void MTD_FLASHMEM flush()
-		{
-			processFileRequest();
-			HTTPResponse::flush();
-		}
+		virtual void flush();
 		
 	private:
 	
-		void MTD_FLASHMEM processFileRequest()
-		{
-			char const* mimetype;
-			void const* data;
-			uint16_t dataLength;
-			if (m_filename && FlashFileSystem::find(m_filename, &mimetype, &data, &dataLength))
-			{
-				// found
-				setStatus(STR_200_OK);
-				addHeader(STR_Content_Type, FSTR("text/html"));
-				
-				// replace parameters
-				ParameterReplacer replacer((char const*)data, (char const*)data + dataLength, &m_params);
-				
-				// is this a specialized file (contains {%..%} blocks)?
-				if (replacer.getBlocks()->getItemsCount() > 0 && replacer.getTemplateFilename() != NULL)
-				{
-					// this is a specialized file, add blocks as parameters
-					addParams(replacer.getBlocks());
-					// load template file
-					if (FlashFileSystem::find(replacer.getTemplateFilename(), &mimetype, &data, &dataLength))
-					{
-						// replace parameters and blocks of template file
-						ParameterReplacer templateReplacer((char const*)data, (char const*)data + dataLength, &m_params);
-						// flush resulting content
-						addContent(templateReplacer.getResult());
-						return;
-					}
-				}
-				else
-				{
-					// just flush this file (contains only {{...}} blocks)
-					addContent(replacer.getResult());
-					return;
-				}
-			}
-			// not found
-			setStatus(STR_404_Not_Fount);
-		}
+		void processFileRequest();
 		
 	private:
-		char const*      m_filename;
-		Params           m_params;		
+		char const* m_filename;
+		Params      m_params;		
 	};
 
 
@@ -1260,16 +1159,16 @@ namespace fdv
 
     public:
 
-        // serverIP = NULL then IP is 193.204.114.232 (ntp1.inrim.it)
-        explicit SNTPClient(char const* serverIP = NULL, uint16_t port = 123);
+        // default is 193.204.114.232 (ntp1.inrim.it)
+        explicit SNTPClient(IPAddress serverIP = IPAddress(193, 204, 114, 232), uint16_t port = 123);
 
-        bool MTD_FLASHMEM query(uint64_t* outValue) const;
+        bool query(uint64_t* outValue) const;
 
 
     private:
 
-        char const* m_server;
-        uint16_t    m_port;
+        IPAddress m_server;
+        uint16_t  m_port;
       };
 
 

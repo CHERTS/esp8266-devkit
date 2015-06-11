@@ -38,6 +38,7 @@ struct MyHTTPHandler : public HTTPHandler
 			{FSTR("/confnet"),   (PageHandler)&MyHTTPHandler::get_confnet},
 			{FSTR("/confserv"),  (PageHandler)&MyHTTPHandler::get_confserv},
 			{FSTR("/confgpio"),  (PageHandler)&MyHTTPHandler::get_confgpio},
+            {FSTR("/conftime"),  (PageHandler)&MyHTTPHandler::get_conftime},
 			{FSTR("/reboot"),    (PageHandler)&MyHTTPHandler::get_reboot},
 			{FSTR("/restore"),   (PageHandler)&MyHTTPHandler::get_restore},
 			{FSTR("*"),          (PageHandler)&MyHTTPHandler::get_all},
@@ -78,6 +79,12 @@ struct MyHTTPHandler : public HTTPHandler
 	void MTD_FLASHMEM get_confgpio()
 	{
 		HTTPGPIOConfigurationResponse response(this, FSTR("confgpio.html"));
+		response.flush();
+	}
+
+	void MTD_FLASHMEM get_conftime()
+	{
+		HTTPTimeConfigurationResponse response(this, FSTR("conftime.html"));
 		response.flush();
 	}
 	

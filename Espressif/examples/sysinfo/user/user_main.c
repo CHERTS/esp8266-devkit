@@ -14,6 +14,10 @@ extern int ets_uart_printf(const char *fmt, ...);
 
 LOCAL os_timer_t info_timer;
 
+void user_rf_pre_init(void)
+{
+}
+
 LOCAL void ICACHE_FLASH_ATTR info_cb(void *arg)
 {
 	char temp[80];

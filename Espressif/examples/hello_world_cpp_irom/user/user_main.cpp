@@ -136,6 +136,9 @@ LOCAL void hello_cb(void *arg)
 	a.print();
 }
 
+extern "C" void user_rf_pre_init(void)
+{
+}
 
 extern "C" void ICACHE_IRAM_ATTR user_init(void)
 {

@@ -93,6 +93,10 @@ LOCAL void ICACHE_FLASH_ATTR hello_cb(void *arg)
 
 A a;
 
+extern "C" void user_rf_pre_init(void)
+{
+}
+
 extern "C" void user_init(void)
 {
 	do_global_ctors();

@@ -59,6 +59,10 @@ void ICACHE_FLASH_ATTR intr_callback(unsigned pin, unsigned level)
 	}
 }
 
+void user_rf_pre_init(void)
+{
+}
+
 void user_init(void)
 {
 	GPIO_INT_TYPE gpio_type;

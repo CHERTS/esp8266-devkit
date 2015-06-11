@@ -205,6 +205,9 @@ void ICACHE_FLASH_ATTR mqttPublishedCb(uint32_t *args)
     os_printf("MQTT: Published\r\n");
 }
 
+void user_rf_pre_init(void)
+{
+}
 
 //Main routine
 void ICACHE_FLASH_ATTR user_init(void) {
@@ -273,8 +276,6 @@ void ICACHE_FLASH_ATTR user_init(void) {
 	//OLEDInit();
 	
 }
-
-
 
 
 

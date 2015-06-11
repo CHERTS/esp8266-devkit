@@ -25,6 +25,7 @@ import time
 import argparse
 import os
 import subprocess
+import tempfile
 
 class ESPROM:
 
@@ -368,7 +369,8 @@ class ESPFirmwareImage:
                 (offset, size) = struct.unpack('<II', f.read(8))
                 if offset > 0x40200000 or offset < 0x3ffe0000 or size > 65536:
                     raise Exception('Suspicious segment %x,%d' % (offset, size))
-                self.segments.append((offset, size, f.read(size)))
+                if size > 0:
+                    self.segments.append((offset, size, f.read(size)))
 
             # Skip the padding. The checksum is stored in the last byte so that the
             # file is a multiple of 16 bytes.
@@ -380,8 +382,9 @@ class ESPFirmwareImage:
     def add_segment(self, addr, data):
         # Data should be aligned on word boundary
         l = len(data)
-        if l % 4:
-            data += b"\x00" * (4 - l % 4)
+        if l > 0:
+            if l % 4:
+                data += b"\x00" * (4 - l % 4)
         self.segments.append((addr, len(data), data))
 
     def save(self, filename):
@@ -430,11 +433,13 @@ class ELFFile:
         tool_objcopy = "C:\\Espressif\\xtensa-lx106-elf\\bin\\xtensa-lx106-elf-objcopy.exe"
         if os.getenv('XTENSA_CORE')=='lx106':
             tool_objcopy = "xt-objcopy"
-        subprocess.check_call([tool_objcopy, "--only-section", section, "-Obinary", self.name, ".tmp.section"])
-        f = open(".tmp.section", "rb")
-        data = f.read()
-        f.close()
-        os.remove(".tmp.section")
+        tmpsection = tempfile.mktemp(suffix=".section")
+        try:
+            subprocess.check_call([tool_objcopy, "--only-section", section, "-Obinary", self.name, tmpsection])
+            with open(tmpsection, "rb") as f:
+                data = f.read()
+        finally:
+            os.remove(tmpsection)
         return data
 
 
@@ -492,7 +497,7 @@ if __name__ == '__main__':
     parser_write_flash.add_argument('--flash_mode', '-fm', help = 'SPI Flash mode',
             choices = ['qio', 'qout', 'dio', 'dout'], default = 'qio')
     parser_write_flash.add_argument('--flash_size', '-fs', help = 'SPI Flash size in Mbit',
-            choices = ['4m', '2m', '8m', '16m', '32m'], default = '4m')
+            choices = ['4m', '2m', '8m', '16m', '32m', '16m-c1', '32m-c1', '32m-c2'], default = '4m')
 
     parser_run = subparsers.add_parser(
             'run',
@@ -521,7 +526,9 @@ if __name__ == '__main__':
     parser_elf2image.add_argument('--flash_mode', '-fm', help = 'SPI Flash mode',
             choices = ['qio', 'qout', 'dio', 'dout'], default = 'qio')
     parser_elf2image.add_argument('--flash_size', '-fs', help = 'SPI Flash size in Mbit',
-            choices = ['4m', '2m', '8m', '16m', '32m'], default = '4m')
+            choices = ['4m', '2m', '8m', '16m', '32m', '16m-c1', '32m-c1', '32m-c2'], default = '4m')
+    parser_elf2image.add_argument('--entry-symbol', '-es', help = 'Entry point symbol name (default \'call_user_start\')',
+                                  default = 'call_user_start')
 
     parser_read_mac = subparsers.add_parser(
             'read_mac',
@@ -591,7 +598,7 @@ if __name__ == '__main__':
         assert len(args.addr_filename) % 2 == 0
 
         flash_mode = {'qio':0, 'qout':1, 'dio':2, 'dout': 3}[args.flash_mode]
-        flash_size_freq = {'4m':0x00, '2m':0x10, '8m':0x20, '16m':0x30, '32m':0x40}[args.flash_size]
+        flash_size_freq = {'4m':0x00, '2m':0x10, '8m':0x20, '16m':0x30, '32m':0x40, '16m-c1': 0x50, '32m-c1':0x60, '32m-c2':0x70}[args.flash_size]
         flash_size_freq += {'40m':0, '26m':1, '20m':2, '80m': 0xf}[args.flash_freq]
         flash_info = struct.pack('BB', flash_mode, flash_size_freq)
 
@@ -604,6 +611,8 @@ if __name__ == '__main__':
             blocks = math.ceil(len(image)/float(esp.ESP_FLASH_BLOCK))
             esp.flash_begin(blocks*esp.ESP_FLASH_BLOCK, address)
             seq = 0
+            written = 0
+            t = time.time()
             while len(image) > 0:
                 print '\rWriting at 0x%08x... (%d %%)' % (address + seq*esp.ESP_FLASH_BLOCK, 100*(seq+1)/blocks),
                 sys.stdout.flush()
@@ -616,8 +625,10 @@ if __name__ == '__main__':
                 esp.flash_block(block, seq)
                 image = image[esp.ESP_FLASH_BLOCK:]
                 seq += 1
-            print
-        print '\nLeaving...'
+                written += len(block)
+            t = time.time() - t
+            print '\nWritten %d bytes in %.2f seconds (%.2f kbit/s)...' % (written, t, written / t * 8 / 1000)
+        print "\nLeaving..."
         esp.flash_finish(False)
 
     elif args.operation == 'run':
@@ -652,13 +663,13 @@ if __name__ == '__main__':
             args.output = args.input + '-'
         e = ELFFile(args.input)
         image = ESPFirmwareImage()
-        image.entrypoint = e.get_symbol_addr("call_user_start")
+        image.entrypoint = e.get_symbol_addr(args.entry_symbol)
         for section, start in ((".text", "_text_start"), (".data", "_data_start"), (".rodata", "_rodata_start")):
             data = e.load_section(section)
             image.add_segment(e.get_symbol_addr(start), data)
 
         image.flash_mode = {'qio':0, 'qout':1, 'dio':2, 'dout': 3}[args.flash_mode]
-        image.flash_size_freq = {'4m':0x00, '2m':0x10, '8m':0x20, '16m':0x30, '32m':0x40}[args.flash_size]
+        image.flash_size_freq = {'4m':0x00, '2m':0x10, '8m':0x20, '16m':0x30, '32m':0x40, '16m-c1': 0x50, '32m-c1':0x60, '32m-c2':0x70}[args.flash_size]
         image.flash_size_freq += {'40m':0, '26m':1, '20m':2, '80m': 0xf}[args.flash_freq]
 
         image.save(args.output + "0x00000.bin")

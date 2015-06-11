@@ -25,6 +25,10 @@ LOCAL void ICACHE_FLASH_ATTR ds18b20_cb(void *arg)
 	ds18b20();
 }
 
+void user_rf_pre_init(void)
+{
+}
+
 void user_init(void)
 {
 	uart_init(BIT_RATE_115200, BIT_RATE_115200);

@@ -30,6 +30,11 @@ typedef enum {
 	WIFI_CONNECTED,
 } tConnState;
 
+unsigned char *default_certificate;
+unsigned int default_certificate_len = 0;
+unsigned char *default_private_key;
+unsigned int default_private_key_len = 0;
+
 LOCAL os_timer_t dht22_timer;
 LOCAL void ICACHE_FLASH_ATTR setup_wifi_st_mode(void);
 static struct ip_info ipConfig;
@@ -61,7 +66,7 @@ LOCAL void ICACHE_FLASH_ATTR thingspeak_http_callback(char * response, int http_
 	{
 		//os_printf("strlen(response)=%d\r\n", strlen(response));
 		//os_printf("strlen(full_response)=%d\r\n", strlen(full_response));
-		os_printf("response=%s\r\n", response);
+		os_printf("response=%s<EOF>\n", response);
 		//os_printf("full_response=%s\r\n", full_response);
 		os_printf("---------------------------\r\n");
 	}
@@ -70,7 +75,7 @@ LOCAL void ICACHE_FLASH_ATTR thingspeak_http_callback(char * response, int http_
 		os_printf("http_status=%d\r\n", http_status);
 		os_printf("strlen(response)=%d\r\n", strlen(response));
 		os_printf("strlen(full_response)=%d\r\n", strlen(full_response));
-		os_printf("response=%s\r\n", response);
+		os_printf("response=%s<EOF>\n", response);
 		os_printf("---------------------------\r\n");
 	}
 }
@@ -99,10 +104,10 @@ LOCAL void ICACHE_FLASH_ATTR dht22_cb(void *arg)
 					// Start the connection process
 					os_sprintf(data, "http://%s/update?key=%s&field1=%s&field2=%s&status=dev_ip:%d.%d.%d.%d", THINGSPEAK_SERVER, THINGSPEAK_API_KEY, temp, hum, IP2STR(&ipConfig.ip));
 					os_printf("Request: %s\r\n", data);
-					http_get(data, thingspeak_http_callback);
+					http_get(data, "", thingspeak_http_callback);
 					/*os_sprintf(data, "key=%s&field1=%s&field2=%s&status=dev_ip:%d.%d.%d.%d", THINGSPEAK_SERVER, THINGSPEAK_API_KEY, temp, hum, IP2STR(&ipconfig.ip));
 					os_printf("Request: http://184.106.153.149/update?%s\r\n", data);
-					http_post("http://184.106.153.149/update", data, thingspeak_http_callback);*/
+					http_post("http://184.106.153.149/update", data, "Content-Type: application/x-www-form-urlencoded\r\n", thingspeak_http_callback);*/
 			} else {
 				os_printf("Error reading temperature and humidity.\r\n");
 			}
@@ -171,6 +176,10 @@ LOCAL void ICACHE_FLASH_ATTR setup_wifi_st_mode(void)
 	wifi_station_dhcpc_start();
 	wifi_station_set_auto_connect(1);
 	os_printf("ESP8266 in STA mode configured.\r\n");
+}
+
+void user_rf_pre_init(void)
+{
 }
 
 void user_init(void)

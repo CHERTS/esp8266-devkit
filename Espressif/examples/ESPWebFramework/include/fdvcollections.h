@@ -169,11 +169,11 @@ public:
 			: next(NULL), key(KeyIterator()), keyEnd(KeyIterator()), value(ValueIterator()), valueEnd(ValueIterator())
 		{
 		}
-		bool MTD_FLASHMEM operator==(Item const& rhs)
+		bool TMTD_FLASHMEM operator==(Item const& rhs)
 		{
 			return next == rhs.next && key == rhs.key && keyEnd == rhs.keyEnd && value == rhs.value && valueEnd == rhs.valueEnd;
 		}
-		bool MTD_FLASHMEM operator!=(Item const& rhs)
+		bool TMTD_FLASHMEM operator!=(Item const& rhs)
 		{
 			return !(*this == rhs);
 		}
@@ -189,7 +189,7 @@ public:
 		clear();
 	}
 	
-	void MTD_FLASHMEM clear()
+	void TMTD_FLASHMEM clear()
 	{
 		Item* item = m_items;
 		while (item)
@@ -202,7 +202,7 @@ public:
 		m_itemsCount = 0;
 	}
 	
-	void MTD_FLASHMEM add(KeyIterator key, KeyIterator keyEnd, ValueIterator value, ValueIterator valueEnd)
+	void TMTD_FLASHMEM add(KeyIterator key, KeyIterator keyEnd, ValueIterator value, ValueIterator valueEnd)
 	{
 		if (m_items)
 		{
@@ -217,7 +217,7 @@ public:
 	}
 	
 	// key and value must terminate with a Zero
-	void MTD_FLASHMEM add(KeyIterator key, ValueIterator value)
+	void TMTD_FLASHMEM add(KeyIterator key, ValueIterator value)
 	{
 		add(key, key + t_strlen(key), value, value + t_strlen(value));
 	}
@@ -225,18 +225,18 @@ public:
 	// automatically embeds key and value into CharIterator, so key and value can stay in RAM or Flash
 	// key and value must terminate with a Zero
 	// Applies only when KeyIterator == ValueIterator == CharIterator
-	void MTD_FLASHMEM add(char const* key, char const* value)
+	void TMTD_FLASHMEM add(char const* key, char const* value)
 	{
 		add(CharIterator(key), CharIterator(value));
 	}
 	
-	uint32_t MTD_FLASHMEM getItemsCount()
+	uint32_t TMTD_FLASHMEM getItemsCount()
 	{
 		return m_itemsCount;
 	}
 	
 	// warn: this doesn't check "index" range!
-	Item* MTD_FLASHMEM getItem(uint32_t index)
+	Item* TMTD_FLASHMEM getItem(uint32_t index)
 	{
 		Item* item = m_items;
 		for (; index > 0; --index)
@@ -245,7 +245,7 @@ public:
 	}
 
 	// key stay in RAM or Flash
-	Item* MTD_FLASHMEM getItem(char const* key, char const* keyEnd)
+	Item* TMTD_FLASHMEM getItem(char const* key, char const* keyEnd)
 	{
 		Item* item = m_items;
 		while (item)
@@ -258,7 +258,7 @@ public:
 	}
 	
 	// warn: this doesn't check "index" range!
-	Item* MTD_FLASHMEM operator[](uint32_t index)
+	Item* TMTD_FLASHMEM operator[](uint32_t index)
 	{
 		return getItem(index);
 	}
@@ -266,7 +266,7 @@ public:
 	// key can stay in RAM or Flash and must terminate with zero
 	// creates a RAM stored temporary (with the same lifetime of IterDict class) zero terminated string with the value content
 	// if m_urlDecode is true then the temporary in RAM string is url decoded
-	char const* MTD_FLASHMEM operator[](char const* key)
+	char const* TMTD_FLASHMEM operator[](char const* key)
 	{
 		Item* item = getItem(key, key + f_strlen(key));
 		if (item)
@@ -282,13 +282,13 @@ public:
 		return NULL;
 	}
 	
-	void MTD_FLASHMEM setUrlDecode(bool value)
+	void TMTD_FLASHMEM setUrlDecode(bool value)
 	{
 		m_urlDecode = value;
 	}
 	
 	// debug
-	void MTD_FLASHMEM dump()
+	void TMTD_FLASHMEM dump()
 	{
 		for (uint32_t i = 0; i != m_itemsCount; ++i)
 		{

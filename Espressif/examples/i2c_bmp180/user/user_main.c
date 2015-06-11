@@ -34,7 +34,7 @@ void sensor_timerfunc(void *arg)
     console_printf("Temperature: %d.%d *F\r\n", (int)(9 * temperature / 50 + 32), (int)(9 * temperature / 5 % 10));
     console_printf("Pressure: %d mm rt.st.\r\n", (int)(pressure/133.322368));
     console_printf("Pressure: %d m water.st.\r\n", (int)(pressure/9806.65));
-    console_printf("Pressure: %d.%d mbar\r\n", (int)(pressure), (int)(pressure%100));
+    console_printf("Pressure: %d.%d mbar\r\n", (int)(pressure/100), (int)(pressure%100));
     console_printf("Pressure: %d.%d mmHg\r\n", (int)(pressure * 75 / 10000), (int)((pressure * 75 % 10000) / 1000));
     console_printf("Altitude: %d\r\n", BMP180_CalcAltitude(pressure));
 }
@@ -43,6 +43,10 @@ static void ICACHE_FLASH_ATTR
 user_procTask(os_event_t *events)
 {
     os_delay_us(5000);
+}
+
+void user_rf_pre_init(void)
+{
 }
 
 void user_init(void)

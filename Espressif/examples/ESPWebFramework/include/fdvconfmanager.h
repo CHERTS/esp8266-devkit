@@ -50,6 +50,7 @@ namespace fdv
 			applyDHCPServer();
 			applyWebServer<HTTPCustomServer_T>();
 			applyGPIO();
+            applyDateTime();
 		}
 		
 	
@@ -218,7 +219,18 @@ namespace fdv
 			uint16_t webPort;
 			getWebServerParams(&webPort);
 			new HTTPCustomServer_T(webPort);
-		}			
+		}
+
+
+        // can be re-applied
+        static void MTD_FLASHMEM applyDateTime()
+        {
+            int8_t timezoneHours;
+            uint8_t timezoneMinutes;
+            char const* defaultNTPServer;
+            getDateTimeParams(&timezoneHours, &timezoneMinutes, &defaultNTPServer);
+            DateTime::setDefaults(timezoneHours, timezoneMinutes, defaultNTPServer);
+        }
 
 		
 		static void MTD_FLASHMEM restore()
@@ -421,6 +433,25 @@ namespace fdv
 				*value      = false;
 			}
 		}
+        
+        
+        
+        //// Date-time parameters
+        
+        static void MTD_FLASHMEM setDateTimeParams(int8_t timezoneHours, uint8_t timezoneMinutes, char const* defaultNTPServer)
+        {
+            FlashDictionary::setInt(STR_TZHH, timezoneHours);
+            FlashDictionary::setInt(STR_TZMM, timezoneMinutes);
+            FlashDictionary::setString(STR_DEFNTPSRV, defaultNTPServer);
+        }
+        
+        static void MTD_FLASHMEM getDateTimeParams(int8_t* timezoneHours, uint8_t* timezoneMinutes, char const** defaultNTPServer)
+        {
+            *timezoneHours    = FlashDictionary::getInt(STR_TZHH, 0);
+            *timezoneMinutes  = FlashDictionary::getInt(STR_TZMM, 0);
+            *defaultNTPServer = FlashDictionary::getString(STR_DEFNTPSRV, FSTR("193.204.114.232")); // 193.204.114.232 = ntp1.inrim.it
+        }
+        
 		
 		
 	private:
@@ -765,6 +796,71 @@ namespace fdv
 			}
 			addParamCharChunks(FSTR("GPIOS"), &linkedChunks);
 				
+			HTTPTemplateResponse::flush();
+		}
+		
+	};
+
+
+
+	//////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+	// HTTPTimeConfigurationResponse
+
+	struct HTTPTimeConfigurationResponse : public HTTPTemplateResponse
+	{
+		HTTPTimeConfigurationResponse(HTTPHandler* httpHandler, char const* filename)
+			: HTTPTemplateResponse(httpHandler, filename)
+		{
+		}
+		
+		virtual void MTD_FLASHMEM flush()
+		{
+			if (getRequest().method == HTTPHandler::Post)
+			{
+                // set current date and time
+                char const* dateStr = getRequest().form[STR_date];
+                char const* timeStr = getRequest().form[STR_time];
+                if (dateStr && timeStr)
+                {
+                    DateTime dt;
+                    dt.decode(dateStr, FSTR("%d/%m/%Y"));
+                    dt.decode(timeStr, FSTR("%H:%M:%S"));
+                    DateTime::setCurrentDateTime(dt);
+                }
+                
+                // set timezone and NTP server
+                char const* tzh = getRequest().form[STR_tzh];
+                char const* tzm = getRequest().form[STR_tzm];
+                char const* ntpsrv = getRequest().form[STR_ntpsrv];
+                if (tzh && tzm)
+                {
+                    ConfigurationManager::setDateTimeParams(strtol(tzh, NULL, 10),
+                                                            strtol(tzm, NULL, 10),
+                                                            ntpsrv? ntpsrv : STR_);                                                            
+                    ConfigurationManager::applyDateTime();
+                }
+			}
+            
+            // get current date
+            char dateStr[11];
+            DateTime::now().format(dateStr, FSTR("%d/%m/%Y"));
+            addParamStr(STR_date, dateStr);
+            
+            // get current time
+            char timeStr[9];
+            DateTime::now().format(timeStr, FSTR("%H:%M:%S"));
+            addParamStr(STR_time, timeStr);
+            
+            // get timezone and NTP server
+            int8_t timezoneHours;
+            uint8_t timezoneMinutes;
+            char const* defaultNTPServer;
+            ConfigurationManager::getDateTimeParams(&timezoneHours, &timezoneMinutes, &defaultNTPServer);
+            addParamInt(STR_tzh, timezoneHours);
+            addParamInt(STR_tzm, timezoneMinutes);
+            addParamStr(STR_ntpsrv, defaultNTPServer);
+			
 			HTTPTemplateResponse::flush();
 		}
 		

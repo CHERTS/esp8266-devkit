@@ -17,6 +17,10 @@
 extern void ets_wdt_enable (void);
 extern void ets_wdt_disable (void);
 
+void user_rf_pre_init(void)
+{
+}
+
 void user_init(void)
 {
 	uint8_t state=0;

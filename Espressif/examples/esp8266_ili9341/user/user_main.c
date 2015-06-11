@@ -60,6 +60,10 @@ LOCAL void ICACHE_FLASH_ATTR handler_task (os_event_t *e)
 	}
 }
 
+void user_rf_pre_init(void)
+{
+}
+
 void user_init(void)
 {
 	os_event_t *handlerQueue;

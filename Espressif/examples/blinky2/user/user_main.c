@@ -24,6 +24,10 @@ LOCAL void ICACHE_FLASH_ATTR blink_cb(void *arg)
 	led_state ^=1;
 }
 
+void user_rf_pre_init(void)
+{
+}
+
 void user_init(void)
 {
 	// Configure pin as a GPIO
