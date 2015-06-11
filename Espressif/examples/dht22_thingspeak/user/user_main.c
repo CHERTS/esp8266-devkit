@@ -107,7 +107,7 @@ LOCAL void ICACHE_FLASH_ATTR dht22_cb(void *arg)
 					http_get(data, "", thingspeak_http_callback);
 					/*os_sprintf(data, "key=%s&field1=%s&field2=%s&status=dev_ip:%d.%d.%d.%d", THINGSPEAK_SERVER, THINGSPEAK_API_KEY, temp, hum, IP2STR(&ipconfig.ip));
 					os_printf("Request: http://184.106.153.149/update?%s\r\n", data);
-					http_post("http://184.106.153.149/update", data, thingspeak_http_callback);*/
+					http_post("http://184.106.153.149/update", data, "Content-Type: application/x-www-form-urlencoded\r\n", thingspeak_http_callback);*/
 			} else {
 				os_printf("Error reading temperature and humidity.\r\n");
 			}
