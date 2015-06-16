@@ -8,6 +8,19 @@
 
 #define REG_SPI_BASE(i)  (0x60000200-i*0x100)
 #define SPI_CMD(i)                            (REG_SPI_BASE(i)  + 0x0)
+
+#define SPI_FLASH_READ                          BIT31
+#define SPI_FLASH_WREN                         BIT30
+#define SPI_FLASH_WRDI                         BIT29
+#define SPI_FLASH_RDID                          BIT28
+#define SPI_FLASH_RDSR                          BIT27
+#define SPI_FLASH_WRSR                         BIT26
+#define SPI_FLASH_PP                              BIT25
+#define SPI_FLASH_SE                              BIT24
+#define SPI_FLASH_BE                              BIT23
+#define SPI_FLASH_CE                              BIT22
+#define SPI_FLASH_RES                            BIT20
+
 #define SPI_USR (BIT(18))
 
 #define SPI_ADDR(i)                           (REG_SPI_BASE(i)  + 0x4)
@@ -180,7 +193,6 @@
 #define SPI_W13(i) 							(REG_SPI_BASE(i) +0x74)
 #define SPI_W14(i) 							(REG_SPI_BASE(i) +0x78)
 #define SPI_W15(i) 							(REG_SPI_BASE(i) +0x7C)
-
 
 #define SPI_EXT2(i)                           (REG_SPI_BASE(i)  + 0xF8)
 

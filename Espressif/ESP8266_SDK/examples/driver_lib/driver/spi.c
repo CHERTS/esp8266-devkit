@@ -1,40 +1,43 @@
+
 #include "driver/spi.h"
+#include "driver/spi_overlap.h"
 
-
+#define CACHE_FLASH_CTRL_REG 0x3ff0000C
+#define CACHE_FLUSH_START_BIT BIT0
+#define CACHE_EMPTY_FLAG_BIT BIT1
 /******************************************************************************
- * FunctionName : spi_lcd_mode_init
- * Description  : SPI master initial function for driving LCD TM035PDZV36
+ * FunctionName : cache_flush
+ * Description  : clear all the cpu cache data for stability test.
+*******************************************************************************/
+void cache_flush(void)
+{
+   while(READ_PERI_REG(CACHE_FLASH_CTRL_REG)&CACHE_EMPTY_FLAG_BIT) {
+      CLEAR_PERI_REG_MASK(CACHE_FLASH_CTRL_REG, CACHE_FLUSH_START_BIT);
+      SET_PERI_REG_MASK(CACHE_FLASH_CTRL_REG, CACHE_FLUSH_START_BIT);
+   }
+   while(!(READ_PERI_REG(CACHE_FLASH_CTRL_REG)&CACHE_EMPTY_FLAG_BIT));
+   	
+   CLEAR_PERI_REG_MASK(CACHE_FLASH_CTRL_REG, CACHE_FLUSH_START_BIT);
+}
+/******************************************************************************
+ * FunctionName : spi_master_init
+ * Description  : SPI master initial function for common byte units transmission
  * Parameters   : uint8 spi_no - SPI module number, Only "SPI" and "HSPI" are valid
 *******************************************************************************/
-void spi_lcd_mode_init(uint8 spi_no)
+void ICACHE_FLASH_ATTR
+    spi_master_init(uint8 spi_no)
 {
 	uint32 regvalue; 
-	if(spi_no>1) 		return; //handle invalid input number
-	//bit9 of PERIPHS_IO_MUX should be cleared when HSPI clock doesn't equal CPU clock
-	//bit8 of PERIPHS_IO_MUX should be cleared when SPI clock doesn't equal CPU clock
-	if(spi_no==SPI){
-		WRITE_PERI_REG(PERIPHS_IO_MUX, 0x005); //clear bit9,and bit8
-		PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_CLK_U, 1);//configure io to spi mode
-		PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_CMD_U, 1);//configure io to spi mode	
-		PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_DATA0_U, 1);//configure io to spi mode	
-		PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_DATA1_U, 1);//configure io to spi mode	
-	}else if(spi_no==HSPI){
-		WRITE_PERI_REG(PERIPHS_IO_MUX, 0x105); //clear bit9
-		PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTDI_U, 2);//configure io to spi mode
-		PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTCK_U, 2);//configure io to spi mode	
-		PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTMS_U, 2);//configure io to spi mode	
-		PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTDO_U, 2);//configure io to spi mode	
-	}			
 
+	if(spi_no>1) 		return; //handle invalid input number
+	
 	SET_PERI_REG_MASK(SPI_USER(spi_no), SPI_CS_SETUP|SPI_CS_HOLD|SPI_USR_COMMAND);
 	CLEAR_PERI_REG_MASK(SPI_USER(spi_no), SPI_FLASH_MODE);
-	// SPI clock=CPU clock/8
+
 	WRITE_PERI_REG(SPI_CLOCK(spi_no), 
-					((1&SPI_CLKDIV_PRE)<<SPI_CLKDIV_PRE_S)|
 					((3&SPI_CLKCNT_N)<<SPI_CLKCNT_N_S)|
 					((1&SPI_CLKCNT_H)<<SPI_CLKCNT_H_S)|
 					((3&SPI_CLKCNT_L)<<SPI_CLKCNT_L_S)); //clear bit 31,set SPI clock div
-	
 }
 /******************************************************************************
  * FunctionName : spi_lcd_9bit_write
@@ -43,7 +46,8 @@ void spi_lcd_mode_init(uint8 spi_no)
  *				uint8 high_bit - first high bit of the data, 0 is for "0",the other value 1-255 is for "1"
  *				uint8 low_8bit- the rest 8bits of the data.
 *******************************************************************************/
-void spi_lcd_9bit_write(uint8 spi_no,uint8 high_bit,uint8 low_8bit)
+void ICACHE_FLASH_ATTR
+    spi_lcd_9bit_write(uint8 spi_no,uint8 high_bit,uint8 low_8bit)
 {
 	uint32 regvalue;
 	uint8 bytetemp;
@@ -57,59 +61,16 @@ void spi_lcd_9bit_write(uint8 spi_no,uint8 high_bit,uint8 low_8bit)
 	while(READ_PERI_REG(SPI_CMD(spi_no))&SPI_USR);		//waiting for spi module available
 	WRITE_PERI_REG(SPI_USER2(spi_no), regvalue);				//write  command and command length into spi reg
 	SET_PERI_REG_MASK(SPI_CMD(spi_no), SPI_USR);		//transmission start
+//	while(READ_PERI_REG(SPI_CMD(spi_no))&SPI_USR);	
 }
-
-/******************************************************************************
- * FunctionName : spi_master_init
- * Description  : SPI master initial function for common byte units transmission
- * Parameters   : uint8 spi_no - SPI module number, Only "SPI" and "HSPI" are valid
-*******************************************************************************/
-void spi_master_init(uint8 spi_no)
-{
-	uint32 regvalue; 
-
-	if(spi_no>1) 		return; //handle invalid input number
-	
-
-	if(spi_no==SPI){
-		WRITE_PERI_REG(PERIPHS_IO_MUX, 0x005); 
-		PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_CLK_U, 1);//configure io to spi mode
-		PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_CMD_U, 1);//configure io to spi mode	
-		PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_DATA0_U, 1);//configure io to spi mode	
-		PIN_FUNC_SELECT(PERIPHS_IO_MUX_SD_DATA1_U, 1);//configure io to spi mode	
-	}
-	else if(spi_no==HSPI){
-		WRITE_PERI_REG(PERIPHS_IO_MUX, 0x105); 
-		PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTDI_U, 2);//configure io to spi mode
-		PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTCK_U, 2);//configure io to spi mode	
-		PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTMS_U, 2);//configure io to spi mode	
-		PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTDO_U, 2);//configure io to spi mode	
-	}
-
-	SET_PERI_REG_MASK(SPI_USER(spi_no), SPI_CS_SETUP|SPI_CS_HOLD|SPI_USR_COMMAND|SPI_USR_MOSI);
-	CLEAR_PERI_REG_MASK(SPI_USER(spi_no), SPI_FLASH_MODE);
-
-	//clear Daul or Quad lines transmission mode
-	CLEAR_PERI_REG_MASK(SPI_CTRL(spi_no), SPI_QIO_MODE|SPI_DIO_MODE|SPI_DOUT_MODE|SPI_QOUT_MODE);
-
-	WRITE_PERI_REG(SPI_CLOCK(spi_no), 
-					((3&SPI_CLKCNT_N)<<SPI_CLKCNT_N_S)|
-					((1&SPI_CLKCNT_H)<<SPI_CLKCNT_H_S)|
-					((3&SPI_CLKCNT_L)<<SPI_CLKCNT_L_S)); //clear bit 31,set SPI clock div
-
-	//set 8bit output buffer length, the buffer is the low 8bit of register"SPI_FLASH_C0"
-	WRITE_PERI_REG(SPI_USER1(spi_no), 
-					((7&SPI_USR_MOSI_BITLEN)<<SPI_USR_MOSI_BITLEN_S)|
-					((7&SPI_USR_MISO_BITLEN)<<SPI_USR_MISO_BITLEN_S));
-}
-
 /******************************************************************************
  * FunctionName : spi_mast_byte_write
  * Description  : SPI master 1 byte transmission function
  * Parameters   : 	uint8 spi_no - SPI module number, Only "SPI" and "HSPI" are valid
  *				uint8 data- transmitted data
 *******************************************************************************/
-void spi_mast_byte_write(uint8 spi_no,uint8 data)
+void ICACHE_FLASH_ATTR
+    spi_mast_byte_write(uint8 spi_no,uint8 data)
  {
 	uint32 regvalue;
 
@@ -123,6 +84,7 @@ void spi_mast_byte_write(uint8 spi_no,uint8 data)
 	WRITE_PERI_REG(SPI_USER2(spi_no), 
 					((7&SPI_USR_COMMAND_BITLEN)<<SPI_USR_COMMAND_BITLEN_S)|((uint32)data));
 	SET_PERI_REG_MASK(SPI_CMD(spi_no), SPI_USR);
+	while(READ_PERI_REG(SPI_CMD(spi_no))&SPI_USR);	
  }  
 
 /******************************************************************************
@@ -133,7 +95,8 @@ void spi_mast_byte_write(uint8 spi_no,uint8 data)
  * Parameters   : 	uint8 spi_no - SPI module number, Only "SPI" and "HSPI" are valid
  *				uint8 data- transmitted data
 *******************************************************************************/
-void spi_byte_write_espslave(uint8 spi_no,uint8 data)
+void ICACHE_FLASH_ATTR
+    spi_byte_write_espslave(uint8 spi_no,uint8 data)
  {
 	uint32 regvalue;
 
@@ -159,7 +122,8 @@ void spi_byte_write_espslave(uint8 spi_no,uint8 data)
  * Parameters   : 	uint8 spi_no - SPI module number, Only "SPI" and "HSPI" are valid
  *				uint8* data- recieved data address
 *******************************************************************************/
-  void spi_byte_read_espslave(uint8 spi_no,uint8 *data)
+  void ICACHE_FLASH_ATTR
+      spi_byte_read_espslave(uint8 spi_no,uint8 *data)
  {
 	uint32 regvalue;
 
@@ -185,12 +149,18 @@ void spi_byte_write_espslave(uint8 spi_no,uint8 data)
  * Description  : SPI slave mode initial funtion, including mode setting,
  * 			IO setting, transmission interrupt opening, interrupt function registration
  * Parameters   : 	uint8 spi_no - SPI module number, Only "SPI" and "HSPI" are valid
+ *				uint8 data_len - read&write data pack length,using byte as unit,the range is 1-32
 *******************************************************************************/
-void spi_slave_init(uint8 spi_no)
+void ICACHE_FLASH_ATTR
+    spi_slave_init(uint8 spi_no,uint8 data_len)
 {
     uint32 regvalue; 
+    uint32 data_bit_len;
     if(spi_no>1)
         return; //handle invalid input number
+    if(data_len<=1) data_bit_len=7;
+    else if(data_len>=32) data_bit_len=0xff;
+    else	data_bit_len=(data_len<<3)-1;
 
     //clear bit9,bit8 of reg PERIPHS_IO_MUX
     //bit9 should be cleared when HSPI clock doesn't equal CPU clock
@@ -242,7 +212,7 @@ void spi_slave_init(uint8 spi_no)
 
     //set 8 bit slave recieve buffer length, the buffer is SPI_FLASH_C0-C7
     //set 8 bit slave status register, which is the low 8 bit of register "SPI_FLASH_STATUS"
-    SET_PERI_REG_MASK(SPI_SLAVE1(spi_no),  ((0xff&SPI_SLV_BUF_BITLEN)<< SPI_SLV_BUF_BITLEN_S)|
+    SET_PERI_REG_MASK(SPI_SLAVE1(spi_no),  ((data_bit_len&SPI_SLV_BUF_BITLEN)<< SPI_SLV_BUF_BITLEN_S)|
                                                                                         ((0x7&SPI_SLV_STATUS_BITLEN)<<SPI_SLV_STATUS_BITLEN_S)|
                                                                                        ((0x7&SPI_SLV_WR_ADDR_BITLEN)<<SPI_SLV_WR_ADDR_BITLEN_S)|
                                                                                        ((0x7&SPI_SLV_RD_ADDR_BITLEN)<<SPI_SLV_RD_ADDR_BITLEN_S));

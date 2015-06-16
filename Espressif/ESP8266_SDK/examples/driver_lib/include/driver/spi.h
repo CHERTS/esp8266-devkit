@@ -6,19 +6,22 @@
 #include "osapi.h"
 #include "uart.h"
 #include "os_type.h"
+#include "spi_flash.h"
+
+#define SPI_FLASH_BYTES_LEN                24
+#define IODATA_START_ADDR                 BIT0
+#define SPI_BUFF_BYTE_NUM                    32
 
 /*SPI number define*/
 #define SPI 			0
 #define HSPI			1
 
-
-
-//lcd drive function
-void spi_lcd_mode_init(uint8 spi_no);
-void spi_lcd_9bit_write(uint8 spi_no,uint8 high_bit,uint8 low_8bit);
-
+void cache_flush(void);
 //spi master init funtion
 void spi_master_init(uint8 spi_no);
+
+//lcd drive function
+void spi_lcd_9bit_write(uint8 spi_no,uint8 high_bit,uint8 low_8bit);
 //use spi send 8bit data
 void spi_mast_byte_write(uint8 spi_no,uint8 data);
 
@@ -30,7 +33,7 @@ void spi_byte_write_espslave(uint8 spi_no,uint8 data);
 void spi_byte_read_espslave(uint8 spi_no,uint8 *data);
 
  //esp8266 slave mode initial
-void spi_slave_init(uint8 spi_no);
+void spi_slave_init(uint8 spi_no,uint8 data_len);
   //esp8266 slave isr handle funtion,tiggered when any transmission is finished.
   //the function is registered in spi_slave_init.
 void spi_slave_isr_handler(void *para); 
@@ -40,8 +43,7 @@ void spi_slave_isr_handler(void *para);
 void hspi_master_readwrite_repeat(void);
 
 
-void ICACHE_FLASH_ATTR
-    spi_test_init(void);
+void spi_test_init(void);
 
 
 #endif

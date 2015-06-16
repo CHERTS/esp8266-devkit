@@ -1286,13 +1286,20 @@ user_esp_platform_init(void)
 
 	system_param_load(ESP_PARAM_START_SEC, 0, &esp_param, sizeof(esp_param));
 
-    system_rtc_mem_read(0,&rtc_info,sizeof(struct rst_info));
-     if(rtc_info.reason == 1 || rtc_info.reason == 2) {
-    	 ESP_DBG("flag = %d,epc1 = 0x%08x,epc2=0x%08x,epc3=0x%08x,excvaddr=0x%08x,depc=0x%08x,\nFatal \
-exception (%d): \n",rtc_info.reason,rtc_info.epc1,rtc_info.epc2,rtc_info.epc3,rtc_info.excvaddr,rtc_info.depc,rtc_info.exccause);
-     }
-    struct rst_info info = {0};
-    system_rtc_mem_write(0,&info,sizeof(struct rst_info));
+	struct rst_info *rtc_info = system_get_rst_info();
+
+	os_printf("reset reason: %x\n", rtc_info->reason);
+
+	if (rtc_info->reason == REASON_WDT_RST ||
+		rtc_info->reason == REASON_EXCEPTION_RST ||
+		rtc_info->reason == REASON_SOFT_WDT_RST) {
+		if (rtc_info->reason == REASON_EXCEPTION_RST) {
+			os_printf("Fatal exception (%d):\n", rtc_info->exccause);
+		}
+		os_printf("epc1=0x%08x, epc2=0x%08x, epc3=0x%08x, excvaddr=0x%08x, depc=0x%08x\n",
+				rtc_info->epc1, rtc_info->epc2, rtc_info->epc3, rtc_info->excvaddr, rtc_info->depc);
+	}
+
 	/***add by tzx for saving ip_info to avoid dhcp_client start****/
     struct dhcp_client_info dhcp_info;
     struct ip_info sta_info;
