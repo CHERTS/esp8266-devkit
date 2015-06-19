@@ -37,7 +37,8 @@ SUBDIRS=    \
 	wofs 	\
 	modules	\
 	spiffs	\
-	cjson
+	cjson  \
+	crypto
 
 endif # } PDIR
 
