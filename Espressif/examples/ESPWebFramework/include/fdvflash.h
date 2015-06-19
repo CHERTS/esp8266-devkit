@@ -118,60 +118,17 @@ namespace fdv
 		{
 		}
 		
-		char const* MTD_FLASHMEM get()
-		{
-			return m_str;
-		}
-		
-		char MTD_FLASHMEM operator*()
-		{
-			return getChar(m_str);
-		}
-		
-		CharIterator MTD_FLASHMEM operator++(int)
-		{
-			CharIterator p = *this;
-			++m_str;
-			return p;
-		}
-		
-		CharIterator MTD_FLASHMEM operator++()
-		{
-			++m_str;
-			return *this;
-		}
-		
-		CharIterator MTD_FLASHMEM operator+(int32_t rhs)
-		{
-			return m_str + rhs;
-		}
-		
-		int32_t MTD_FLASHMEM operator-(CharIterator const& rhs)
-		{
-			return m_str - rhs.m_str;
-		}
-		
-		bool MTD_FLASHMEM operator==(char const* rhs)
-		{
-			return getChar(m_str) == *rhs;
-		}
-		
-		bool MTD_FLASHMEM operator==(CharIterator const& rhs)
-		{
-			return m_str == rhs.m_str;
-		}
-		
-		bool MTD_FLASHMEM operator!=(char const* rhs)
-		{
-			return getChar(m_str) != *rhs;
-		}
-		
-		bool MTD_FLASHMEM operator!=(CharIterator const& rhs)
-		{
-			return m_str != rhs.m_str;
-		}
-		
-	private:
+		char const* get();
+		char operator*();
+		CharIterator operator++(int);
+		CharIterator operator++();
+		CharIterator operator+(int32_t rhs);
+		int32_t operator-(CharIterator const& rhs);
+		bool operator==(char const* rhs);
+		bool operator==(CharIterator const& rhs);
+		bool operator!=(char const* rhs);
+		bool operator!=(CharIterator const& rhs);
+    private:
 		char const* m_str;
 	};
 

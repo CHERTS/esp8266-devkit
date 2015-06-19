@@ -125,3 +125,25 @@ print ""
 if outsize > maxsize:
 	print "Error! exceeded max file size."
 	sys.exit(1)
+
+
+		
+		
+	
+		
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	

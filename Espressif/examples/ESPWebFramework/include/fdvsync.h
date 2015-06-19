@@ -56,6 +56,7 @@ namespace fdv
 		taskEXIT_CRITICAL();
 	}
 
+
 	/////////////////////////////////////////////////////////////////////+
 	/////////////////////////////////////////////////////////////////////+
 	// Mutex
@@ -72,38 +73,14 @@ namespace fdv
 	class Mutex
 	{
 		public:		
-			Mutex()
-				: m_handle(NULL)
-			{
-				vSemaphoreCreateBinary(m_handle);
-			}
+			Mutex();			
+			virtual ~Mutex();
 			
-			virtual ~Mutex()
-			{
-				vSemaphoreDelete(m_handle);
-			}
+			bool lock(uint32_t msTimeOut = portMAX_DELAY);			
+			bool lockFromISR();
 			
-			bool MTD_FLASHMEM lock(uint32_t msTimeOut = portMAX_DELAY)
-			{
-				return xSemaphoreTake(m_handle, msTimeOut / portTICK_RATE_MS);
-			}
-			
-			bool MTD_FLASHMEM lockFromISR()
-			{
-				signed portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
-				return xSemaphoreTakeFromISR(m_handle, &xHigherPriorityTaskWoken);
-			}
-			
-			void MTD_FLASHMEM unlock()
-			{
-				xSemaphoreGive(m_handle);
-			}
-			
-			void MTD_FLASHMEM unlockFromISR()
-			{
-				signed portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
-				xSemaphoreGiveFromISR(m_handle, &xHigherPriorityTaskWoken);				
-			}
+			void unlock();			
+			void unlockFromISR();
 					
 		private:		
 			xSemaphoreHandle m_handle;
@@ -118,17 +95,8 @@ namespace fdv
 	class MutexLock
 	{
 		public:
-			MutexLock(Mutex* mutex, uint32_t msTimeOut = portMAX_DELAY)
-			  : m_mutex(mutex)
-			{
-				m_acquired = m_mutex->lock(msTimeOut);
-			}
-
-			virtual ~MutexLock()
-			{
-				if (m_acquired)
-					m_mutex->unlock();
-			}
+			MutexLock(Mutex* mutex, uint32_t msTimeOut = portMAX_DELAY);
+			virtual ~MutexLock();
 			
 			MTD_FLASHMEM operator bool()
 			{
@@ -144,17 +112,8 @@ namespace fdv
 	class MutexLockFromISR
 	{
 		public:
-			MutexLockFromISR(Mutex* mutex)
-			  : m_mutex(mutex)
-			{
-				m_acquired = m_mutex->lockFromISR();
-			}
-
-			virtual ~MutexLockFromISR()
-			{
-				if (m_acquired)
-					m_mutex->unlockFromISR();
-			}
+			MutexLockFromISR(Mutex* mutex);
+			virtual ~MutexLockFromISR();
 			
 			MTD_FLASHMEM operator bool()
 			{

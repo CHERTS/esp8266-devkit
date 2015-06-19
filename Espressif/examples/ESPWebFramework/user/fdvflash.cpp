@@ -121,6 +121,65 @@ namespace fdv
 		char const* pc = (char const*)buffer;
 		return (uint8_t)getChar(pc) | ((uint8_t)getChar(pc + 1) << 8) | ((uint8_t)getChar(pc + 2) << 16) | ((uint8_t)getChar(pc + 3) << 24);
 	}
-	
+
+
+
+	//////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+	// CharIterator
+
+    char const* MTD_FLASHMEM CharIterator::get()
+    {
+        return m_str;
+    }
+
+    char MTD_FLASHMEM CharIterator::operator*()
+    {
+        return getChar(m_str);
+    }
+
+    CharIterator MTD_FLASHMEM CharIterator::operator++(int)
+    {
+        CharIterator p = *this;
+        ++m_str;
+        return p;
+    }
+
+    CharIterator MTD_FLASHMEM CharIterator::operator++()
+    {
+        ++m_str;
+        return *this;
+    }
+
+    CharIterator MTD_FLASHMEM CharIterator::operator+(int32_t rhs)
+    {
+        return m_str + rhs;
+    }
+
+    int32_t MTD_FLASHMEM CharIterator::operator-(CharIterator const& rhs)
+    {
+        return m_str - rhs.m_str;
+    }
+
+    bool MTD_FLASHMEM CharIterator::operator==(char const* rhs)
+    {
+        return getChar(m_str) == *rhs;
+    }
+
+    bool MTD_FLASHMEM CharIterator::operator==(CharIterator const& rhs)
+    {
+        return m_str == rhs.m_str;
+    }
+
+    bool MTD_FLASHMEM CharIterator::operator!=(char const* rhs)
+    {
+        return getChar(m_str) != *rhs;
+    }
+
+    bool MTD_FLASHMEM CharIterator::operator!=(CharIterator const& rhs)
+    {
+        return m_str != rhs.m_str;
+    }
+		
 	
 }

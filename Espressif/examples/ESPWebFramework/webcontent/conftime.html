@@ -1,0 +1,38 @@
+{%base.html%}
+
+{%title%}
+Time
+
+{%content%}
+
+
+<script type="text/javascript">
+  function enableFields() {
+    document.getElementById('datetime_fields').disabled = !document.getElementById("ch_setdatetime").checked;
+  }
+  window.onload = enableFields;
+</script>
+
+
+<form method='POST'>
+
+  <p><h3>Time settings</h3></p>
+  
+  <div id="subcontent">		
+    Set date and time <input id="ch_setdatetime" type='checkbox' name='setdatetime' value='1' onclick="enableFields()"> (Might be overwritten if NTP is also specified) <br>
+    <fieldset id="datetime_fields">  
+      Date (DD/MM/YYYY): <input type='text' name='date' value='{{date}}' size=10> <br>
+      Time (HH:MM:SS): <input type='text' name='time' value='{{time}}' size=8> <br>
+    </fieldset>
+  </div>
+
+  <div id="subcontent">		
+    TimeZone Hours: <input type='text' name='tzh' value='{{tzh}}' size=2> <br>
+    TimeZone Minutes: <input type='text' name='tzm' value='{{tzm}}' size=2> <br>
+    NTP Server: <input type='text' name='ntpsrv' value='{{ntpsrv}}'> (empty value disables NTP synchronization) <br>
+  </div>
+
+  
+  <input type='submit' value='Save'>
+  
+</form>

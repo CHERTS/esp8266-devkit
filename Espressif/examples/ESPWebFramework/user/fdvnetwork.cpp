@@ -45,6 +45,336 @@ namespace fdv
 {
 
 
+	//////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+    // IPAddress
+
+    
+    void MTD_FLASHMEM IPAddress::operator=(IPAddress const& c)
+    {
+        address[0] = c.address[0];
+        address[1] = c.address[1];
+        address[2] = c.address[2];
+        address[3] = c.address[3];            
+    }
+    
+    
+    void MTD_FLASHMEM IPAddress::operator=(in_addr inaddr)
+    {
+        address[0] = ((uint8_t*)&inaddr.s_addr)[0];
+        address[1] = ((uint8_t*)&inaddr.s_addr)[1];
+        address[2] = ((uint8_t*)&inaddr.s_addr)[2];
+        address[3] = ((uint8_t*)&inaddr.s_addr)[3];
+    }
+    
+    
+    void MTD_FLASHMEM IPAddress::operator=(in_addr_t inaddr)
+    {
+        address[0] = ((uint8_t*)&inaddr)[0];
+        address[1] = ((uint8_t*)&inaddr)[1];
+        address[2] = ((uint8_t*)&inaddr)[2];
+        address[3] = ((uint8_t*)&inaddr)[3];
+    }
+    
+    
+    void MTD_FLASHMEM IPAddress::operator=(ip_addr_t ipaddr)
+    {
+        address[0] = ((uint8_t*)&ipaddr)[0];
+        address[1] = ((uint8_t*)&ipaddr)[1];
+        address[2] = ((uint8_t*)&ipaddr)[2];
+        address[3] = ((uint8_t*)&ipaddr)[3];
+    }
+    
+    
+    void MTD_FLASHMEM IPAddress::operator=(char const* str)
+    {
+        if (!str || f_strlen(str) == 0)
+            *this = IPAddress(0, 0, 0, 0);
+        else
+            *this = IPAddress(ipaddr_addr(APtr<char>(f_strdup(str)).get()));
+    }
+    
+    
+    in_addr_t MTD_FLASHMEM IPAddress::get_in_addr_t()
+    {
+        in_addr_t a;
+        ((uint8_t*)&a)[0] = address[0];
+        ((uint8_t*)&a)[1] = address[1];
+        ((uint8_t*)&a)[2] = address[2];
+        ((uint8_t*)&a)[3] = address[3];
+        return a;
+    }
+    
+    ip_addr_t MTD_FLASHMEM IPAddress::get_ip_addr_t()
+    {
+        ip_addr_t a;
+        ((uint8_t*)&a.addr)[0] = address[0];
+        ((uint8_t*)&a.addr)[1] = address[1];
+        ((uint8_t*)&a.addr)[2] = address[2];
+        ((uint8_t*)&a.addr)[3] = address[3];
+        return a;
+    }
+    
+    uint32_t MTD_FLASHMEM IPAddress::get_uint32()
+    {
+        uint32_t a;
+        ((uint8_t*)&a)[0] = address[0];
+        ((uint8_t*)&a)[1] = address[1];
+        ((uint8_t*)&a)[2] = address[2];
+        ((uint8_t*)&a)[3] = address[3];
+        return a;
+    }
+    
+    IPAddress::IPAddressStr MTD_FLASHMEM IPAddress::get_str()
+    {
+        IPAddressStr str;
+        ip_addr_t a = get_ip_addr_t();
+        ipaddr_ntoa_r(&a, (char*)str, 16);
+        return str;
+    }
+    
+    bool MTD_FLASHMEM IPAddress::operator==(IPAddress const& rhs)
+    {
+        return address[0] == rhs.address[0] && address[1] == rhs.address[1] &&
+               address[2] == rhs.address[2] && address[3] == rhs.address[3];
+    }
+    
+    bool MTD_FLASHMEM IPAddress::operator!=(IPAddress const& rhs)
+    {
+        return !(*this == rhs);
+    }
+    
+
+
+	//////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+	// WiFi
+	
+    
+    WiFi::Mode STC_FLASHMEM WiFi::setMode(Mode mode)
+    {
+        Critical critical;
+        wifi_set_opmode(mode);
+    }
+    
+    
+    WiFi::Mode STC_FLASHMEM WiFi::getMode()
+    {
+        Mode mode = (Mode)wifi_get_opmode();
+        return mode;
+    }
+    
+    
+    char const* STC_FLASHMEM WiFi::convSecurityProtocolToString(SecurityProtocol securityProtocol)
+    {
+        char const* authMode = STR_;
+        switch (securityProtocol)
+        {
+            case WiFi::Open:
+                authMode = FSTR("Open");
+                break;
+            case WiFi::WEP:
+                authMode = FSTR("WEP");
+                break;
+            case WiFi::WPA_PSK:
+                authMode = FSTR("WPA-PSK");
+                break;
+            case WiFi::WPA2_PSK:
+                authMode = FSTR("WPA2-PSK");
+                break;
+            case WiFi::WPA_WPA2_PSK:
+                authMode = FSTR("WPA-WPA2-PSK");
+                break;
+        }
+        return authMode;
+    }			
+
+    
+    // setMode must be called with AccessPoint or ClientAndAccessPoint
+    // note: make sure there is enough stack space free otherwise mail cause reset (fatal exception)!
+    // channel: 1..13
+    void STC_FLASHMEM WiFi::configureAccessPoint(char const* SSID, char const* securityKey, uint8_t channel, SecurityProtocol securityProtocol, bool hiddenSSID)
+    {						
+        softap_config config = {0};
+        wifi_softap_get_config(&config);
+        f_strcpy((char *)config.ssid, SSID);
+        config.ssid_len = f_strlen(SSID);
+        f_strcpy((char *)config.password, securityKey);
+        config.channel = channel;
+        config.authmode = AUTH_MODE(securityProtocol);
+        config.ssid_hidden = (uint8)hiddenSSID;
+        Critical critical;
+        wifi_softap_set_config(&config);
+    }
+    
+    
+    // setMode must be called with Client or ClientAndAccessPoint
+    void STC_FLASHMEM WiFi::configureClient(char const* SSID, char const* securityKey)
+    {
+        station_config config = {0};
+        f_strcpy((char *)config.ssid, SSID);
+        f_strcpy((char *)config.password, securityKey);
+        Critical critical;
+        wifi_station_disconnect();
+        wifi_station_set_config(&config);
+        wifi_station_connect();
+    }
+    
+    
+    // fills MAC with MAC address of the specified network
+    // MAC must be a pointer to 6 bytes buffer
+    void STC_FLASHMEM WiFi::getMACAddress(WiFi::Network network, uint8_t* MAC)
+    {
+        wifi_get_macaddr((uint8_t)network, MAC);
+    }
+    
+    
+    WiFi::ClientConnectionStatus STC_FLASHMEM WiFi::getClientConnectionStatus()
+    {
+        return (ClientConnectionStatus)wifi_station_get_connect_status();
+    }
+    
+    
+    // returns access point list
+    WiFi::APInfo* STC_FLASHMEM WiFi::getAPList(uint32_t* count, bool rescan)
+    {
+        if (rescan)
+        {
+            Mode prevMode = getMode();
+            if (prevMode == AccessPoint)
+                setMode(ClientAndAccessPoint);
+            wifi_station_scan(NULL, scanDoneCB);
+            getAPInfo()->receive();	// wait for completion
+            if (prevMode != getMode())
+                setMode(prevMode);
+        }
+        APInfo* infos;
+        getAPInfo(&infos, count);
+        return infos;
+    }
+
+    
+    void STC_FLASHMEM WiFi::scanDoneCB(void* arg, STATUS status)
+    {
+        if (status == OK)
+        {
+            // count items
+            uint32_t count = 0;
+            for (bss_info* bss_link = ((bss_info*)arg)->next.stqe_next; bss_link; bss_link = bss_link->next.stqe_next)
+                ++count;
+            // fill items
+            APInfo* infos;
+            getAPInfo(&infos, &count, count);
+            for (bss_info* bss_link = ((bss_info*)arg)->next.stqe_next; bss_link; bss_link = bss_link->next.stqe_next, ++infos)
+            {
+                memcpy(infos->BSSID, bss_link->bssid, 6);
+                memset(infos->SSID, 0, 33);
+                memcpy(infos->SSID, bss_link->ssid, 32);
+                infos->Channel  = bss_link->channel;
+                infos->RSSI     = bss_link->rssi;
+                infos->AuthMode = (SecurityProtocol)bss_link->authmode;
+                infos->isHidden = (bool)bss_link->is_hidden;
+            }
+            getAPInfo()->send();
+        }
+    }
+    
+    
+    // allocateCount >= 0 -> allocate (or reallocate or free) AP info
+    // allocateCount < 0  -> get infos
+    Queue<bool>* STC_FLASHMEM WiFi::getAPInfo(APInfo** infos, uint32_t* count, int32_t allocateCount)
+    {
+        static APInfo*  s_infos = NULL;
+        static uint32_t s_count = 0;
+        static Queue<bool>* s_queue = new Queue<bool>(1);	// never deleted
+        if (allocateCount >= 0)
+        {
+            if (s_infos != NULL)
+                delete[] s_infos;
+            s_infos = NULL;
+            s_count = 0;
+            if (allocateCount > 0)
+            {
+                s_infos = new APInfo[allocateCount];
+                s_count = allocateCount;
+            }
+        }
+        if (infos && count)
+        {
+            *infos = s_infos;
+            *count = s_count;
+        }
+        return s_queue;
+    }
+		
+
+
+	//////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+	// IP
+	
+    void STC_FLASHMEM IP::configureStatic(WiFi::Network network, char const* IP, char const* netmask, char const* gateway)
+    {
+        ip_info info;
+        info.ip.addr      = ipaddr_addr(APtr<char>(f_strdup(IP)).get());
+        info.netmask.addr = ipaddr_addr(APtr<char>(f_strdup(netmask)).get());
+        info.gw.addr      = ipaddr_addr(APtr<char>(f_strdup(gateway)).get());
+        Critical critical;
+        if (network == WiFi::ClientNetwork)
+            wifi_station_dhcpc_stop();
+        wifi_set_ip_info(network, &info);
+    }
+    
+    
+    // applies only to ClientNetwork
+    void STC_FLASHMEM IP::configureDHCP(WiFi::Network network)
+    {
+        if (network == WiFi::ClientNetwork)
+        {
+            Critical critical;
+            wifi_station_dhcpc_start();
+        }
+    }
+    
+    
+    // fills IP with IP address of the specified network
+    // IP, netmask, gateway must be a pointer to 4 bytes buffer
+    void STC_FLASHMEM IP::getIPInfo(WiFi::Network network, uint8_t* IP, uint8_t* netmask, uint8_t* gateway)
+    {
+        ip_info info;
+        wifi_get_ip_info(network, &info);
+        for (uint32_t i = 0; i != 4; ++i)
+        {
+            IP[i]      = ((uint8_t*)&info.ip.addr)[i];
+            netmask[i] = ((uint8_t*)&info.netmask.addr)[i];
+            gateway[i] = ((uint8_t*)&info.gw.addr)[i];
+        }
+    }
+		
+        
+        
+	//////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+	// DHCPServer
+	
+    // warn: each IP in the range requires memory!
+    void STC_FLASHMEM DHCPServer::configure(char const* startIP, char const* endIP, uint32_t maxLeases)
+    {		
+        //udhcpd_stop();
+        dhcp_info info = {0};
+        info.start_ip      = ipaddr_addr(APtr<char>(f_strdup(startIP)).get());
+        info.end_ip        = ipaddr_addr(APtr<char>(f_strdup(endIP)).get());
+        info.max_leases    = maxLeases;
+        info.auto_time     = 60;
+        info.decline_time  = 60;
+        info.conflict_time = 60;
+        info.offer_time    = 60;
+        info.min_lease_sec = 60;
+        dhcp_set_info(&info);
+        udhcpd_start();			
+    }
+        
+        
 
    	//////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////
@@ -232,6 +562,15 @@ namespace fdv
 	//////////////////////////////////////////////////////////////////////
 	// HTTPResponse
 	
+    MTD_FLASHMEM HTTPResponse::HTTPResponse(HTTPHandler* httpHandler, char const* status, char const* content)
+        : m_httpHandler(httpHandler), m_status(status)
+    {
+        // content (if present, otherwise use addContent())
+        if (content)
+            addContent(content);
+    }
+    
+    
     HTTPHandler::Request& MTD_FLASHMEM HTTPResponse::getRequest()
     {
         return m_httpHandler->getRequest();
@@ -304,6 +643,13 @@ namespace fdv
 	// ParameterReplacer
 
 	
+    MTD_FLASHMEM ParameterReplacer::ParameterReplacer(char const* strStart, char const* strEnd, Params* params)
+        : m_params(params), m_strStart(strStart), m_strEnd(strEnd)
+    {
+        processInput();
+    }
+    
+    
 	void MTD_FLASHMEM ParameterReplacer::processInput()
 	{
 		char const* curc  = m_strStart;
@@ -407,6 +753,12 @@ namespace fdv
 	//////////////////////////////////////////////////////////////////////
 	// HTTPTemplateResponse
 
+    
+    MTD_FLASHMEM HTTPTemplateResponse::HTTPTemplateResponse(HTTPHandler* httpHandler, char const* filename)
+        : HTTPResponse(httpHandler, NULL), m_filename(filename)
+    {			
+    }
+    
 
     void MTD_FLASHMEM HTTPTemplateResponse::addParamStr(char const* key, char const* value)
     {
@@ -517,6 +869,18 @@ namespace fdv
 	//////////////////////////////////////////////////////////////////////
 	// UDPClient
     
+    MTD_FLASHMEM UDPClient::UDPClient(IPAddress remoteAddress, uint16_t remotePort)
+    {
+        init(remoteAddress, remotePort);
+    }
+    
+    
+    MTD_FLASHMEM UDPClient::~UDPClient()
+    {
+        m_socket.close();
+    }
+    
+    
     void MTD_FLASHMEM UDPClient::init(IPAddress remoteAddress, uint16_t remotePort)
     {
         m_socket = lwip_socket(PF_INET, SOCK_DGRAM, 0);
@@ -545,7 +909,7 @@ namespace fdv
     // SNTPClient
 
     // serverIP is a uint8_t[4] IP address or NULL
-    SNTPClient::SNTPClient(IPAddress serverIP, uint16_t port)
+    MTD_FLASHMEM SNTPClient::SNTPClient(IPAddress serverIP, uint16_t port)
         : m_server(serverIP), m_port(port)
     {
     }

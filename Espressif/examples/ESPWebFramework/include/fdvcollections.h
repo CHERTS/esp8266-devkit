@@ -112,8 +112,7 @@ struct LinkedCharChunks
 	LinkedCharChunks(LinkedCharChunks& c)
 		: m_chunks(NULL), m_current(NULL)
 	{
-		clear();
-		addChunks(&c);
+        *this = c;
 	}
 	
 	
@@ -134,6 +133,7 @@ struct LinkedCharChunks
 	CharChunksIterator getIterator();
 	uint32_t getItemsCount();
 	void dump();
+    void operator=(LinkedCharChunks& c);
 
 private:
 	CharChunk* m_chunks;
@@ -492,129 +492,33 @@ private:
 
 struct FlashDictionary
 {
-
 	static uint32_t const FLASH_DICTIONARY_POS = 0x16000;
 	static uint32_t const MAGIC                = 0x46445631;
 	
 	// clear the entire available space and write MAGIC at the beginning of the dictionary
 	// This is required only if you want to remove previous content
 	// erase all values to 0xFF
-	static void MTD_FLASHMEM eraseContent()
-	{
-		Critical critical;
-		spi_flash_erase_sector(FLASH_DICTIONARY_POS / SPI_FLASH_SEC_SIZE);
-		uint32 magic = MAGIC;
-		spi_flash_write(FLASH_DICTIONARY_POS, &magic, sizeof(magic));
-	}
+	static void eraseContent();
 
 	// requires 4K free heap to execute!
-	static void MTD_FLASHMEM setValue(char const* key, void const* value, uint32_t valueLength)
-	{
-		if (!value)
-			return;
-		
-		// find key or a free space
-		uint8_t const* keyPosPtr = (uint8_t const*)findKey(key);
-
-		// copy the Flash page in RAM buffer (page)
-		// memcpy is ok, because source alredy aligned then can be read directly from Flash
-		uint8_t* page = new uint8_t[SPI_FLASH_SEC_SIZE];
-		memcpy(page, (void const*)(FLASH_MAP_START + FLASH_DICTIONARY_POS), SPI_FLASH_SEC_SIZE);	
-		
-		// get key position as index into page[]
-		uint32_t keyPos = (uint32_t)keyPosPtr - FLASH_MAP_START - FLASH_DICTIONARY_POS;
-		uint32_t curPos = keyPos;
-		
-		// is new key?
-		bool isNewKey = (page[keyPos] == 0xFF);
-		
-		// store key length (byte)
-		uint32_t keyLen = f_strlen(key);
-		page[curPos++] = keyLen;
-		
-		// store key (and terminating zero)
-		f_strcpy((char *)&page[curPos], key);
-		curPos += keyLen + 1;
-
-		// need to move next key->values?
-		if (!isNewKey)
-		{			
-			uint32_t prevValueLength = page[curPos] | (page[curPos + 1] << 8);	// little-endian
-			bool isLastKey = (page[curPos + 2 + prevValueLength] == 0xFF);
-			int diff = (int32_t)valueLength - prevValueLength;
-			uint8_t* dst = &page[curPos + max(0, diff)];
-			uint8_t* src = &page[curPos - min(0, diff)];
-			uint8_t* end = &page[SPI_FLASH_SEC_SIZE];
-			memmove(dst, src, min(end - src, end - dst));
-			// mark the new end of items
-			if (isLastKey)
-				page[curPos + 2 + valueLength] = 0xFF;			
-		}
-		
-		// store low and high byte of value length word (little-endian)
-		page[curPos++] = valueLength & 0xFF;
-		page[curPos++] = (valueLength >> 8) & 0xFF;
-		
-		// store value data
-		f_memcpy(&page[curPos], value, valueLength);
-				
-		// write back into the flash
-		Critical critical;
-		spi_flash_erase_sector(FLASH_DICTIONARY_POS / SPI_FLASH_SEC_SIZE);
-		spi_flash_write(FLASH_DICTIONARY_POS, (uint32*)page, SPI_FLASH_SEC_SIZE);
-		
-		delete[] page;
-	}
+	static void setValue(char const* key, void const* value, uint32_t valueLength);
 	
 	// return NULL if key point to a free space (aka key doesn't exist)
 	// return pointer may be Unaligned pointer to Flash
-	static uint8_t const* MTD_FLASHMEM getValue(char const* key, uint32_t* valueLength = NULL)
-	{
-		uint8_t const* pos = (uint8_t const*)findKey(key);
-		uint8_t keyLen = getByte(pos);
-		if (keyLen == 0xFF)
-			return NULL;
-		pos += 1 + keyLen + 1;
-		if (valueLength)
-			*valueLength = getWord(pos);
-		return pos + 2;
-	}
+	static uint8_t const* getValue(char const* key, uint32_t* valueLength = NULL);
 		
-	static void MTD_FLASHMEM setString(char const* key, char const* value)
-	{
-		if (value)
-			setValue(key, value, f_strlen(value) + 1);
-	}
+	static void setString(char const* key, char const* value);
 	
 	// always returns a Flash stored string (if not found return what contained in defaultValue)
-	static char const* MTD_FLASHMEM getString(char const* key, char const* defaultValue)
-	{
-		char const* value = (char const*)getValue(key);
-		return value? value : defaultValue;
-	}
+	static char const* getString(char const* key, char const* defaultValue);
 	
-	static void MTD_FLASHMEM setInt(char const* key, int32_t value)
-	{
-		setValue(key, &value, sizeof(value));
-	}
+	static void setInt(char const* key, int32_t value);
 	
-	static int32_t MTD_FLASHMEM getInt(char const* key, int32_t defaultValue)
-	{
-		void const* value = (void const*)getValue(key);
-		return value? (int32_t)getDWord(value) : defaultValue;
-	}
+	static int32_t getInt(char const* key, int32_t defaultValue);
 	
-	static void MTD_FLASHMEM setBool(char const* key, bool value)
-	{
-		uint8_t b = value? 1 : 0;
-		setValue(key, &b, 1);
-	}
+	static void setBool(char const* key, bool value);
 	
-	static bool MTD_FLASHMEM getBool(char const* key, bool defaultValue)
-	{
-		void const* value = (void const*)getValue(key);
-		return value? (getByte(value) == 1? true : false) : defaultValue;
-	}
+	static bool getBool(char const* key, bool defaultValue);
 	
 	// return starting of specified key or starting of next free position
 	// what is stored:
@@ -624,33 +528,11 @@ struct FlashDictionary
 	//   word: value length (little endian)
 	//   ....: value data
 	// automatically erase content if not already initialized
-	static void const* MTD_FLASHMEM findKey(char const* key)
-	{		
-		if (!isContentValid())
-			eraseContent();
-		uint8_t const* curpos = (uint8_t const*)(FLASH_MAP_START + FLASH_DICTIONARY_POS + sizeof(MAGIC));	
-		while (true)
-		{
-			uint8_t keylen = getByte(curpos);	// keylen doesn't include ending zero
-			if (keylen == 0xFF || (key && f_strcmp((char const*)(curpos + 1), key) == 0))
-				return curpos;	// return start of free space or start of key->value block
-			// goto next block
-			curpos += 1 + keylen + 1;		// 1 (keylen field) + keylen + 1 (ending zero)
-			curpos += 2 + getWord(curpos);	// 2 (valuelen field) + valuelen
-		}
-	}
+	static void const* findKey(char const* key);
 	
-	static bool MTD_FLASHMEM isContentValid()
-	{
-		// already aligned, can be read directly from Flash
-		return *((uint32_t const*)(FLASH_MAP_START + FLASH_DICTIONARY_POS)) == MAGIC;
-	}
+	static bool isContentValid();
 	
-	static uint32_t MTD_FLASHMEM getUsedSpace()
-	{
-		return (uint32_t)findKey(NULL) - (FLASH_MAP_START + FLASH_DICTIONARY_POS);
-	}
-	
+	static uint32_t getUsedSpace();	
 };
 
 

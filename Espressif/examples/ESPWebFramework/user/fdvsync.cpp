@@ -72,6 +72,72 @@ namespace fdv
 	}
 	
 	
-		
+	/////////////////////////////////////////////////////////////////////+
+	/////////////////////////////////////////////////////////////////////+
+	// Mutex
+
+    MTD_FLASHMEM Mutex::Mutex()
+        : m_handle(NULL)
+    {
+        vSemaphoreCreateBinary(m_handle);
+    }
+    
+    MTD_FLASHMEM Mutex::~Mutex()
+    {
+        vSemaphoreDelete(m_handle);
+    }
+    
+    bool MTD_FLASHMEM Mutex::lock(uint32_t msTimeOut)
+    {
+        return xSemaphoreTake(m_handle, msTimeOut / portTICK_RATE_MS);
+    }
+    
+    bool MTD_FLASHMEM Mutex::lockFromISR()
+    {
+        signed portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
+        return xSemaphoreTakeFromISR(m_handle, &xHigherPriorityTaskWoken);
+    }
+    
+    void MTD_FLASHMEM Mutex::unlock()
+    {
+        xSemaphoreGive(m_handle);
+    }
+    
+    void MTD_FLASHMEM Mutex::unlockFromISR()
+    {
+        signed portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
+        xSemaphoreGiveFromISR(m_handle, &xHigherPriorityTaskWoken);				
+    }
+    
 	
+	/////////////////////////////////////////////////////////////////////+
+	/////////////////////////////////////////////////////////////////////+
+	// MutexLock & MutexLockFromISR
+
+    MTD_FLASHMEM MutexLock::MutexLock(Mutex* mutex, uint32_t msTimeOut)
+      : m_mutex(mutex)
+    {
+        m_acquired = m_mutex->lock(msTimeOut);
+    }
+
+    MTD_FLASHMEM MutexLock::~MutexLock()
+    {
+        if (m_acquired)
+            m_mutex->unlock();
+    }
+
+    
+    MTD_FLASHMEM MutexLockFromISR::MutexLockFromISR(Mutex* mutex)
+      : m_mutex(mutex)
+    {
+        m_acquired = m_mutex->lockFromISR();
+    }
+
+    MTD_FLASHMEM MutexLockFromISR::~MutexLockFromISR()
+    {
+        if (m_acquired)
+            m_mutex->unlockFromISR();
+    }
+    
+    
 }

@@ -48,6 +48,7 @@ namespace fdv
 			applyAccessPointIP();
 			applyClientIP();
 			applyDHCPServer();
+            applyDNS();
 			applyWebServer<HTTPCustomServer_T>();
 			applyGPIO();
             applyDateTime();
@@ -66,151 +67,27 @@ namespace fdv
 		
 		
 		// can be re-applied
-		static void MTD_FLASHMEM applyUARTServices()
-		{            
-			// UART and serial services
-			uint32_t baudRate;
-			bool enableSystemOutput;
-			SerialService serialService;
-			getUARTParams(&baudRate, &enableSystemOutput, &serialService);
-			HardwareSerial::getSerial(0)->reconfig(baudRate);
-			if (!enableSystemOutput)
-				DisableStdOut();
-#if (FDV_INCLUDE_SERIALCONSOLE == 1)
-			if (s_serialConsole)
-			{
-				delete s_serialConsole;
-				s_serialConsole = NULL;
-			}
-#endif
-#if (FDV_INCLUDE_SERIALBINARY == 1)
-			if (s_serialBinary)
-			{
-				delete s_serialBinary;
-				s_serialBinary = NULL;
-			}
-#endif
-		    switch (serialService)
-			{
-#if (FDV_INCLUDE_SERIALCONSOLE == 1)
-				case SerialService_Console:
-					s_serialConsole = new SerialConsole;
-					break;
-#endif
-#if (FDV_INCLUDE_SERIALBINARY == 1)
-				case SerialService_BinaryProtocol:
-					s_serialBinary = new SerialBinary;
-					break;
-#endif
-			}            
-		}
-		
+		static void applyUARTServices();		
 		
 		// can be re-applied
-		static void MTD_FLASHMEM applyWiFi()
-		{
-			// WiFi Mode
-			WiFi::setMode(getWiFiMode());
-										
-			if (getWiFiMode() == WiFi::AccessPoint || getWiFiMode() == WiFi::ClientAndAccessPoint)
-			{
-				// Access point parameters
-				char const* SSID;
-				char const* securityKey;
-				uint8_t channel;
-				WiFi::SecurityProtocol securityProtocol;
-				bool hiddenSSID;
-				getAccessPointParams(&SSID, &securityKey, &channel, &securityProtocol, &hiddenSSID);
-				WiFi::configureAccessPoint(SSID, securityKey, channel, securityProtocol, hiddenSSID);
-			}
-			
-			if (getWiFiMode() == WiFi::Client || getWiFiMode() == WiFi::ClientAndAccessPoint)
-			{			
-				// Client parameters
-				char const* SSID;
-				char const* securityKey;
-				getClientParams(&SSID, &securityKey);
-				WiFi::configureClient(SSID, securityKey);
-			}
-		}
-
+		static void applyWiFi();
 
 		// can be re-applied
 		// doesn't support GPIO16
-		static void MTD_FLASHMEM applyGPIO()
-		{
-			// GPIO
-			for (uint32_t i = 0; i < 17; ++i)
-			{
-				bool configured, isOutput, pullUp, value;
-				getGPIOParams(i, &configured, &isOutput, &pullUp, &value);
-				if (configured)
-				{
-					// GPIO0..15
-					GPIO gpio(i);
-					if (isOutput)
-						gpio.modeOutput();
-					else
-						gpio.modeInput();
-					gpio.enablePullUp(pullUp);
-					if (isOutput)
-						gpio.write(value);
-				}
-			}
-		}		
-		
+		static void applyGPIO();
 		
 		// can be re-applied
-		static void MTD_FLASHMEM applyAccessPointIP()
-		{
-			if (getWiFiMode() == WiFi::AccessPoint || getWiFiMode() == WiFi::ClientAndAccessPoint)
-			{
-				// Access Point IP
-				char const* IP;
-				char const* netmask;
-				char const* gateway;
-				getAccessPointIPParams(&IP, &netmask, &gateway);
-				IP::configureStatic(WiFi::AccessPointNetwork, IP, netmask, gateway);
-			}
-		}			
-		
+		static void applyAccessPointIP();
 		
 		// can be re-applied
-		static void MTD_FLASHMEM applyClientIP()
-		{
-			if (getWiFiMode() == WiFi::Client || getWiFiMode() == WiFi::ClientAndAccessPoint)
-			{			
-				// Client IP
-				bool staticIP;
-				char const* IP;
-				char const* netmask;
-				char const* gateway;
-				getClientIPParams(&staticIP, &IP, &netmask, &gateway);
-				if (staticIP)
-					IP::configureStatic(WiFi::ClientNetwork, IP, netmask, gateway);
-				else
-					IP::configureDHCP(WiFi::ClientNetwork);
-			}
-		}			
+		static void applyClientIP();
+		
+		// can be re-applied
+		static void applyDHCPServer();
 
-		
-		// can be re-applied
-		static void MTD_FLASHMEM applyDHCPServer()
-		{
-			// DCHP Server
-			if (getWiFiMode() == WiFi::AccessPoint || getWiFiMode() == WiFi::ClientAndAccessPoint)
-			{
-				bool enabled;
-				char const* startIP;
-				char const* endIP;
-				uint32_t maxLeases;
-				getDHCPServerParams(&enabled, &startIP, &endIP, &maxLeases);
-				if (enabled)
-					DHCPServer::configure(startIP, endIP, maxLeases);
-			}
-		}			
-		
-
+        // can be re-applied
+        static void applyDNS();
+        
 		// cannot be re-applied
 		template <typename HTTPCustomServer_T>
 		static void MTD_FLASHMEM applyWebServer()
@@ -221,179 +98,82 @@ namespace fdv
 			new HTTPCustomServer_T(webPort);
 		}
 
-
         // can be re-applied
-        static void MTD_FLASHMEM applyDateTime()
-        {
-            int8_t timezoneHours;
-            uint8_t timezoneMinutes;
-            char const* defaultNTPServer;
-            getDateTimeParams(&timezoneHours, &timezoneMinutes, &defaultNTPServer);
-            DateTime::setDefaults(timezoneHours, timezoneMinutes, defaultNTPServer);
-        }
-
+        static void applyDateTime();
 		
-		static void MTD_FLASHMEM restore()
-		{
-			FlashDictionary::eraseContent();
-			system_restore();
-		}
+		static void MTD_FLASHMEM restore();
 		
 		
 		//// WiFi settings
 		
-		static void MTD_FLASHMEM setWiFiMode(WiFi::Mode value)
-		{
-			FlashDictionary::setInt(STR_WiFiMode, (int32_t)value);
-		}
+		static void setWiFiMode(WiFi::Mode value);
 		
-		static WiFi::Mode MTD_FLASHMEM getWiFiMode()
-		{
-			return (WiFi::Mode)FlashDictionary::getInt(STR_WiFiMode, (int32_t)WiFi::AccessPoint);
-		}
-		
+		static WiFi::Mode getWiFiMode();
+
 		
 		//// Access Point mode parameters
 		
-		static void MTD_FLASHMEM setAccessPointParams(char const* SSID, char const* securityKey, uint8_t channel, WiFi::SecurityProtocol securityProtocol, bool hiddenSSID)
-		{
-			FlashDictionary::setString(STR_APSSID, SSID);
-			FlashDictionary::setString(STR_APSECKEY, securityKey);
-			FlashDictionary::setInt(STR_APCH, channel);
-			FlashDictionary::setInt(STR_APSP, (int32_t)securityProtocol);
-			FlashDictionary::setBool(STR_APHSSID, hiddenSSID);
-		}
+		static void setAccessPointParams(char const* SSID, char const* securityKey, uint8_t channel, WiFi::SecurityProtocol securityProtocol, bool hiddenSSID);
 		
-		static void MTD_FLASHMEM getAccessPointParams(char const** SSID, char const** securityKey, uint8_t* channel, WiFi::SecurityProtocol* securityProtocol, bool* hiddenSSID)
-		{
-			static char defaultSSID[10];
-			uint8_t mac[16];
-			WiFi::getMACAddress(WiFi::AccessPointNetwork, mac);			
-			sprintf(defaultSSID, FSTR("ESP%02X%02X%02X%02X%02X%02X"), mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-			*SSID             = FlashDictionary::getString(STR_APSSID, defaultSSID);
-			*securityKey      = FlashDictionary::getString(STR_APSECKEY, STR_);
-			*channel          = FlashDictionary::getInt(STR_APCH, 9);
-			*securityProtocol = (WiFi::SecurityProtocol)FlashDictionary::getInt(STR_APSP, (int32_t)WiFi::Open);
-			*hiddenSSID       = FlashDictionary::getBool(STR_APHSSID, false);
-		}
+		static void getAccessPointParams(char const** SSID, char const** securityKey, uint8_t* channel, WiFi::SecurityProtocol* securityProtocol, bool* hiddenSSID);
 		
 		
 		//// Client mode parameters
 		
-		static void MTD_FLASHMEM setClientParams(char const* SSID, char const* securityKey)
-		{
-			FlashDictionary::setString(STR_CLSSID, SSID);
-			FlashDictionary::setString(STR_CLSECKEY, securityKey);
-		}
+		static void setClientParams(char const* SSID, char const* securityKey);
 		
-		static void MTD_FLASHMEM getClientParams(char const** SSID, char const** securityKey)
-		{
-			*SSID        = FlashDictionary::getString(STR_CLSSID, STR_);
-			*securityKey = FlashDictionary::getString(STR_CLSECKEY, STR_);
-		}
+		static void getClientParams(char const** SSID, char const** securityKey);
 		
 		
 		//// Client mode IP parameters
 		
 		// IP, netmask, gateway valid only if staticIP = true
-		static void MTD_FLASHMEM setClientIPParams(bool staticIP, char const* IP, char const* netmask, char const* gateway)
-		{
-			FlashDictionary::setBool(STR_CLSTATIC, staticIP);
-			FlashDictionary::setString(STR_CLIP, IP);
-			FlashDictionary::setString(STR_CLNETMSK, netmask);
-			FlashDictionary::setString(STR_CLGTW, gateway);			
-		}
+		static void setClientIPParams(bool staticIP, char const* IP, char const* netmask, char const* gateway);
 		
 		// IP, netmask, gateway valid only if staticIP = true
-		static void MTD_FLASHMEM getClientIPParams(bool* staticIP, char const** IP, char const** netmask, char const** gateway)
-		{
-			*staticIP = FlashDictionary::getBool(STR_CLSTATIC, false);
-			*IP       = FlashDictionary::getString(STR_CLIP, STR_);
-			*netmask  = FlashDictionary::getString(STR_CLNETMSK, STR_);
-			*gateway  = FlashDictionary::getString(STR_CLGTW, STR_);
-		}
+		static void getClientIPParams(bool* staticIP, char const** IP, char const** netmask, char const** gateway);
 		
 		
 		//// Access point IP parameters
 		
-		static void MTD_FLASHMEM setAccessPointIPParams(char const* IP, char const* netmask, char const* gateway)
-		{
-			FlashDictionary::setString(STR_APIP, IP);
-			FlashDictionary::setString(STR_APNETMSK, netmask);
-			FlashDictionary::setString(STR_APGTW, gateway);			
-		}
+		static void setAccessPointIPParams(char const* IP, char const* netmask, char const* gateway);
 		
-		static void MTD_FLASHMEM getAccessPointIPParams(char const** IP, char const** netmask, char const** gateway)
-		{
-			*IP       = FlashDictionary::getString(STR_APIP, FSTR("192.168.4.1"));
-			*netmask  = FlashDictionary::getString(STR_APNETMSK, FSTR("255.255.255.0"));
-			*gateway  = FlashDictionary::getString(STR_APGTW, STR_);
-		}
+		static void getAccessPointIPParams(char const** IP, char const** netmask, char const** gateway);
 		
 		
 		//// DHCP server parameters
 		
-		static void MTD_FLASHMEM setDHCPServerParams(bool enabled, char const* startIP = NULL, char const* endIP = NULL, uint32_t maxLeases = 0)
-		{
-			FlashDictionary::setBool(STR_DHCPDEN, enabled);
-			if (startIP && endIP && maxLeases)
-			{
-				FlashDictionary::setString(STR_DHCPDIP1, startIP);
-				FlashDictionary::setString(STR_DHCPDIP2, endIP);
-				FlashDictionary::setInt(STR_DHCPDMXL, maxLeases);
-			}
-		}
+		static void setDHCPServerParams(bool enabled, char const* startIP = NULL, char const* endIP = NULL, uint32_t maxLeases = 0);
 		
-		static void MTD_FLASHMEM getDHCPServerParams(bool* enabled, char const** startIP, char const** endIP, uint32_t* maxLeases)
-		{
-			*enabled   = FlashDictionary::getBool(STR_DHCPDEN, true);
-			*startIP   = FlashDictionary::getString(STR_DHCPDIP1, FSTR("192.168.4.100"));
-			*endIP     = FlashDictionary::getString(STR_DHCPDIP2, FSTR("192.168.4.110"));
-			*maxLeases = FlashDictionary::getInt(STR_DHCPDMXL, 10);
-		}
+		static void getDHCPServerParams(bool* enabled, char const** startIP, char const** endIP, uint32_t* maxLeases);
 		
 		
+        //// DNS parameters
+        
+        static void setDNSParams(IPAddress DNS1, IPAddress DNS2);
+        
+        static void getDNSParams(IPAddress* DNS1, IPAddress* DNS2);
+        
+        
 		//// Web Server parameters
 		
-		static void MTD_FLASHMEM setWebServerParams(uint16_t port)
-		{
-			FlashDictionary::setInt(STR_WEBPORT, port);
-		}
+		static void setWebServerParams(uint16_t port);
 		
-		static void MTD_FLASHMEM getWebServerParams(uint16_t* port)
-		{
-			*port = FlashDictionary::getInt(STR_WEBPORT, 80);
-		}
+		static void getWebServerParams(uint16_t* port);
 		
 		
 		//// UART parameters
 		
-		static void MTD_FLASHMEM setUARTParams(uint32_t baudRate, bool enableSystemOutput, SerialService serialService)
-		{
-			FlashDictionary::setInt(STR_BAUD, baudRate);
-			FlashDictionary::setBool(STR_SYSOUT, enableSystemOutput);
-			FlashDictionary::setInt(STR_UARTSRV, (int32_t)serialService);
-		}
+		static void setUARTParams(uint32_t baudRate, bool enableSystemOutput, SerialService serialService);
 		
-		static void MTD_FLASHMEM getUARTParams(uint32_t* baudRate, bool* enableSystemOutput, SerialService* serialService)
-		{
-			*baudRate           = FlashDictionary::getInt(STR_BAUD, 115200);
-			*enableSystemOutput = FlashDictionary::getBool(STR_SYSOUT, false);
-			*serialService      = (SerialService)FlashDictionary::getInt(STR_UARTSRV, (int32_t)SerialService_Console);
-		}
+		static void getUARTParams(uint32_t* baudRate, bool* enableSystemOutput, SerialService* serialService);
 		
 #if (FDV_INCLUDE_SERIALCONSOLE == 1)
-		static SerialConsole* MTD_FLASHMEM getSerialConsole()
-		{
-			return s_serialConsole;
-		}
+		static SerialConsole* getSerialConsole();
 #endif
 		
 #if (FDV_INCLUDE_SERIALBINARY == 1)
-		static SerialBinary* MTD_FLASHMEM getSerialBinary()
-		{
-			return s_serialBinary;
-		}
+		static SerialBinary* getSerialBinary();
 #endif
 		
 		
@@ -404,54 +184,18 @@ namespace fdv
 			uint32_t configured: 1, isOutput: 1, pullUp: 1, value: 1;
 		};
 
-		static void MTD_FLASHMEM setGPIOParams(uint32_t gpioNum, bool configured, bool isOutput, bool pullUp, bool value)
-		{
-			APtr<char> key(f_printf(FSTR("GPIO%d"), gpioNum));
-			GPIOInfo info = {configured, isOutput, pullUp, value};
-			FlashDictionary::setValue(key.get(), &info, sizeof(GPIOInfo));
-		}
+		static void setGPIOParams(uint32_t gpioNum, bool configured, bool isOutput, bool pullUp, bool value);
 		
-		static void MTD_FLASHMEM getGPIOParams(uint32_t gpioNum, bool* configured, bool* isOutput, bool* pullUp, bool* value)
-		{
-			APtr<char> key(f_printf(FSTR("GPIO%d"), gpioNum));
-			uint8_t const* infoPtr = FlashDictionary::getValue(key.get());			
-			if (infoPtr)
-			{
-				uint32_t infoInt = getDWord(infoPtr);
-				GPIOInfo* info = (GPIOInfo*)&infoInt;
-				*configured = info->configured;
-				*isOutput   = info->isOutput;
-				*pullUp     = info->pullUp;
-				*value      = info->value;
-			}
-			else
-			{
-				// defaults
-				*configured = false;
-				*isOutput   = false;
-				*pullUp     = false;
-				*value      = false;
-			}
-		}
-        
+		static void getGPIOParams(uint32_t gpioNum, bool* configured, bool* isOutput, bool* pullUp, bool* value);
         
         
         //// Date-time parameters
         
-        static void MTD_FLASHMEM setDateTimeParams(int8_t timezoneHours, uint8_t timezoneMinutes, char const* defaultNTPServer)
-        {
-            FlashDictionary::setInt(STR_TZHH, timezoneHours);
-            FlashDictionary::setInt(STR_TZMM, timezoneMinutes);
-            FlashDictionary::setString(STR_DEFNTPSRV, defaultNTPServer);
-        }
+        static void setDateTimeParams(int8_t timezoneHours, uint8_t timezoneMinutes, char const* defaultNTPServer);
         
-        static void MTD_FLASHMEM getDateTimeParams(int8_t* timezoneHours, uint8_t* timezoneMinutes, char const** defaultNTPServer)
-        {
-            *timezoneHours    = FlashDictionary::getInt(STR_TZHH, 0);
-            *timezoneMinutes  = FlashDictionary::getInt(STR_TZMM, 0);
-            *defaultNTPServer = FlashDictionary::getString(STR_DEFNTPSRV, FSTR("193.204.114.232")); // 193.204.114.232 = ntp1.inrim.it
-        }
+        static void getDateTimeParams(int8_t* timezoneHours, uint8_t* timezoneMinutes, char const** defaultNTPServer);
         
+        static DateTime getBootDateTime();        
 		
 		
 	private:
@@ -461,6 +205,7 @@ namespace fdv
 #if (FDV_INCLUDE_SERIALBINARY == 1)
 		static SerialBinary*  s_serialBinary;
 #endif
+        static DateTime       s_bootTime;
 	};
 
 
@@ -583,6 +328,9 @@ namespace fdv
 															  strtol(getRequest().form[STR_maxLeases], NULL, 10));
 				else
 					ConfigurationManager::setDHCPServerParams(false);
+                
+                // set DNS
+                ConfigurationManager::setDNSParams(IPAddress(getRequest().form[STR_DNS1]), IPAddress(getRequest().form[STR_DNS2]));
 			}
 			
 			WiFi::Mode mode = ConfigurationManager::getWiFiMode();
@@ -620,6 +368,14 @@ namespace fdv
 			addParamInt(STR_maxLeases, maxLeases);
 			addParamStr(FSTR("DISP_DHCPD"), mode == WiFi::AccessPoint || mode == WiFi::ClientAndAccessPoint? STR_ : STR_disabled);
 			
+            // get DNS server configuration
+            IPAddress DNS1, DNS2;
+            ConfigurationManager::getDNSParams(&DNS1, &DNS2);
+            IPAddress::IPAddressStr DNS1str = DNS1.get_str();
+            IPAddress::IPAddressStr DNS2str = DNS2.get_str();
+            addParamStr(STR_DNS1, DNS1str);
+            addParamStr(STR_DNS2, DNS2str);
+            
 			HTTPTemplateResponse::flush();
 		}
 		

@@ -21,6 +21,7 @@ WebESP8266 webESP;
 
 void setup()
 {
+  //while(1);  // debug
   // setup software serial baud rate
   softSerial.begin(9600);
   

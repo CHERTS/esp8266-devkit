@@ -108,6 +108,13 @@ namespace fdv
     {
         return lhs.getUnixDateTime() > rhs.getUnixDateTime();
     }
+    
+    
+    // returns time difference in seconds
+    inline int32_t operator - (DateTime const& lhs, DateTime const& rhs)
+    {
+        return lhs.getUnixDateTime() - rhs.getUnixDateTime();
+    }
 
 
     // dd/mm/yyyy hh:mm:ss
