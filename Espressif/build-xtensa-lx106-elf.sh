@@ -93,8 +93,8 @@ if [ $REPOCHECK -gt 0 ]; then
   # Makeinfo will fail if it encounters CRLF endings.
   git config --global core.autocrlf false
 
-  echo "GCC"
-  if cd $XTDLP/gcc-xtensa; then git pull; else git clone https://github.com/jcmvbkbc/gcc-xtensa.git $XTDLP/gcc-xtensa; fi
+  echo "GCC v5.1"
+  if cd $XTDLP/gcc-xtensa; then git pull; else git clone -b lx106-5.1 https://github.com/jcmvbkbc/gcc-xtensa.git $XTDLP/gcc-xtensa; fi
   echo "Newlib"
   if cd $XTDLP/esp-newlib; then git pull; else git clone -b xtensa https://github.com/jcmvbkbc/newlib-xtensa.git $XTDLP/esp-newlib; fi
   echo "Binutils"
@@ -186,7 +186,7 @@ if [ $REINSTALL -gt 0 -o ! -f .installed ]; then
   touch .installed
 fi
 
-echo "Building first stage GCC"
+echo "Building first stage GCC v5.1"
 cd $XTDLP/gcc-xtensa/build-1
 if [ $RECONF -gt 0 -o ! -f .configured ]; then
   rm -f .configured
@@ -222,7 +222,7 @@ if [ $REINSTALL -gt 0 -o ! -f .installed ]; then
   touch .installed
 fi
 
-echo "Building final GCC"
+echo "Building final GCC v5.1"
 cd $XTDLP/gcc-xtensa/build-2
 if [ $RECONF -gt 0 -o ! -f .configured ]; then
   rm -f .configured
