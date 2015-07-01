@@ -15,6 +15,7 @@ JOBS=-j1
 
 TARGET=xtensa-lx106-elf
 
+BUILDROOT=$PWD
 XTTC=$PWD/$TARGET
 XTBP=$PWD/build
 XTDLP=$PWD/dl
@@ -238,6 +239,7 @@ if [ $REINSTALL -gt 0 -o ! -f .installed ]; then
   rm -rf .installed
   make install
   touch .installed
+  cp $BUILDROOT/specs-gcc-5.1 xtensa-lx106-elf/lib/gcc/xtensa-lx106-elf/5.1.0/specs
 fi
 
 echo "Done!"
