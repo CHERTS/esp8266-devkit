@@ -67,7 +67,7 @@ void task2(void *pvParameters)
         printf("C > send success\n");
         free(pbuf);
 
-        char *recv_buf = (char *)zalloc(129);
+        char *recv_buf = (char *)zalloc(128);
         while ((recbytes = read(sta_socket , recv_buf, 128)) > 0) {
         	recv_buf[recbytes] = 0;
             printf("C > read data success %d!\nC > %s\n", recbytes, recv_buf);
@@ -75,6 +75,7 @@ void task2(void *pvParameters)
         free(recv_buf);
 
         if (recbytes <= 0) {
+		    close(sta_socket);
             printf("C > read data fail!\n");
         }
     }
@@ -127,7 +128,7 @@ void task3(void *pvParameters)
 
                 printf("S > Client from %s %d\n", inet_ntoa(client_addr.sin_addr), htons(client_addr.sin_port));
 
-                char *recv_buf = (char *)zalloc(129);
+                char *recv_buf = (char *)zalloc(128);
                 while ((recbytes = read(client_sock , recv_buf, 128)) > 0) {
                 	recv_buf[recbytes] = 0;
                     printf("S > read data success %d!\nS > %s\n", recbytes, recv_buf);
@@ -159,42 +160,14 @@ user_init(void)
 
     {
         struct station_config *config = (struct station_config *)zalloc(sizeof(struct station_config));
-        sprintf(config->ssid, "CVR100W_T");
-        sprintf(config->password, "justfortest");
+        sprintf(config->ssid, "ZTE_5560");
+        sprintf(config->password, "espressif");
 
         /* need to sure that you are in station mode first,
          * otherwise it will be failed. */
         wifi_station_set_config(config);
         free(config);
     }
-    
-    {
-        struct ip_info ipinfo;
-    	    
-        ipinfo.gw.addr = ipaddr_addr("192.168.145.253");
-    	ipinfo.ip.addr = ipaddr_addr("192.168.145.253");
-    	ipinfo.netmask.addr = ipaddr_addr("255.255.255.0");
-    	
-    	wifi_set_ip_info(SOFTAP_IF, &ipinfo);
-    }
-
-    {
-        struct dhcp_info *pdhcp_info = NULL;
-    
-        pdhcp_info = (struct dhcp_info *)zalloc(sizeof(struct dhcp_info));
-        pdhcp_info->start_ip = ipaddr_addr("192.168.145.100");
-        pdhcp_info->end_ip = ipaddr_addr("192.168.145.110");    // don't set the range too large, because it will cost memory.
-        pdhcp_info->max_leases = 10;
-        pdhcp_info->auto_time = 60;
-        pdhcp_info->decline_time = 60;
-        pdhcp_info->conflict_time = 60;
-        pdhcp_info->offer_time = 60;
-        pdhcp_info->min_lease_sec = 60;
-        dhcp_set_info(pdhcp_info);
-        free(pdhcp_info);
-    }
-    
-    udhcpd_start();
 
     xTaskCreate(task2, "tsk2", 256, NULL, 2, NULL);
     xTaskCreate(task3, "tsk3", 256, NULL, 2, NULL);
