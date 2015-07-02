@@ -93,63 +93,6 @@ struct rst_info rtc_info;
 void user_esp_platform_check_ip(uint8 reset_flag);
 
 /******************************************************************************
- * FunctionName : user_esp_platform_load_param
- * Description  : load parameter from flash, toggle use two sector by flag value.
- * Parameters   : param--the parame point which write the flash
- * Returns      : none
-*******************************************************************************/
-void ICACHE_FLASH_ATTR
-user_esp_platform_load_param(struct esp_platform_saved_param *param)
-{
-    struct esp_platform_sec_flag_param flag;
-
-    spi_flash_read((ESP_PARAM_START_SEC + ESP_PARAM_FLAG) * SPI_FLASH_SEC_SIZE,
-                   (uint32 *)&flag, sizeof(struct esp_platform_sec_flag_param));
-
-    if (flag.flag == 0) {
-        spi_flash_read((ESP_PARAM_START_SEC + ESP_PARAM_SAVE_0) * SPI_FLASH_SEC_SIZE,
-                       (uint32 *)param, sizeof(struct esp_platform_saved_param));
-    } else {
-        spi_flash_read((ESP_PARAM_START_SEC + ESP_PARAM_SAVE_1) * SPI_FLASH_SEC_SIZE,
-                       (uint32 *)param, sizeof(struct esp_platform_saved_param));
-    }
-}
-
-/******************************************************************************
- * FunctionName : user_esp_platform_save_param
- * Description  : toggle save param to two sector by flag value,
- *              : protect write and erase data while power off.
- * Parameters   : param -- the parame point which write the flash
- * Returns      : none
-*******************************************************************************/
-void ICACHE_FLASH_ATTR
-user_esp_platform_save_param(struct esp_platform_saved_param *param)
-{
-    struct esp_platform_sec_flag_param flag;
-
-    spi_flash_read((ESP_PARAM_START_SEC + ESP_PARAM_FLAG) * SPI_FLASH_SEC_SIZE,
-                   (uint32 *)&flag, sizeof(struct esp_platform_sec_flag_param));
-
-    if (flag.flag == 0) {
-        spi_flash_erase_sector(ESP_PARAM_START_SEC + ESP_PARAM_SAVE_1);
-        spi_flash_write((ESP_PARAM_START_SEC + ESP_PARAM_SAVE_1) * SPI_FLASH_SEC_SIZE,
-                        (uint32 *)param, sizeof(struct esp_platform_saved_param));
-        flag.flag = 1;
-        spi_flash_erase_sector(ESP_PARAM_START_SEC + ESP_PARAM_FLAG);
-        spi_flash_write((ESP_PARAM_START_SEC + ESP_PARAM_FLAG) * SPI_FLASH_SEC_SIZE,
-                        (uint32 *)&flag, sizeof(struct esp_platform_sec_flag_param));
-    } else {
-        spi_flash_erase_sector(ESP_PARAM_START_SEC + ESP_PARAM_SAVE_0);
-        spi_flash_write((ESP_PARAM_START_SEC + ESP_PARAM_SAVE_0) * SPI_FLASH_SEC_SIZE,
-                        (uint32 *)param, sizeof(struct esp_platform_saved_param));
-        flag.flag = 0;
-        spi_flash_erase_sector(ESP_PARAM_START_SEC + ESP_PARAM_FLAG);
-        spi_flash_write((ESP_PARAM_START_SEC + ESP_PARAM_FLAG) * SPI_FLASH_SEC_SIZE,
-                        (uint32 *)&flag, sizeof(struct esp_platform_sec_flag_param));
-    }
-}
-
-/******************************************************************************
  * FunctionName : user_esp_platform_get_token
  * Description  : get the espressif's device token
  * Parameters   : token -- the parame point which write the flash
@@ -180,7 +123,8 @@ user_esp_platform_set_token(uint8_t *token)
 
     esp_param.activeflag = 0;
     os_memcpy(esp_param.token, token, os_strlen(token));
-    user_esp_platform_save_param(&esp_param);
+
+    system_param_save_with_protect(ESP_PARAM_START_SEC, &esp_param, sizeof(esp_param));
 }
 
 /******************************************************************************
@@ -193,7 +137,8 @@ void ICACHE_FLASH_ATTR
 user_esp_platform_set_active(uint8 activeflag)
 {
     esp_param.activeflag = activeflag;
-    user_esp_platform_save_param(&esp_param);
+
+    system_param_save_with_protect(ESP_PARAM_START_SEC, &esp_param, sizeof(esp_param));
 }
 
 void ICACHE_FLASH_ATTR
@@ -285,9 +230,11 @@ user_esp_platform_get_info(struct espconn *pconn, uint8 *pbuffer)
 #if PLUG_DEVICE
         os_sprintf(pbuf, RESPONSE_FRAME, user_plug_get_status(), nonce);
 #elif LIGHT_DEVICE
+        uint32 white_val;
+        white_val = (PWM_CHANNEL>LIGHT_COLD_WHITE?user_light_get_duty(LIGHT_COLD_WHITE):0);
         os_sprintf(pbuf, RESPONSE_FRAME, nonce, user_light_get_period(),
                    user_light_get_duty(LIGHT_RED), user_light_get_duty(LIGHT_GREEN),
-                   user_light_get_duty(LIGHT_BLUE), 50);
+                   user_light_get_duty(LIGHT_BLUE),white_val );//50);
 #endif
 
         ESP_DBG("%s\n", pbuf);
@@ -335,7 +282,9 @@ user_esp_platform_set_info(struct espconn *pconn, uint8 *pbuffer)
     char recvbuf[10];
     uint16 length = 0;
     uint32 data = 0;
-    static uint32 rr,gg,bb;
+    static uint32 rr,gg,bb,cw,ww,period;
+    ww=0;
+    cw=0;
     extern uint8 light_sleep_flg;
     pstr = (char *)os_strstr(pbuffer, "\"path\": \"/v1/datastreams/light/datapoint/\"");
 
@@ -349,27 +298,27 @@ user_esp_platform_set_info(struct espconn *pconn, uint8 *pbuffer)
             pdata = (char *)os_zalloc(length + 1);
             os_memcpy(pdata, pstr, length);
 
-            pstr = os_strchr(pdata, 'x');
+            pstr = (char *)os_strchr(pdata, 'x');
 
             if (pstr != NULL) {
                 pstr += 4;
-                pbuf = os_strchr(pstr, ',');
+                pbuf = (char *)os_strchr(pstr, ',');
 
                 if (pbuf != NULL) {
                     length = pbuf - pstr;
                     os_memset(recvbuf, 0, 10);
                     os_memcpy(recvbuf, pstr, length);
                     data = atoi(recvbuf);
-                    
-                    user_light_set_period(data);
+                    period = data;
+                    //user_light_set_period(data);
                 }
             }
 
-            pstr = os_strchr(pdata, 'y');
+            pstr = (char *)os_strchr(pdata, 'y');
 
             if (pstr != NULL) {
                 pstr += 4;
-                pbuf = os_strchr(pstr, ',');
+                pbuf = (char *)os_strchr(pstr, ',');
 
                 if (pbuf != NULL) {
                     length = pbuf - pstr;
@@ -382,11 +331,11 @@ user_esp_platform_set_info(struct espconn *pconn, uint8 *pbuffer)
                 }
             }
 
-            pstr = os_strchr(pdata, 'z');
+            pstr = (char *)os_strchr(pdata, 'z');
 
             if (pstr != NULL) {
                 pstr += 4;
-                pbuf = os_strchr(pstr, ',');
+                pbuf = (char *)os_strchr(pstr, ',');
 
                 if (pbuf != NULL) {
                     length = pbuf - pstr;
@@ -399,11 +348,11 @@ user_esp_platform_set_info(struct espconn *pconn, uint8 *pbuffer)
                 }
             }
 
-            pstr = os_strchr(pdata, 'k');
+            pstr = (char *)os_strchr(pdata, 'k');
 
             if (pstr != NULL) {
                 pstr += 4;;
-                pbuf = os_strchr(pstr, ',');
+                pbuf = (char *)os_strchr(pstr, ',');
 
                 if (pbuf != NULL) {
                     length = pbuf - pstr;
@@ -416,26 +365,43 @@ user_esp_platform_set_info(struct espconn *pconn, uint8 *pbuffer)
                 }
             }
 
+            pstr = (char *)os_strchr(pdata, 'l');
+
+            if (pstr != NULL) {
+                pstr += 4;;
+                pbuf = (char *)os_strchr(pstr, ',');
+
+                if (pbuf != NULL) {
+                    length = pbuf - pstr;
+                    os_memset(recvbuf, 0, 10);
+                    os_memcpy(recvbuf, pstr, length);
+                    data = atoi(recvbuf);
+                    cw=data;
+		      ww=data;
+                    os_printf("cw: %d\r\n",cw);
+		      os_printf("ww:%d\r\n",ww);   //chg
+                    //user_light_set_duty(data, 2);
+                }
+            }
+
             os_free(pdata);
         }
     }
     
-    if((rr|gg|bb) == 0){
+    if((rr|gg|bb|cw|ww) == 0){
         if(light_sleep_flg==0){
-            //os_printf("light sleep en\r\n");
-            //fi_set_sleep_type(LIGHT_SLEEP_T);
-            //ght_sleep_flg_2 = 1;
+
         }
         
     }else{
         if(light_sleep_flg==1){
-                        os_printf("modem sleep en\r\n");
+            os_printf("modem sleep en\r\n");
             wifi_set_sleep_type(MODEM_SLEEP_T);
             light_sleep_flg =0;
         }
     }
 
-    light_set_aim(rr,gg,bb,0);
+    light_set_aim(rr,gg,bb,cw,ww,period);
     //user_light_restart();
 
 #endif
@@ -574,7 +540,7 @@ user_esp_platform_sent(struct espconn *pespconn)
         if (esp_param.activeflag == 0) {
             uint8 token[token_size] = {0};
             uint8 bssid[6];
-            active_nonce = rand();
+            active_nonce = os_random();
 
             os_memcpy(token, esp_param.token, 40);
 
@@ -625,7 +591,7 @@ user_esp_platform_sent(struct espconn *pespconn)
 #endif
 #else
         else {
-            nonce = rand();
+            nonce = os_random();
             os_sprintf(pbuf, FIRST_FRAME, nonce , devkey);
         }
 
@@ -658,7 +624,7 @@ user_esp_platform_sent_beacon(struct espconn *pespconn)
 
     if (pespconn->state == ESPCONN_CONNECT) {
         if (esp_param.activeflag == 0) {
-            ESP_DBG("plese check device is activated.\n");
+            ESP_DBG("please check device is activated.\n");
             user_esp_platform_sent(pespconn);
         } else {
             uint8 devkey[token_size] = {0};
@@ -893,7 +859,7 @@ user_esp_platform_recv_cb(void *arg, char *pusrdata, unsigned short length)
 
                 device_status = DEVICE_ACTIVE_DONE;
                 esp_param.activeflag = 1;
-                user_esp_platform_save_param(&esp_param);
+                system_param_save_with_protect(ESP_PARAM_START_SEC, &esp_param, sizeof(esp_param));
                 user_esp_platform_sent(pespconn);
 		  if(LIGHT_DEVICE){
                     system_restart();
@@ -1318,15 +1284,22 @@ user_esp_platform_init(void)
 	IOT_VERSION_MINOR,IOT_VERSION_REVISION,device_type,UPGRADE_FALG);
 	os_printf("IOT VERSION = %s\n",iot_version);
 
-    user_esp_platform_load_param(&esp_param);
+	system_param_load(ESP_PARAM_START_SEC, 0, &esp_param, sizeof(esp_param));
 
-    system_rtc_mem_read(0,&rtc_info,sizeof(struct rst_info));
-     if(rtc_info.reason == 1 || rtc_info.reason == 2) {
-    	 ESP_DBG("flag = %d,epc1 = 0x%08x,epc2=0x%08x,epc3=0x%08x,excvaddr=0x%08x,depc=0x%08x,\nFatal \
-exception (%d): \n",rtc_info.reason,rtc_info.epc1,rtc_info.epc2,rtc_info.epc3,rtc_info.excvaddr,rtc_info.depc,rtc_info.exccause);
-     }
-    struct rst_info info = {0};
-    system_rtc_mem_write(0,&info,sizeof(struct rst_info));
+	struct rst_info *rtc_info = system_get_rst_info();
+
+	os_printf("reset reason: %x\n", rtc_info->reason);
+
+	if (rtc_info->reason == REASON_WDT_RST ||
+		rtc_info->reason == REASON_EXCEPTION_RST ||
+		rtc_info->reason == REASON_SOFT_WDT_RST) {
+		if (rtc_info->reason == REASON_EXCEPTION_RST) {
+			os_printf("Fatal exception (%d):\n", rtc_info->exccause);
+		}
+		os_printf("epc1=0x%08x, epc2=0x%08x, epc3=0x%08x, excvaddr=0x%08x, depc=0x%08x\n",
+				rtc_info->epc1, rtc_info->epc2, rtc_info->epc3, rtc_info->excvaddr, rtc_info->depc);
+	}
+
 	/***add by tzx for saving ip_info to avoid dhcp_client start****/
     struct dhcp_client_info dhcp_info;
     struct ip_info sta_info;

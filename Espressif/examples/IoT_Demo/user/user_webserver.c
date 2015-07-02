@@ -38,6 +38,8 @@ LOCAL scaninfo *pscaninfo;
 
 extern u16 scannum;
 
+LOCAL uint32 PostCmdNeeRsp = 1;
+
 uint8 upgrade_lock = 0;
 LOCAL os_timer_t app_upgrade_10s;
 LOCAL os_timer_t upgrade_check_timer;
@@ -253,7 +255,19 @@ light_status_get(struct jsontree_context *js_ctx)
         jsontree_write_int(js_ctx, user_light_get_duty(LIGHT_GREEN));
     } else if (os_strncmp(path, "blue", 4) == 0) {
         jsontree_write_int(js_ctx, user_light_get_duty(LIGHT_BLUE));
-    } else if (os_strncmp(path, "freq", 4) == 0) {
+    } else if (os_strncmp(path, "wwhite", 6) == 0) {
+        if(PWM_CHANNEL>LIGHT_WARM_WHITE){
+            jsontree_write_int(js_ctx, user_light_get_duty(LIGHT_WARM_WHITE));
+        }else{
+            jsontree_write_int(js_ctx, 0);
+        }
+    } else if (os_strncmp(path, "cwhite", 6) == 0) {
+        if(PWM_CHANNEL>LIGHT_COLD_WHITE){
+            jsontree_write_int(js_ctx, user_light_get_duty(LIGHT_COLD_WHITE));
+        }else{
+            jsontree_write_int(js_ctx, 0);
+        }
+    } else if (os_strncmp(path, "period", 6) == 0) {
         jsontree_write_int(js_ctx, user_light_get_period());
     }
 
@@ -264,8 +278,10 @@ LOCAL int ICACHE_FLASH_ATTR
 light_status_set(struct jsontree_context *js_ctx, struct jsonparse_state *parser)
 {
     int type;
-    static uint32 r,g,b;
-
+    static uint32 r,g,b,cw,ww,period;
+    period = 1000;
+    cw=0;
+    ww=0;
     extern uint8 light_sleep_flg;
     
     while ((type = jsonparse_next(parser)) != 0) {
@@ -297,18 +313,45 @@ light_status_set(struct jsontree_context *js_ctx, struct jsonparse_state *parser
                 os_printf("B: %d \n",status);
                 //user_light_set_duty(status, LIGHT_BLUE);
                 //set_aim_b( b);
-            } else if (jsonparse_strcmp_value(parser, "freq") == 0) {
+            } else if (jsonparse_strcmp_value(parser, "cwhite") == 0) {
+                uint32 status;
+                jsonparse_next(parser);
+                jsonparse_next(parser);
+                status = jsonparse_get_value_as_int(parser);
+                cw=status;
+                os_printf("CW: %d \n",status);
+                //user_light_set_duty(status, LIGHT_BLUE);
+                //set_aim_b( b);
+            } else if (jsonparse_strcmp_value(parser, "wwhite") == 0) {
+                uint32 status;
+                jsonparse_next(parser);
+                jsonparse_next(parser);
+                status = jsonparse_get_value_as_int(parser);
+                ww=status;
+                os_printf("WW: %d \n",status);
+                //user_light_set_duty(status, LIGHT_BLUE);
+                //set_aim_b( b);
+            } else if (jsonparse_strcmp_value(parser, "period") == 0) {
                 uint32 status;
                 jsonparse_next(parser);
                 jsonparse_next(parser);
                 status = jsonparse_get_value_as_int(parser);
                 os_printf("PERIOD: %d \n",status);
-                user_light_set_period(status);
+                period=status;
+                //user_light_set_period(status);
+            }else if (jsonparse_strcmp_value(parser, "response") == 0) {
+                uint32 status;
+                jsonparse_next(parser);
+                jsonparse_next(parser);
+                status = jsonparse_get_value_as_int(parser);
+                os_printf("rspneed: %d \n",status);
+                PostCmdNeeRsp = status;
+                
             }
         }
     }
 
-    if((r|g|b) == 0){
+    if((r|g|b|ww|cw) == 0){
         if(light_sleep_flg==0){
 
         }
@@ -320,8 +363,7 @@ light_status_set(struct jsontree_context *js_ctx, struct jsonparse_state *parser
             light_sleep_flg =0;
         }
     }
-    light_set_aim(r,g,b,0);
-    //user_light_restart();
+    light_set_aim(r,g,b,cw,ww,period);
     return 0;
 }
 
@@ -331,9 +373,12 @@ LOCAL struct jsontree_callback light_callback =
 JSONTREE_OBJECT(rgb_tree,
                 JSONTREE_PAIR("red", &light_callback),
                 JSONTREE_PAIR("green", &light_callback),
-                JSONTREE_PAIR("blue", &light_callback));
+                JSONTREE_PAIR("blue", &light_callback),
+                JSONTREE_PAIR("cwhite", &light_callback),
+                JSONTREE_PAIR("wwhite", &light_callback),
+                );
 JSONTREE_OBJECT(sta_tree,
-                JSONTREE_PAIR("freq", &light_callback),
+                JSONTREE_PAIR("period", &light_callback),
                 JSONTREE_PAIR("rgb", &rgb_tree));
 JSONTREE_OBJECT(PwmTree,
                 JSONTREE_PAIR("light", &sta_tree));
@@ -792,7 +837,8 @@ parse_url(char *precv, URL_Frame *purl_frame)
 
 LOCAL char *precvbuffer;
 static uint32 dat_sumlength = 0;
-LOCAL bool save_data(char *precv, uint16 length)
+LOCAL bool ICACHE_FLASH_ATTR
+save_data(char *precv, uint16 length)
 {
     bool flag = false;
     char length_buf[10] = {0};
@@ -852,6 +898,43 @@ LOCAL bool save_data(char *precv, uint16 length)
     }
 }
 
+LOCAL bool ICACHE_FLASH_ATTR
+check_data(char *precv, uint16 length)
+{
+        //bool flag = true;
+    char length_buf[10] = {0};
+    char *ptemp = NULL;
+    char *pdata = NULL;
+    char *tmp_precvbuffer;
+    uint16 tmp_length = length;
+    uint32 tmp_totallength = 0;
+    
+    ptemp = (char *)os_strstr(precv, "\r\n\r\n");
+    
+    if (ptemp != NULL) {
+        tmp_length -= ptemp - precv;
+        tmp_length -= 4;
+        tmp_totallength += tmp_length;
+        
+        pdata = (char *)os_strstr(precv, "Content-Length: ");
+        
+        if (pdata != NULL){
+            pdata += 16;
+            tmp_precvbuffer = (char *)os_strstr(pdata, "\r\n");
+            
+            if (tmp_precvbuffer != NULL){
+                os_memcpy(length_buf, pdata, tmp_precvbuffer - pdata);
+                dat_sumlength = atoi(length_buf);
+                os_printf("A_dat:%u,tot:%u,lenght:%u\n",dat_sumlength,tmp_totallength,tmp_length);
+                if(dat_sumlength != tmp_totallength){
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
+
 LOCAL os_timer_t *restart_10ms;
 LOCAL rst_parm *rstparm;
 
@@ -872,7 +955,7 @@ restart_10ms_cb(void *arg)
                         wifi_station_set_config(sta_conf);
                         wifi_station_disconnect();
                         wifi_station_connect();
-                        user_esp_platform_check_ip();
+                        user_esp_platform_check_ip(1);
                     }
 
                     if (ap_conf->ssid[0] != 0x00) {
@@ -1192,7 +1275,7 @@ LOCAL local_upgrade_deinit(void)
  *                length -- The length of upgrade data
  * Returns      : none
 *******************************************************************************/
-LOCAL void
+LOCAL void ICACHE_FLASH_ATTR
 local_upgrade_download(void * arg,char *pusrdata, unsigned short length)
 {
     char *ptr = NULL;
@@ -1264,7 +1347,14 @@ webserver_recv(void *arg, char *pusrdata, unsigned short length)
 
     if(upgrade_lock == 0){
 
-    	parse_flag = save_data(pusrdata, length);
+        os_printf("len:%u\n",length);
+        if(check_data(pusrdata, length) == false)
+        {
+            os_printf("goto\n");
+             goto _temp_exit;
+        }
+        
+    	 parse_flag = save_data(pusrdata, length);
         if (parse_flag == false) {
         	response_send(ptrespconn, false);
         }
@@ -1486,7 +1576,12 @@ webserver_recv(void *arg, char *pusrdata, unsigned short length)
 
                             jsontree_setup(&js, (struct jsontree_value *)&PwmTree, json_putchar);
                             json_parse(&js, pParseBuffer);
-                            response_send(ptrespconn, true);
+
+                            os_printf("rsp1:%u\n",PostCmdNeeRsp);
+                            if(PostCmdNeeRsp == 0)
+                                PostCmdNeeRsp = 1;
+                            else
+                                response_send(ptrespconn, true);
                         } else {
                             response_send(ptrespconn, false);
                         }
@@ -1495,7 +1590,7 @@ webserver_recv(void *arg, char *pusrdata, unsigned short length)
                             response_send(ptrespconn, true);
                             extern  struct esp_platform_saved_param esp_param;
                             esp_param.activeflag = 0;
-                            user_esp_platform_save_param(&esp_param);
+                            system_param_save_with_protect(ESP_PARAM_START_SEC, &esp_param, sizeof(esp_param));
                             
                             system_restore();
                             system_restart();
@@ -1537,7 +1632,8 @@ webserver_recv(void *arg, char *pusrdata, unsigned short length)
         }
         os_free(pURL_Frame);
         pURL_Frame = NULL;
-
+        _temp_exit:
+            ;
     }
     else if(upgrade_lock == 1){
     	local_upgrade_download(ptrespconn,pusrdata, length);

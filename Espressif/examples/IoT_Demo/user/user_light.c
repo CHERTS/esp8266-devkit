@@ -15,6 +15,7 @@
 #include "user_interface.h"
 
 #include "user_light.h"
+#include "pwm.h"
 
 #if LIGHT_DEVICE
 
@@ -93,25 +94,47 @@ user_light_restart(void)
  * Parameters   : none
  * Returns      : none
 *******************************************************************************/
-#include "gpio.h"
 void ICACHE_FLASH_ATTR
 user_light_init(void)
 {
     spi_flash_read((PRIV_PARAM_START_SEC + PRIV_PARAM_SAVE) * SPI_FLASH_SEC_SIZE,
                                (uint32 *)&light_param, sizeof(struct light_saved_param));
-    light_param.pwm_period = 1000;
+    if(light_param.pwm_period>10000 || light_param.pwm_period <1000){
+            light_param.pwm_period = 1000;
+    }
 
-	uint32 io_info[][3] = {{PWM_0_OUT_IO_MUX,PWM_0_OUT_IO_FUNC,PWM_0_OUT_IO_NUM},
+	uint32 io_info[][3] = {   {PWM_0_OUT_IO_MUX,PWM_0_OUT_IO_FUNC,PWM_0_OUT_IO_NUM},
 		                      {PWM_1_OUT_IO_MUX,PWM_1_OUT_IO_FUNC,PWM_1_OUT_IO_NUM},
-		                      {PWM_2_OUT_IO_MUX,PWM_2_OUT_IO_FUNC,PWM_2_OUT_IO_NUM}};
-       uint32 pwm_duty_init[3] = {0,0,0};
-pwm_init(light_param.pwm_period,  pwm_duty_init ,PWM_CHANNEL,io_info);
+		                      {PWM_2_OUT_IO_MUX,PWM_2_OUT_IO_FUNC,PWM_2_OUT_IO_NUM},
+		                      {PWM_3_OUT_IO_MUX,PWM_3_OUT_IO_FUNC,PWM_3_OUT_IO_NUM},
+		                      {PWM_4_OUT_IO_MUX,PWM_4_OUT_IO_FUNC,PWM_4_OUT_IO_NUM},
+		                      };
+	
+    uint32 pwm_duty_init[PWM_CHANNEL] = {0};
+	
+    /*PIN FUNCTION INIT FOR PWM OUTPUT*/
+    pwm_init(light_param.pwm_period,  pwm_duty_init ,PWM_CHANNEL,io_info);
+    
+    os_printf("LIGHT PARAM: R: %d \r\n",light_param.pwm_duty[LIGHT_RED]);
+    os_printf("LIGHT PARAM: G: %d \r\n",light_param.pwm_duty[LIGHT_GREEN]);
+    os_printf("LIGHT PARAM: B: %d \r\n",light_param.pwm_duty[LIGHT_BLUE]);
+    if(PWM_CHANNEL>LIGHT_COLD_WHITE){
+        os_printf("LIGHT PARAM: CW: %d \r\n",light_param.pwm_duty[LIGHT_COLD_WHITE]);
+        os_printf("LIGHT PARAM: WW: %d \r\n",light_param.pwm_duty[LIGHT_WARM_WHITE]);
+    }
+    os_printf("LIGHT PARAM: P: %d \r\n",light_param.pwm_period);
 
-light_set_aim(light_param.pwm_duty[LIGHT_RED],
-	                light_param.pwm_duty[LIGHT_GREEN],
-	                light_param.pwm_duty[LIGHT_BLUE], 
-	                0);
-    set_pwm_debug_en(0);
+    uint32 light_init_target[8]={0};
+    os_memcpy(light_init_target,light_param.pwm_duty,sizeof(light_param.pwm_duty));
+
+    light_set_aim(      
+		         light_init_target[LIGHT_RED],
+    	                light_init_target[LIGHT_GREEN],
+    	                light_init_target[LIGHT_BLUE], 
+    	                light_init_target[LIGHT_COLD_WHITE],
+    	                light_init_target[LIGHT_WARM_WHITE],
+    	                light_param.pwm_period);
+    set_pwm_debug_en(0);//disable debug print in pwm driver
     os_printf("PWM version : %08x \r\n",get_pwm_version());
 }
 #endif
