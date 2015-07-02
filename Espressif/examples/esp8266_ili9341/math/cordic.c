@@ -1,10 +1,3 @@
-/*
- * cordic.c
- *
- *  Created on: 28 џэт. 2015 у.
- *      Author: Sem
- */
-
 #include "cordic.h"
 
 static int cordic_ctab [CORDIC_NTAB] = { 0x3243F6A8, 0x1DAC6705, 0x0FADBAFC, 0x07F56EA6, 0x03FEAB76, 0x01FFD55B,
