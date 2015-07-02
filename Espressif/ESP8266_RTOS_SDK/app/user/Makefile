@@ -12,9 +12,7 @@
 #     a generated lib/image xxx.a ()
 #
 ifndef PDIR
-
-GEN_LIBS = libudhcp.a
-
+GEN_LIBS = libuser.a
 endif
 
 
@@ -40,7 +38,6 @@ endif
 #
 
 INCLUDES := $(INCLUDES) -I $(PDIR)include
-INCLUDES += -I ./
 PDIR := ../$(PDIR)
 sinclude $(PDIR)Makefile
 
