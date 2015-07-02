@@ -51,6 +51,16 @@ void FUNC_FLASHMEM debug(char const *fmt, ...)
 	fdv::exitCritical();
 }
 
+
+// str can be in RAM or in Flash
+void debugstr(char const* str)
+{
+    fdv::enterCritical();
+    fdv::HardwareSerial::getSerial(0)->write(str);
+    fdv::exitCritical();
+}
+
+
 // str can be in RAM or in Flash
 void FUNC_FLASHMEM debugstrn(char const* str, uint32_t len)
 {
@@ -59,6 +69,7 @@ void FUNC_FLASHMEM debugstrn(char const* str, uint32_t len)
 		fdv::HardwareSerial::getSerial(0)->write(fdv::getChar(str++));
 	fdv::exitCritical();
 }
+
 
 void FUNC_FLASHMEM debug(char c)
 {

@@ -35,6 +35,7 @@ namespace fdv
     int8_t      DateTime::s_defaultTimezoneHours    = 0;
     uint8_t     DateTime::s_defaultTimezoneMinutes  = 0;
     IPAddress   DateTime::s_defaultNTPServer        = IPAddress(193, 204, 114, 232);    // default is ntp1.inrim.it
+    bool        DateTime::s_synchingWithNTPServer   = false;
 
     
     // a local copy of defaultNTPServer string is perfomed
@@ -46,15 +47,15 @@ namespace fdv
         if (s_defaultNTPServer != IPAddress(0, 0, 0, 0))
         {
             // this will force NTP synchronization
-            lastMillis() = 0;
+            lastSyncMillis() = 0;
         }
     }
     
     
     void MTD_FLASHMEM DateTime::setCurrentDateTime(DateTime const& dateTime)
     {
-        lastDateTime() = dateTime;
-        lastMillis()   = millis();
+        lastSyncDateTime() = dateTime;
+        lastSyncMillis()   = millis();
     }
 
 
@@ -139,26 +140,45 @@ namespace fdv
     }
 
 
+    
+    void STC_FLASHMEM DateTime::syncWithNTPServer()
+    {
+        static uint32_t const MAXTRIES = 5;
+        static uint32_t const DELAY    = 30000;
+        if (!s_synchingWithNTPServer)
+        {
+            s_synchingWithNTPServer = true;
+            for (uint32_t i = 0; i != MAXTRIES; ++i)
+            {
+                if (DateTime::lastSyncDateTime().getFromNTPServer())
+                {
+                    DateTime::lastSyncMillis() = millis();
+                    break;
+                }
+                Task::delay(DELAY);
+            }
+            s_synchingWithNTPServer = false;
+        }
+    }
+    
+    
     // if this is the first time calling now() or after 6 hours an NTP update is perfomed
     // warn: now() should be called within 50 days from the last call
     // warn: loses about 3 seconds every 10 hours
     DateTime MTD_FLASHMEM DateTime::now()
     {
         uint32_t currentMillis = millis();
-        uint32_t locLastMillis = lastMillis();
+        uint32_t locLastMillis = lastSyncMillis();
         uint32_t diff = (currentMillis < locLastMillis) ? (0xFFFFFFFF - locLastMillis + currentMillis) : (currentMillis - locLastMillis);
         
         if (locLastMillis == 0 || diff > 6 * 3600 * 1000)
         {
-            if (lastDateTime().getFromNTPServer())
-            {
-                lastMillis() = currentMillis;
-                return lastDateTime();
-            }
+            if (!s_synchingWithNTPServer)
+                asyncExec<syncWithNTPServer>();
         }
         
         DateTime result;
-        result.setUnixDateTime( lastDateTime().getUnixDateTime() + (diff / 1000) );
+        result.setUnixDateTime( lastSyncDateTime().getUnixDateTime() + (diff / 1000) );
         
         if (s_defaultNTPServer == IPAddress(0, 0, 0, 0))
         {
@@ -166,8 +186,8 @@ namespace fdv
             if (diff > 10 * 24 * 3600 * 1000)   // past 10 days?
             {
                 // reset millis counter to avoid overflow (actually it overflows after 50 days)
-                lastMillis()   = currentMillis;
-                lastDateTime() = result;
+                lastSyncMillis()   = currentMillis;
+                lastSyncDateTime() = result;
             }
         }
         
@@ -175,14 +195,14 @@ namespace fdv
     }
 
 
-    DateTime& MTD_FLASHMEM DateTime::lastDateTime()
+    DateTime& MTD_FLASHMEM DateTime::lastSyncDateTime()
     {
         static DateTime s_lastDateTime;
         return s_lastDateTime;
     }
 
 
-    uint32_t& MTD_FLASHMEM DateTime::lastMillis()
+    uint32_t& MTD_FLASHMEM DateTime::lastSyncMillis()
     {
         static uint32_t s_lastMillis = 0;
         return s_lastMillis;

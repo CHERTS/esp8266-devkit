@@ -36,6 +36,7 @@ extern "C"
 
 void debug(char const *fmt, ...);
 void debugstrn(char const* str, uint32_t len);
+void debugstr(char const* str);
 void debug(char c);
 
 

@@ -452,20 +452,18 @@ namespace fdv
 			uint32_t count = 0;
 			WiFi::APInfo* infos = WiFi::getAPList(&count, true);
 
-			LinkedCharChunks linkedChunks;
+			LinkedCharChunks* linkedChunks = addParamCharChunks(FSTR("APS"));
 			for (uint32_t i = 0; i != count; ++i)
 			{
-				linkedChunks.addChunk(f_printf(FSTR("<tr> <td><a href='confwifi?AP=%s'>%s</a></td> <td>%02X:%02X:%02X:%02X:%02X:%02X</td> <td>%d</td> <td>%d</td> <td>%s</td> </tr>"), 
-				                               infos[i].SSID,
-											   infos[i].SSID,
-											   infos[i].BSSID[0], infos[i].BSSID[1], infos[i].BSSID[2], infos[i].BSSID[3], infos[i].BSSID[4], infos[i].BSSID[5],
-											   infos[i].Channel,
-											   infos[i].RSSI,
-											   WiFi::convSecurityProtocolToString(infos[i].AuthMode)),
-									  true);
-			}
-			addParamCharChunks(FSTR("APS"), &linkedChunks);
-			
+				linkedChunks->addChunk(f_printf(FSTR("<tr> <td><a href='confwifi?AP=%s'>%s</a></td> <td>%02X:%02X:%02X:%02X:%02X:%02X</td> <td>%d</td> <td>%d</td> <td>%s</td> </tr>"), 
+				                                infos[i].SSID,
+					 		 				    infos[i].SSID,
+						 					    infos[i].BSSID[0], infos[i].BSSID[1], infos[i].BSSID[2], infos[i].BSSID[3], infos[i].BSSID[4], infos[i].BSSID[5],
+											    infos[i].Channel,
+											    infos[i].RSSI,
+											    WiFi::convSecurityProtocolToString(infos[i].AuthMode)),
+									   true);
+			}						
 
 			HTTPTemplateResponse::flush();
 		}
@@ -515,7 +513,7 @@ namespace fdv
 				GPIO(gpion).write(value);
 			}
 				
-			LinkedCharChunks linkedChunks;
+			LinkedCharChunks* linkedChunks = addParamCharChunks(FSTR("GPIOS"));
 			for (uint32_t i = 0; i != 16; ++i)
 			{
 				if (i != 1 && i != 3 && (i < 6 || i > 11))
@@ -523,34 +521,33 @@ namespace fdv
 					bool configured, isOutput, pullUp, value;
 					ConfigurationManager::getGPIOParams(i, &configured, &isOutput, &pullUp, &value);
 					
-					linkedChunks.addChunk(f_printf(FSTR("<tr> <td>%d</td> <td><form method='POST'>"), i), true);
-					linkedChunks.addChunk(f_printf(FSTR("Enabled <input type='checkbox' name='configured' value='1' onclick=\"document.getElementById('GPIO%d').disabled=!this.checked\" %s>"), i, configured? STR_checked:STR_), true);
-					linkedChunks.addChunk(f_printf(FSTR("<fieldset class='inline' id='GPIO%d' %s>"), i, configured? STR_:STR_disabled), true);
-					linkedChunks.addChunk(f_printf(FSTR("<select name='mode'><option value='in' %s>IN</option><option value='out' %s>OUT</option></select>"), 
+					linkedChunks->addChunk(f_printf(FSTR("<tr> <td>%d</td> <td><form method='POST'>"), i), true);
+					linkedChunks->addChunk(f_printf(FSTR("Enabled <input type='checkbox' name='configured' value='1' onclick=\"document.getElementById('GPIO%d').disabled=!this.checked\" %s>"), i, configured? STR_checked:STR_), true);
+					linkedChunks->addChunk(f_printf(FSTR("<fieldset class='inline' id='GPIO%d' %s>"), i, configured? STR_:STR_disabled), true);
+					linkedChunks->addChunk(f_printf(FSTR("<select name='mode'><option value='in' %s>IN</option><option value='out' %s>OUT</option></select>"), 
 					                               isOutput? STR_:STR_selected, 
 												   isOutput? STR_selected:STR_), 
 										  true);
-					linkedChunks.addChunk(f_printf(FSTR("     PullUp <input type='checkbox' name='pullup' value='1' %s> </fieldset>"), pullUp? STR_checked:STR_), true);
-					linkedChunks.addChunk(f_printf(FSTR("<input type='hidden' name='GPIO' value='%d'>"), i), true);
-					linkedChunks.addChunk(FSTR("<input type='submit' value='Save'></form></td>"));
+					linkedChunks->addChunk(f_printf(FSTR("     PullUp <input type='checkbox' name='pullup' value='1' %s> </fieldset>"), pullUp? STR_checked:STR_), true);
+					linkedChunks->addChunk(f_printf(FSTR("<input type='hidden' name='GPIO' value='%d'>"), i), true);
+					linkedChunks->addChunk(FSTR("<input type='submit' value='Save'></form></td>"));
 					if (configured)
 					{
 						if (isOutput)
 						{
-							linkedChunks.addChunk(f_printf(FSTR("<td><a href='confgpio?gpio=%d&val=%d' class='link_button2'>%s</a></td> </tr>"), i, !value, value? STR_HI:STR_LO), true);
+							linkedChunks->addChunk(f_printf(FSTR("<td><a href='confgpio?gpio=%d&val=%d' class='link_button2'>%s</a></td> </tr>"), i, !value, value? STR_HI:STR_LO), true);
 						}
 						else
 						{
-							linkedChunks.addChunk(f_printf(FSTR("<td>%s</td> </tr>"), GPIO(i).read()? STR_HI:STR_LO), true);
+							linkedChunks->addChunk(f_printf(FSTR("<td>%s</td> </tr>"), GPIO(i).read()? STR_HI:STR_LO), true);
 						}
 					}
 					else
 					{
-						linkedChunks.addChunk(FSTR("<td></td></tr>"));
+						linkedChunks->addChunk(FSTR("<td></td></tr>"));
 					}
 				}
-			}
-			addParamCharChunks(FSTR("GPIOS"), &linkedChunks);
+			}			
 				
 			HTTPTemplateResponse::flush();
 		}

@@ -552,8 +552,8 @@ namespace fdv
 		{			
 			while (getSocket()->isConnected())
 			{
-				CharChunk* chunk = m_receivedData.addChunk(CHUNK_CAPACITY);
-				chunk->items = getSocket()->read(chunk->data, CHUNK_CAPACITY);
+				CharChunkBase* chunk = m_receivedData.addChunk(CHUNK_CAPACITY);
+				chunk->setItems(getSocket()->read(chunk->data, CHUNK_CAPACITY));
 				if (processRequest())
 					break;
 			}
@@ -623,9 +623,9 @@ namespace fdv
 					int32_t missingBytes = headerEnd.getPosition() + contentLength - m_receivedData.getItemsCount();
 					while (getSocket()->isConnected() && missingBytes > 0)
 					{
-						CharChunk* chunk = m_receivedData.addChunk(missingBytes);
-						chunk->items = getSocket()->read(chunk->data, missingBytes);		
-						missingBytes -= chunk->items;
+						CharChunkBase* chunk = m_receivedData.addChunk(missingBytes);
+						chunk->setItems(getSocket()->read(chunk->data, missingBytes));
+						missingBytes -= chunk->getItems();
 					}
 					m_receivedData.append(0);	// add additional terminating "0"
 					// check content type
@@ -670,7 +670,7 @@ namespace fdv
 					*curc++ = 0; // zero-ends value
 					if (key.isValid() && value.isValid())
 					{		
-						fields->add(key, value);	 // store parameter
+						fields->add(key, value);	        // store parameter
 						key = value = CharChunksIterator(); // reset
 					}
 					if (endLoop)
@@ -851,21 +851,25 @@ namespace fdv
 	//////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////
 	// ParameterReplacer
-	// If input contains {%..%} blocks only then getBlocks() should be used and getResult() will contain empty data.
-	// If input contains only {{}} tags only then getResult() should be used.
+	// If input contains {%..%} blocks only getBlocks() should be used
+	// If input contains only {{}} tags only getResult() should be used.
 	
 	struct ParameterReplacer
 	{
 		typedef ObjectDict<LinkedCharChunks> Params;
+        typedef ObjectDict<LinkedCharChunks*> BlockParams;
 		
-		ParameterReplacer(char const* strStart, char const* strEnd, Params* params);
+        ParameterReplacer();
+        ~ParameterReplacer();
+        
+		void start(char const* strStart, char const* strEnd, Params* params, BlockParams* blockParams);
 		
 		LinkedCharChunks* MTD_FLASHMEM getResult()
 		{
-			return &m_result;
+			return m_results[0];
 		}
 		
-		Params* MTD_FLASHMEM getBlocks()
+		ObjectDict<LinkedCharChunks*>* MTD_FLASHMEM getBlocks()
 		{
 			return &m_blocks;
 		}
@@ -882,12 +886,13 @@ namespace fdv
 		char const* extractTagStr(char const* curc, char const** tagEnd);
 		
 	private:
-		Params*           m_params;
-		char const*       m_strStart;
-		char const*       m_strEnd;
-		LinkedCharChunks  m_result;
-		Params            m_blocks;
-		APtr<char>        m_template;	// template file name (filled with the first {%...%} block)
+		Params*                       m_params;
+        BlockParams*                  m_blockParams;
+		char const*                   m_strStart;
+		char const*                   m_strEnd;
+		Vector<LinkedCharChunks*>     m_results;
+		ObjectDict<LinkedCharChunks*> m_blocks;
+		APtr<char>                    m_template;	// template file name (filled with the first {%...%} block)
 	};
 	
 
@@ -942,8 +947,7 @@ namespace fdv
 		void addParamStr(char const* key, char const* value);		
 		void addParamInt(char const* key, int32_t value);
 		void addParamFmt(char const* key, char const *fmt, ...);
-		void addParamCharChunks(char const* key, LinkedCharChunks* value);
-		void addParams(Params* params);
+		LinkedCharChunks* addParamCharChunks(char const* key);
 
 		Params* getParams();
 		
@@ -954,8 +958,10 @@ namespace fdv
 		void processFileRequest();
 		
 	private:
-		char const* m_filename;
-		Params      m_params;		
+		char const*       m_filename;
+		Params            m_params;
+        ParameterReplacer m_replacer;
+        ParameterReplacer m_templateReplacer;
 	};
 
 

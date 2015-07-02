@@ -33,44 +33,243 @@ namespace fdv
 
 
 
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+// VectorBase
+// A non-template vector
+// Max item size: 65535 bytes
+// Max items: 65535
+
+class VectorBase
+{
+public:
+    VectorBase(uint16_t itemSize);
+    VectorBase(VectorBase const& c);
+    ~VectorBase();
+    void add(void const* item);
+    void insert(uint32_t position, void const* item);
+    void remove(uint32_t position);
+    int32_t indexof(void const* item);
+    void clear();
+    uint32_t size();
+    void* getItem(uint32_t position);
+    void operator=(VectorBase const& c);
+    
+private:
+    void allocate(uint32_t itemsCount);    
+    
+private:
+    uint16_t m_itemSize;
+    uint16_t m_itemsCount;
+    uint16_t m_itemsAllocated;
+    void*    m_data;
+};
+
+
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+// Generic vector based on VectorBase
+
+template <typename T>
+class Vector
+{
+public:
+    Vector()
+        : m_data(sizeof(T))
+    {
+    }
+    
+    void add(T const& value)
+    {
+        m_data.add(&value);
+    }
+    
+    void insert(uint32_t position, T const& value)
+    {
+        m_data.insert(position, &value);
+    }
+    
+    void remove(uint32_t position)
+    {
+        m_data.remove(position);
+    }
+    
+    int32_t indexof(T const& value)
+    {
+        return m_data.indexof(&value);
+    }
+    
+    void clear()
+    {
+        m_data.clear();
+    }
+    
+    uint32_t size()
+    {
+        return m_data.size();
+    }
+    
+    T& operator[](uint32_t position)
+    {
+        return *static_cast<T*>(m_data.getItem(position));
+    }
+    
+    T& last()
+    {
+        return operator[](size() - 1);
+    }
+    
+private:
+    VectorBase m_data;    
+};
+
+
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+// Generic stack based on Vector
+
+template <typename T>
+class Stack
+{
+public:
+    
+    void push(T const& value)
+    {
+        m_data.add(value);
+    }
+    
+    T pop()
+    {
+        uint32_t lastIndex = m_data.size() - 1;
+        T ret = m_data[lastIndex];
+        m_data.remove(lastIndex);
+        return ret;
+    }
+    
+    T& operator[](uint32_t position)
+    {
+        return m_data[position];
+    }    
+    
+    uint32_t size()
+    {
+        return m_data.size();
+    }
+    
+    void clear()
+    {
+        m_data.clear();
+    }
+    
+private:
+    Vector<T> m_data;
+};
+
+
+
+
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 // CharChunk
 
-struct CharChunk
+
+struct CharChunkBase
 {
-	CharChunk* next;
-	uint32_t   items;
-	uint32_t   capacity;
-	char*      data;
-	bool       freeOnDestroy;	// free "data" on destroy
-	
-	CharChunk(uint32_t capacity_)
-		: next(NULL), items(0), capacity(capacity_), data(new char[capacity_]), freeOnDestroy(true)
-	{
-	}
-	CharChunk(char* data_, uint32_t items_, bool freeOnDestroy_)
-		: next(NULL), items(items_), capacity(items_), data(data_), freeOnDestroy(freeOnDestroy_)
-	{
-	}
-	~CharChunk()
-	{
-		if (freeOnDestroy)
-			delete[] data;
-	}
-};
+    CharChunkBase* next;
+    char*          data;
+    uint8_t        type;    // refers to ::TYPE value in inherited classes
+    
+    CharChunkBase(CharChunkBase* next_, char* data_, uint8_t type_)
+        : next(next_), data(data_), type(type_)
+    {
+    }
+    
+    uint32_t getItems();
+    void setItems(uint32_t value);
+    uint32_t getCapacity();
+} __attribute__((packed));
 
 
+template <uint8_t TYPE_V, typename SIZE_T>
+struct CharChunkReference : public CharChunkBase
+{
+    static uint8_t const TYPE = TYPE_V;
+    
+    SIZE_T items;
+        
+    CharChunkReference(char* data_, SIZE_T items_)
+        : CharChunkBase(NULL, data_, TYPE), items(items_)
+    {
+    }
+} __attribute__((packed));
+
+
+typedef CharChunkReference<0, uint8_t>  CharChunkReference8;
+typedef CharChunkReference<1, uint16_t> CharChunkReference16;
+typedef CharChunkReference<2, uint32_t> CharChunkReference32;
+
+
+template <uint8_t TYPE_V, typename SIZE_T>
+struct CharChunkOwn : public CharChunkReference<TYPE_V, SIZE_T>
+{
+    CharChunkOwn(char* data_, SIZE_T items_)
+        : CharChunkReference<TYPE_V, SIZE_T>(data_, items_)
+    {
+    }
+    
+    ~CharChunkOwn()
+    {
+        delete[] CharChunkBase::data;
+    }
+} __attribute__((packed));
+
+
+typedef CharChunkOwn<3, uint8_t>  CharChunkOwn8;
+typedef CharChunkOwn<4, uint16_t> CharChunkOwn16;
+typedef CharChunkOwn<5, uint32_t> CharChunkOwn32;
+    
+
+template <uint8_t TYPE_V, typename SIZE_T>
+struct CharChunkAllocated : public CharChunkOwn<TYPE_V, SIZE_T>
+{
+    SIZE_T capacity;
+    
+    CharChunkAllocated(SIZE_T capacity_)
+        : CharChunkOwn<TYPE_V, SIZE_T>(new char[capacity_], 0), capacity(capacity_)
+    {
+    }
+} __attribute__((packed));
+
+
+typedef CharChunkAllocated<6, uint8_t> CharChunkAllocated8;
+typedef CharChunkAllocated<7, uint8_t> CharChunkAllocated16;
+typedef CharChunkAllocated<8, uint8_t> CharChunkAllocated32;
+
+
+struct CharChunkLink : public CharChunkBase
+{
+    static uint8_t const TYPE = 9;
+    
+    uint32_t       items; // count of all items in the linked list
+    CharChunkBase* link;
+    
+    CharChunkLink(CharChunkBase* firstChunk, uint32_t items_)
+        : CharChunkBase(NULL, NULL, TYPE), items(items_), link(firstChunk)
+    {        
+    }
+} __attribute__((packed));
+    
+
+    
 /////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 // CharChunksIterator
 
 struct CharChunksIterator
 {
-	CharChunksIterator(CharChunk* chunk = NULL)
-		: m_chunk(chunk), m_pos(0), m_absPos(0)
-	{
-	}
+	CharChunksIterator(CharChunkBase* chunk = NULL);
+    CharChunksIterator(CharChunksIterator const& c);
+    CharChunksIterator& operator=(CharChunksIterator const& c);
 	char& operator*();
 	CharChunksIterator operator++(int);
 	CharChunksIterator& operator++();
@@ -82,14 +281,18 @@ struct CharChunksIterator
 	uint32_t getPosition();
 	bool isLast();
 	bool isValid();
+    CharChunkBase* moveToNextChunk();
+    CharChunkBase* getCurrentChunk();
 
 private:
 	void next();
+    void checkLinkedChunks();
 
 private:
-	CharChunk* m_chunk;
-	uint32_t   m_pos;  	   // position inside this chunk
-	uint32_t   m_absPos;   // absolute position (starting from beginning of LinkedCharChunks)
+	CharChunkBase*        m_chunk;
+	uint32_t              m_pos;  	   // position inside this chunk
+	uint32_t              m_absPos;    // absolute position (starting from beginning of LinkedCharChunks)
+    Stack<CharChunkBase*> m_linkedNext;
 };
 
 
@@ -97,7 +300,7 @@ private:
 /////////////////////////////////////////////////////////////////////////
 // LinkedCharChunks
 //
-// Warn: copy constructor copies only pointers. Should not used when with heap or stack buffers.
+// Warn: copy constructor copies only pointers. Should not used with heap or stack buffers.
 
 struct LinkedCharChunks
 {	
@@ -114,30 +317,47 @@ struct LinkedCharChunks
 	{
         *this = c;
 	}
-	
-	
+		
 	~LinkedCharChunks()
 	{
 		clear();
 	}
-	
-	
+		
 	void clear();
-	CharChunk* addChunk(uint32_t capacity);
-	CharChunk* addChunk(char* data, uint32_t items, bool freeOnDestroy);
-	CharChunk* addChunk(char const* data, uint32_t items, bool freeOnDestroy);
+    CharChunkBase* addChunk(CharChunkBase* chunk);
+	CharChunkBase* addChunk(uint32_t capacity);
+	CharChunkBase* addChunk(char* data, uint32_t items, bool freeOnDestroy);
+	CharChunkBase* addChunk(char const* data, uint32_t items, bool freeOnDestroy);
 	void addChunk(char const* str, bool freeOnDestroy = false);
 	void addChunks(LinkedCharChunks* src);
 	void append(char value, uint32_t newChunkSize = 1);
-	CharChunk* getFirstChunk();
+    CharChunkBase* getFirstChunk();
 	CharChunksIterator getIterator();
-	uint32_t getItemsCount();
-	void dump();
+	uint32_t getItemsCount() const;
+	//void dump();
+    //void dumpChunks();
     void operator=(LinkedCharChunks& c);
 
 private:
-	CharChunk* m_chunks;
-	CharChunk* m_current;
+	CharChunkBase* m_chunks;
+	CharChunkBase* m_current;
+};
+
+
+
+/////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+// CharChunkFactory
+
+struct CharChunkFactory
+{
+    static CharChunkBase* createCharChunkReference(char* data, uint32_t items);
+    static CharChunkBase* createCharChunkOwn(char* data, uint32_t items);
+    static CharChunkBase* createCharChunkAllocated(uint32_t capacity);
+    static CharChunkBase* createCharChunkLink(LinkedCharChunks* link);
+    
+    // this to avoid virtual destructors usage
+    static void deleteCharChunk(CharChunkBase* chunk);
 };
 
 
@@ -288,6 +508,7 @@ public:
 	}
 	
 	// debug
+    /*
 	void TMTD_FLASHMEM dump()
 	{
 		for (uint32_t i = 0; i != m_itemsCount; ++i)
@@ -295,12 +516,13 @@ public:
 			Item* item = getItem(i);			
 			for (KeyIterator k = item->key; k != item->keyEnd; ++k)
 				debug(*k);
-			debug(" = ");
+			debug(FSTR(" = "));
 			for (KeyIterator v = item->value; v!= item->valueEnd; ++v)
 				debug(*v);
-			debug("\r\n");			
+			debug(FSTR("\r\n"));			
 		}
-	}		
+	}	
+    */	
 	
 private:
 	
@@ -309,6 +531,7 @@ private:
 	uint32_t m_itemsCount;
 	bool     m_urlDecode;
 };
+
 
 
 //////////////////////////////////////////////////////////////////////
@@ -325,12 +548,16 @@ struct ObjectDict
 		char const*   keyEnd;
 		T             value;
 		
-		Item(char const* key_, char const* keyEnd_, T value_)
+		Item(char const* key_, char const* keyEnd_, T const& value_)
 			: next(NULL), key(key_), keyEnd(keyEnd_), value(value_)
 		{
 		}
+		Item(char const* key_, char const* keyEnd_)
+			: next(NULL), key(key_), keyEnd(keyEnd_)
+		{
+		}
 		Item()
-			: next(NULL), key(NULL), keyEnd(NULL), value(T())
+			: next(NULL), key(NULL), keyEnd(NULL)
 		{
 		}
 		bool MTD_FLASHMEM operator==(Item const& rhs)
@@ -366,7 +593,7 @@ struct ObjectDict
 		m_itemsCount = 0;
 	}
 	
-	void TMTD_FLASHMEM add(char const* key, char const* keyEnd, T value)
+	void TMTD_FLASHMEM add(char const* key, char const* keyEnd, T const& value)
 	{
 		if (m_items)
 		{
@@ -379,6 +606,21 @@ struct ObjectDict
 			++m_itemsCount;
 		}
 	}
+
+    // same of before, but using default constructed value
+	void TMTD_FLASHMEM add(char const* key, char const* keyEnd)
+	{
+		if (m_items)
+		{
+			m_current = m_current->next = new Item(key, keyEnd);
+			++m_itemsCount;
+		}
+		else
+		{
+			m_current = m_items = new Item(key, keyEnd);
+			++m_itemsCount;
+		}
+	}
 	
 	// add zero terminated string
 	void TMTD_FLASHMEM add(char const* key, T value)
@@ -386,22 +628,10 @@ struct ObjectDict
 		add(key, key + f_strlen(key), value);
 	}
 	
-	// add all items of source (shallow copy for keys, value copy for values)
-	void TMTD_FLASHMEM add(ObjectDict<T>* source)
-	{
-		Item* srcItem = source->m_items;
-		while (srcItem)
-		{
-			add(srcItem->key, srcItem->keyEnd, srcItem->value);
-			srcItem = srcItem->next;
-		}
-	}
-	
 	// add an empty item, returning pointer to the created object value
 	T* TMTD_FLASHMEM add(char const* key)
 	{
-		T value;
-		add(key, value);
+        add(key, key + f_strlen(key));
 		return &(getItem(key)->value);
 	}
 	
@@ -410,18 +640,10 @@ struct ObjectDict
 		return m_itemsCount;
 	}
 	
-	// warn: this doesn't check "index" range!
-	Item* TMTD_FLASHMEM getItem(uint32_t index)
-	{
-		Item* item = m_items;
-		for (; index > 0; --index)
-			item = item->next;
-		return item;
-	}
-
 	// key stay in RAM or Flash
 	Item* TMTD_FLASHMEM getItem(char const* key, char const* keyEnd)
 	{
+        // search into local dictionary
 		Item* item = m_items;
 		while (item)
 		{
@@ -429,7 +651,8 @@ struct ObjectDict
 				return item;	// found
 			item = item->next;
 		}
-		return NULL;	// not found
+        // not found
+		return NULL;	
 	}
 	
 	// key stay in RAM or Flash
@@ -450,6 +673,7 @@ struct ObjectDict
 		return getItem(key);
 	}
 	
+    /*
 	void TMTD_FLASHMEM dump()
 	{
 		Item* item = m_items;
@@ -462,12 +686,13 @@ struct ObjectDict
 			item = item->next;
 		}
 	}
+    */
 	
 private:
 	
-	Item*    m_items;
-	Item*    m_current;
-	uint32_t m_itemsCount;
+	Item*                  m_items;
+	Item*                  m_current;
+	uint32_t               m_itemsCount;
 };
 
 
@@ -555,6 +780,7 @@ struct FlashFileSystem
 		
 	static bool find(char const* filename, char const** mimetype, void const** data, uint16_t* dataLength);
 };
+
 
 
 

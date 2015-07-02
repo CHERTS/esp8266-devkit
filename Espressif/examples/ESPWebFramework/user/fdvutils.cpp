@@ -41,15 +41,23 @@ void *__dso_handle;
 
 namespace fdv
 {
+    
+    //static uint32_t s_blocksAllocated = 0;
+    
 
 	void* STC_FLASHMEM Memory::malloc(uint32_t size)
 	{
-		return mem_malloc(size);
+		return pvPortMalloc(size);
+        /*++s_blocksAllocated;
+        void* ptr = pvPortMalloc(size);
+        if (s_blocksAllocated > 2) debug("malloc %d %p (%d bytes)\r\n", s_blocksAllocated, ptr, size);
+        return ptr;*/
 	}
 
 	void STC_FLASHMEM Memory::free(void* ptr)
-	{
-		mem_free(ptr);
+	{        
+        //debug("free %d %p\r\n", --s_blocksAllocated, ptr);
+		vPortFree(ptr);
 	}
 
 }
@@ -59,22 +67,22 @@ namespace fdv
 
 void * FUNC_FLASHMEM operator new(size_t size)
 {
-	return mem_malloc(size);
+    return fdv::Memory::malloc(size);
 }
 
 void * FUNC_FLASHMEM operator new[](size_t size) 
 {
-	return mem_malloc(size);
+    return fdv::Memory::malloc(size);
 }
 
 void FUNC_FLASHMEM operator delete(void * ptr) 
 {
-	mem_free(ptr);
+    fdv::Memory::free(ptr);
 }
 
 void FUNC_FLASHMEM operator delete[](void * ptr) 
 {
-	mem_free(ptr);
+    fdv::Memory::free(ptr);
 }
 
 extern "C" void __cxa_pure_virtual(void) __attribute__ ((__noreturn__));

@@ -201,7 +201,7 @@ namespace fdv
         config.ssid_len = f_strlen(SSID);
         f_strcpy((char *)config.password, securityKey);
         config.channel = channel;
-        config.authmode = AUTH_MODE(securityProtocol);
+        config.authmode = securityProtocol;
         config.ssid_hidden = (uint8)hiddenSSID;
         Critical critical;
         wifi_softap_set_config(&config);
@@ -453,20 +453,20 @@ namespace fdv
     // ret -1 = error, ret 0 = disconnected
     int32_t MTD_FLASHMEM Socket::write(void const* buffer, uint32_t length)
     {
-        static uint32_t const CHUNKSIZE = 256;
+        static uint32_t const MAXCHUNKSIZE = 128;
         
         int32_t bytesSent = 0;
         if (isStoredInFlash(buffer))
         {
-            // copy from Flash, send in chunks of CHUNKSIZE bytes
-            APtr<uint8_t> rambuf(new uint8_t[length]);
+            // copy from Flash, send in chunks of up to MAXCHUNKSIZE bytes
+            uint8_t rambuf[min(length, MAXCHUNKSIZE)];
             uint8_t const* src = (uint8_t const*)buffer;
             while (bytesSent < length)
             {
-                uint32_t bytesToSend = min(CHUNKSIZE, length - bytesSent);
-                f_memcpy(rambuf.get(), src, bytesToSend);
-                uint32_t chunkBytesSent = m_remoteAddress.sin_len == 0? lwip_send(m_socket, rambuf.get(), bytesToSend, 0) :
-                                                                        lwip_sendto(m_socket, rambuf.get(), bytesToSend, 0, (sockaddr*)&m_remoteAddress, sizeof(m_remoteAddress));
+                uint32_t bytesToSend = min(MAXCHUNKSIZE, length - bytesSent);
+                f_memcpy(rambuf, src, bytesToSend);
+                uint32_t chunkBytesSent = m_remoteAddress.sin_len == 0? lwip_send(m_socket, rambuf, bytesToSend, 0) :
+                                                                        lwip_sendto(m_socket, rambuf, bytesToSend, 0, (sockaddr*)&m_remoteAddress, sizeof(m_remoteAddress));
                 if (chunkBytesSent == 0)
                 {
                     // error
@@ -588,7 +588,7 @@ namespace fdv
     // WARN: data is not copied! Just a pointer is stored
     void MTD_FLASHMEM HTTPResponse::addContent(void const* data, uint32_t length)
     {
-        CharChunk* chunk = m_content.addChunk((char*)data, length, false);
+        m_content.addChunk((char*)data, length, false);
     }
     
     
@@ -613,24 +613,29 @@ namespace fdv
     {
         // status line
         m_httpHandler->getSocket()->writeFmt(FSTR("HTTP/1.1 %s\r\n"), m_status);
+
         // HTTPResponse headers
         addHeader(FSTR("Connection"), FSTR("close"));			
+
         // user headers
         for (uint32_t i = 0; i != m_headers.getItemsCount(); ++i)
         {
             Fields::Item* item = m_headers[i];
             m_httpHandler->getSocket()->writeFmt(FSTR("%s: %s\r\n"), APtr<char>(t_strdup(item->key)).get(), APtr<char>(t_strdup(item->value)).get());
         }
+
         // content length header
         m_httpHandler->getSocket()->writeFmt(FSTR("%s: %d\r\n\r\n"), STR_Content_Length, m_content.getItemsCount());
+
         // actual content
         if (m_content.getItemsCount() > 0)
-        {				
-            CharChunk* chunk = m_content.getFirstChunk();
+        {			
+            CharChunksIterator iter = m_content.getIterator();
+            CharChunkBase* chunk = iter.getCurrentChunk();
             while (chunk)
             {
-                m_httpHandler->getSocket()->write((uint8_t const*)chunk->data, chunk->items);
-                chunk = chunk->next;
+                m_httpHandler->getSocket()->write((uint8_t const*)chunk->data, chunk->getItems());
+                chunk = iter.moveToNextChunk();
             }
             m_content.clear();
         }
@@ -642,10 +647,26 @@ namespace fdv
 	//////////////////////////////////////////////////////////////////////
 	// ParameterReplacer
 
-	
-    MTD_FLASHMEM ParameterReplacer::ParameterReplacer(char const* strStart, char const* strEnd, Params* params)
-        : m_params(params), m_strStart(strStart), m_strEnd(strEnd)
+    MTD_FLASHMEM ParameterReplacer::ParameterReplacer()
+        : m_params(NULL), m_blockParams(NULL), m_strStart(NULL), m_strEnd(NULL)
     {
+        m_results.add(new LinkedCharChunks);
+    }
+    
+    
+    MTD_FLASHMEM ParameterReplacer::~ParameterReplacer()
+    {
+        for (uint32_t i = 0; i != m_results.size(); ++i)
+            delete m_results[i];
+    }
+    
+	
+    void MTD_FLASHMEM ParameterReplacer::start(char const* strStart, char const* strEnd, Params* params, BlockParams* blockParams)
+    {
+        m_params      = params;
+        m_blockParams = blockParams;
+        m_strStart    = strStart;
+        m_strEnd      = strEnd;
         processInput();
     }
     
@@ -666,7 +687,7 @@ namespace fdv
 				{
 					// found "{{"
 					// push previous content
-					m_result.addChunk(start, curc - start, false);
+					m_results.last()->addChunk(start, curc - start, false);
 					// process parameter tag
 					start = curc = replaceTag(curc);
 					continue;
@@ -677,9 +698,9 @@ namespace fdv
 					// push previous content
 					if (curBlockKey && curBlockKeyEnd)
 					{
-						m_result.addChunk(start, curc - start, false);
-						m_blocks.add(curBlockKey, curBlockKeyEnd, m_result);
-						m_result.clear();
+						m_results.last()->addChunk(start, curc - start, false);
+						m_blocks.add(curBlockKey, curBlockKeyEnd, m_results.last());
+                        m_results.add(new LinkedCharChunks);
 					}
 					// process block tag
 					curBlockKey = extractTagStr(curc, &curBlockKeyEnd);
@@ -696,11 +717,10 @@ namespace fdv
 			}
 			++curc;
 		}
-		m_result.addChunk(start, m_strEnd - start, false);
+		m_results.last()->addChunk(start, m_strEnd - start, false);
 		if (curBlockKey && curBlockKeyEnd)
 		{
-			m_blocks.add(curBlockKey, curBlockKeyEnd, m_result);
-			m_result.clear();
+			m_blocks.add(curBlockKey, curBlockKeyEnd, m_results.last());
 		}			
 	}
 	
@@ -722,7 +742,7 @@ namespace fdv
 				char const* fulltagname = f_printf(FSTR("%d%s"), index, tag);
 				Params::Item* item = m_params->getItem(fulltagname);
 				if (item)
-					m_result.addChunks(&item->value); // push parameter content
+					m_results.last()->addChunks(&item->value); // push parameter content
 				else
 					break;
 			}
@@ -732,7 +752,13 @@ namespace fdv
 			// replace one parameter
 			Params::Item* item = m_params->getItem(tagStart, tagEnd);
 			if (item)				
-				m_result.addChunks(&item->value); // push parameter content
+				m_results.last()->addChunks(&item->value); // push parameter content
+            else if(m_blockParams)
+            {
+                BlockParams::Item* item = m_blockParams->getItem(tagStart, tagEnd);
+                if (item)
+                    m_results.last()->addChunks(item->value);   // push block parameter content
+            }
 		}
 		return tagEnd + 2;	// bypass "}}"
 	}
@@ -762,9 +788,8 @@ namespace fdv
 
     void MTD_FLASHMEM HTTPTemplateResponse::addParamStr(char const* key, char const* value)
     {
-        LinkedCharChunks linkedCharChunks;
-        linkedCharChunks.addChunk(value, f_strlen(value), false);
-        m_params.add(key, linkedCharChunks);
+        LinkedCharChunks* linkedCharChunks = m_params.add(key);
+        linkedCharChunks->addChunk(value);
     }
     
     
@@ -782,7 +807,7 @@ namespace fdv
         va_start(args, fmt);
         uint16_t len = vsprintf(NULL, fmt, args);
         va_end(args);
-        char buf[len + 1];			
+        char* buf = new char[len + 1];
         va_start(args, fmt);
         vsprintf(buf, fmt, args);
         va_end(args);
@@ -792,15 +817,9 @@ namespace fdv
     }
     
     
-    void MTD_FLASHMEM HTTPTemplateResponse::addParamCharChunks(char const* key, LinkedCharChunks* value)
+    LinkedCharChunks* MTD_FLASHMEM HTTPTemplateResponse::addParamCharChunks(char const* key)
     {
-        m_params.add(key, *value);
-    }
-    
-    
-    void MTD_FLASHMEM HTTPTemplateResponse::addParams(Params* params)
-    {
-        m_params.add(params);
+        return m_params.add(key);
     }
     
     
@@ -834,27 +853,26 @@ namespace fdv
             addHeader(STR_Content_Type, FSTR("text/html"));
             
             // replace parameters
-            ParameterReplacer replacer((char const*)data, (char const*)data + dataLength, &m_params);
+            m_replacer.start((char const*)data, (char const*)data + dataLength, &m_params, NULL);
             
             // is this a specialized file (contains {%..%} blocks)?
-            if (replacer.getBlocks()->getItemsCount() > 0 && replacer.getTemplateFilename() != NULL)
+            if (m_replacer.getBlocks()->getItemsCount() > 0 && m_replacer.getTemplateFilename() != NULL)
             {
-                // this is a specialized file, add blocks as parameters
-                addParams(replacer.getBlocks());
+                // this is a specialized file
                 // load template file
-                if (FlashFileSystem::find(replacer.getTemplateFilename(), &mimetype, &data, &dataLength))
+                if (FlashFileSystem::find(m_replacer.getTemplateFilename(), &mimetype, &data, &dataLength))
                 {
                     // replace parameters and blocks of template file
-                    ParameterReplacer templateReplacer((char const*)data, (char const*)data + dataLength, &m_params);
+                    m_templateReplacer.start((char const*)data, (char const*)data + dataLength, &m_params, m_replacer.getBlocks());
                     // flush resulting content
-                    addContent(templateReplacer.getResult());
+                    addContent(m_templateReplacer.getResult());
                     return;
                 }
             }
             else
             {
                 // just flush this file (contains only {{...}} blocks)
-                addContent(replacer.getResult());
+                addContent(m_replacer.getResult());
                 return;
             }
         }

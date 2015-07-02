@@ -107,7 +107,7 @@ EXTRA_INCDIR = include
 
 #LIBS       = cirom gccirom hal phy pp net80211 wpa main freertos lwip udhcp
 # linking libgccirom.a instead of libgcc.a causes reset when working with flash memory (ie spi_flash_erase_sector)
-LIBS		= gcc hal phy pp net80211 wpa main freertos lwip udhcp
+LIBS		= gcc hal phy pp net80211 wpa main freertos lwip
 
 # compiler flags using during compilation of source files
 CFLAGS		= -g -save-temps -Os -Wpointer-arith -Wundef -Werror -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals -mno-serialize-volatile -D__ets__ -DICACHE_FLASH

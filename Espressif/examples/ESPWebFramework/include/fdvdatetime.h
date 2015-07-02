@@ -83,7 +83,7 @@ namespace fdv
         char const* decode(char const* inbuf, char const* formatstr);
 
         static DateTime now();
-                
+                        
          
     private:
 
@@ -94,12 +94,15 @@ namespace fdv
         static int8_t      s_defaultTimezoneHours;
         static uint8_t     s_defaultTimezoneMinutes;
         static IPAddress   s_defaultNTPServer;  // NTP synchronization enabled if s_defaultNTPServer != 0.0.0.0
+        static bool        s_synchingWithNTPServer;
         
         static uint8_t daysInMonth(uint8_t month);
         static long time2long(uint16_t days, uint8_t h, uint8_t m, uint8_t s);
-        static uint16_t date2days(uint16_t y, uint8_t m, uint8_t d);
-        static DateTime& lastDateTime();
-        static uint32_t& lastMillis();        
+        static uint16_t date2days(uint16_t y, uint8_t m, uint8_t d);                
+        
+        static void syncWithNTPServer();
+        static DateTime& lastSyncDateTime();    // datetime at the time of NTP synchronization
+        static uint32_t& lastSyncMillis();      // millisecs at the time of NTP synchronization
 
     };
 
