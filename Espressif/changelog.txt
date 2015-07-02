@@ -21,6 +21,9 @@ v2.0.7 (25.06.2015):
 * Updated examples:
   i2c_bmp180;
   ESPWebFramework;
+- Remove examples:
+  hello_world_optimized;
+  ESPWebFramework;
 
 v2.0.6 (10.06.2015):
 * Update SDK v1.1.1 (folder ESP8266_SDK);
