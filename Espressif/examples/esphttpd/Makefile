@@ -36,7 +36,7 @@ LIBS += esphttpd
 
 # compiler flags using during compilation of source files
 CFLAGS		= -Os -ggdb -std=c99 -Werror -Wpointer-arith -Wundef -Wall -Wl,-EL -fno-inline-functions \
-		-nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH -D_STDINT_H \
+		-nostdlib -mlongcalls -mtext-section-literals -mno-serialize-volatile -D__ets__ -DICACHE_FLASH -D_STDINT_H \
 		-Wno-address
 
 # linker flags used to generate the main object file
@@ -129,9 +129,6 @@ $(TARGET_OUT): $(APP_AR)
 	$(vecho) "------------------------------------------------------------------------------"
 	$(vecho) "Section info:"
 	$(Q) $(OBJDUMP) -h -j .data -j .rodata -j .bss -j .text -j .irom0.text $@
-	$(vecho) "------------------------------------------------------------------------------"
-	$(vecho) "Section info:"
-	$(Q) $(SDK_TOOLS)/memanalyzer.exe $(OBJDUMP).exe $@
 	$(vecho) "------------------------------------------------------------------------------"
 
 $(FW_BASE): $(TARGET_OUT)

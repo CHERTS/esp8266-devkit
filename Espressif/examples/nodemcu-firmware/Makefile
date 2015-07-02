@@ -100,7 +100,7 @@ NM := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-nm
 CPP := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-cpp
 OBJCOPY := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-objcopy
 OBJDUMP := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-objdump
-CCFLAGS += -Os -ffunction-sections -fno-jump-tables -fdata-sections
+CCFLAGS += -Os -std=gnu90 -ffunction-sections -fno-jump-tables -fdata-sections
 
 CSRCS ?= $(wildcard *.c)
 ASRCs ?= $(wildcard *.s)

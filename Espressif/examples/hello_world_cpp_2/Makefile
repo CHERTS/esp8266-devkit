@@ -156,7 +156,7 @@ EXTRA_INCDIR    = include $(EXTRA_BASE)/include
 LIBS		= c gcc hal phy pp net80211 lwip wpa main
 
 # compiler flags using during compilation of source files
-CFLAGS		= -Os -g -O2 -Wpointer-arith -Wundef -Werror -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
+CFLAGS		= -Os -g -O2 -Wpointer-arith -Wundef -Werror -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals -mno-serialize-volatile -D__ets__ -DICACHE_FLASH
 CXXFLAGS	= $(CFLAGS) -fno-rtti -fno-exceptions
 
 # linker flags used to generate the main object file
@@ -238,9 +238,6 @@ $(TARGET_OUT): $(APP_AR)
 	$(vecho) "------------------------------------------------------------------------------"
 	$(vecho) "Section info:"
 	$(Q) $(OBJDUMP) -h -j .data -j .rodata -j .bss -j .text -j .irom0.text $@
-	$(vecho) "------------------------------------------------------------------------------"
-	$(vecho) "Section info:"
-	$(Q) $(SDK_TOOLS)/memanalyzer.exe $(OBJDUMP).exe $@
 	$(vecho) "------------------------------------------------------------------------------"
 	$(vecho) "Run objcopy, please wait..."
 	$(Q) $(OBJCOPY) --only-section .text -O binary $@ eagle.app.v6.text.bin

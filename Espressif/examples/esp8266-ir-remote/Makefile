@@ -34,7 +34,7 @@ EXTRA_INCDIR = include
 LIBS		= gcc hal phy pp net80211 wpa main freertos lwip udhcp
 
 # compiler flags using during compilation of source files
-CFLAGS		= -g -save-temps -Os -Wpointer-arith -Wundef -Werror -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
+CFLAGS		= -g -save-temps -Os -std=gnu90 -Wpointer-arith -Wundef -Werror -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals -mno-serialize-volatile -D__ets__ -DICACHE_FLASH
 CXXFLAGS	= $(CFLAGS) -fno-rtti -fno-exceptions
 
 # linker flags used to generate the main object file
