@@ -98,7 +98,9 @@ at_exeCmdTest(uint8_t id)
 extern void at_exeCmdCiupdate(uint8_t id);
 at_funcationType at_custom_cmd[] = {
     {"+TEST", 5, at_testCmdTest, at_queryCmdTest, at_setupCmdTest, at_exeCmdTest},
+#ifdef AT_UPGRADE_SUPPORT
     {"+CIUPDATE", 9,       NULL,            NULL,            NULL, at_exeCmdCiupdate}
+#endif
 };
 
 void user_rf_pre_init(void)

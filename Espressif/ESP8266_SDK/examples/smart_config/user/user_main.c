@@ -14,8 +14,6 @@
 #include "user_interface.h"
 #include "smartconfig.h"
 
-sc_type SC_Type = 0;
-
 void ICACHE_FLASH_ATTR
 smartconfig_done(sc_status status, void *pdata)
 {
@@ -28,6 +26,12 @@ smartconfig_done(sc_status status, void *pdata)
             break;
         case SC_STATUS_GETTING_SSID_PSWD:
             os_printf("SC_STATUS_GETTING_SSID_PSWD\n");
+			sc_type *type = pdata;
+            if (*type == SC_TYPE_ESPTOUCH) {
+                os_printf("SC_TYPE:SC_TYPE_ESPTOUCH\n");
+            } else {
+                os_printf("SC_TYPE:SC_TYPE_AIRKISS\n");
+            }
             break;
         case SC_STATUS_LINK:
             os_printf("SC_STATUS_LINK\n");
@@ -39,7 +43,7 @@ smartconfig_done(sc_status status, void *pdata)
             break;
         case SC_STATUS_LINK_OVER:
             os_printf("SC_STATUS_LINK_OVER\n");
-            if (SC_Type == SC_TYPE_ESPTOUCH) {
+            if (pdata != NULL) {
                 uint8 phone_ip[4] = {0};
 
                 os_memcpy(phone_ip, (uint8*)pdata, 4);
@@ -59,7 +63,6 @@ void user_init(void)
 {
     os_printf("SDK version:%s\n", system_get_sdk_version());
 	
-	SC_Type = SC_TYPE_ESPTOUCH;
     wifi_set_opmode(STATION_MODE);
-    smartconfig_start(SC_Type, smartconfig_done);
+    smartconfig_start(smartconfig_done);
 }

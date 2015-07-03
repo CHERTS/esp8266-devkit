@@ -15,6 +15,7 @@
 #include "osapi.h"
 #include "upgrade.h"
 
+#ifdef AT_UPGRADE_SUPPORT
 #ifdef AT_CUSTOM_UPGRADE
 
 #define UPGRADE_FRAME  "{\"path\": \"/v1/messages/\", \"method\": \"POST\", \"meta\": {\"Authorization\": \"token %s\"},\
@@ -285,4 +286,5 @@ at_exeCmdCiupdate(uint8_t id)
   espconn_regist_reconcb(pespconn, at_upDate_recon_cb);
   espconn_connect(pespconn);
 }
+#endif
 #endif
