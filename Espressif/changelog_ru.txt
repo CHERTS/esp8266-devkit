@@ -11,9 +11,11 @@ v2.0.7 (05.07.2015):
   - Удалены файлы:
     2C-ESP8266__SDK__Programming Guide__EN_v1.1.1.pdf
     4A-ESP8266__AT Instruction Set__EN_v0.24.pdf
+    4B-ESP8266__AT Command Examples__EN_v0.4.pdf
   + Добавлены файлы:
-    2C-ESP8266__SDK__Programming Guide__EN_v1.1.2.pdf
-    4A-ESP8266__AT Instruction Set__EN_v0.25.pdf
+    2C-ESP8266__SDK__Programming Guide__EN_v1.2.0.pdf
+    4A-ESP8266__AT Instruction Set__EN_v0.30.pdf
+    4B-ESP8266__AT Command Examples__EN_v0.5.pdf
     SSL\ESP8266__SDK__SSL_User_Manual__EN_v1.0.pdf
   * Обновлены файлы:
     4B-ESP8266__AT Command Examples__EN_v0.4.pdf
