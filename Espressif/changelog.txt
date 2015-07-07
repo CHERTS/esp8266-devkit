@@ -1,7 +1,7 @@
 Changelog:
 ----------
 
-v2.0.7 (05.07.2015):
+v2.0.7 (07.07.2015):
 * Updated compiler xtensa-lx106-gcc and xtensa-lx106-g++ up to version 5.1;
   ATTENTION! For correct build of your firmware, you must add the option -std=gnu90 in directive CFLAGS in Makefile
 * Update SDK v1.2.0 (folder ESP8266_SDK);
@@ -24,6 +24,7 @@ v2.0.7 (05.07.2015):
 * Updated examples:
   i2c_bmp180;
   ESPWebFramework;
+  nodemcu-firmware;
 - Remove examples:
   hello_world_optimized;
   ESPWebFramework;
