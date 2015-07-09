@@ -385,7 +385,7 @@ class ESPFirmwareImage:
         if l > 0:
             if l % 4:
                 data += b"\x00" * (4 - l % 4)
-        self.segments.append((addr, len(data), data))
+                self.segments.append((addr, len(data), data))
 
     def save(self, filename):
         f = file(filename, 'wb')
@@ -417,7 +417,7 @@ class ELFFile:
             tool_nm = "C:\\Espressif\\xtensa-lx106-elf\\bin\\xtensa-lx106-elf-nm.exe"
             if os.getenv('XTENSA_CORE')=='lx106':
                 tool_nm = "xt-nm"
-            proc = subprocess.Popen([tool_nm, self.name], stdout=subprocess.PIPE)
+            proc = subprocess.Popen([tool_nm, '-g', self.name], stdout=subprocess.PIPE)
         except OSError:
             print "Error calling "+tool_nm+", do you have Xtensa toolchain in PATH?"
             sys.exit(1)
