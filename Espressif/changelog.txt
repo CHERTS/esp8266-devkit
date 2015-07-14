@@ -1,6 +1,10 @@
 Changelog:
 ----------
 
+v2.0.8 (19.07.2015):
+* SDRAM Optimization Patch for SDK_v1.2.0 (folder "ESP8266_SDK");
+* Update RTOS SDK (folder "ESP8266_RTOS_SDK");
+
 v2.0.7 (09.07.2015):
 * Updated compiler xtensa-lx106-gcc and xtensa-lx106-g++ up to version 5.1 (big thanks jcmvbkbc);
   ATTENTION! For correct build of your firmware, you must add the option -std=gnu90 in directive CFLAGS in Makefile
