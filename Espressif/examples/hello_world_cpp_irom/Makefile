@@ -13,7 +13,7 @@ FW_BASE		= firmware
 XTENSA_TOOLS_ROOT ?= c:/Espressif/xtensa-lx106-elf/bin
 
 # base directory of the ESP8266 SDK package, absolute
-SDK_BASE	?= c:/Espressif/ESP8266_SDK
+SDK_BASE	?= c:/Espressif/ESP8266_SDK_101
 
 # Extra libs, include and ld file
 EXTRA_BASE	?= c:/Espressif/extra
