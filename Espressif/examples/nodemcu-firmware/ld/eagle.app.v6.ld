@@ -74,7 +74,6 @@ SECTIONS
 
     /* Trade some performance for lots of ram. At the time of writing the
      * available Lua heap went from 18248 to 34704. */
-    *(.rodata*)
 
     _irom0_text_end = ABSOLUTE(.);
     _flash_used_end = ABSOLUTE(.);
@@ -125,6 +124,7 @@ SECTIONS
   .rodata : ALIGN(4)
   {
     _rodata_start = ABSOLUTE(.);
+    *(.rodata*)
     *(.gnu.linkonce.r.*)
     __XT_EXCEPTION_TABLE__ = ABSOLUTE(.);
     *(.xt_except_table)
