@@ -1,6 +1,6 @@
 @echo off
 
-@set comport=COM2
+@set comport=COM3
 @set curdir=%cd%
 @set elf_out=app.out
 @set out_dir=build
@@ -44,6 +44,8 @@ if exist %out_dir% (
       if exist flash.%SPI_MODE%.%SPI_SPEED%.%SPI_SIZE%.bin (
         echo Burn firmware...
         %devkit_dir%\utils\esptool-ck.exe -cp %comport% -cd ck -cb 256000 -ca 0x00000 -cf flash.%SPI_MODE%.%SPI_SPEED%.%SPI_SIZE%.bin
+        echo Clean project directory...
+        make -f Makefile clean
       )
     ) else (
       echo ERROR! File eagle.app.flash.bin is not found
