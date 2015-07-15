@@ -17,10 +17,22 @@ XTENSA_TOOLS_ROOT ?= c:/Espressif/xtensa-lx106-elf/bin
 SDK_BASE	?= c:/Espressif/ESP8266_SDK
 SDK_TOOLS	?= c:/Espressif/utils
 
-#Esptool.py path and port
-ESPTOOL		?=$(SDK_TOOLS)/esptool.exe
-ESPPORT		?=COM2
-ESPBAUD		?= 115200
+# esptool path and port
+ESPTOOL ?= $(SDK_TOOLS)/esptool.exe
+ESPPORT ?= COM3
+# Baud rate for programmer
+BAUD ?= 256000
+
+# ATTENTION! For utility memanalyzer.exe needs microsoft .net version 3.5 or higher
+# USEMEMANALYZER = yes - use memanalyzer.exe utils 
+# USEMEMANALYZER = no - not use memanalyzer.exe utils
+USEMEMANALYZER ?= no
+
+ifeq ($(USEMEMANALYZER), yes)
+    usememanalyzer = yes
+else
+	usememanalyzer = no
+endif
 
 # name for the target project
 TARGET		= httpd
@@ -130,13 +142,18 @@ $(TARGET_OUT): $(APP_AR)
 	$(vecho) "Section info:"
 	$(Q) $(OBJDUMP) -h -j .data -j .rodata -j .bss -j .text -j .irom0.text $@
 	$(vecho) "------------------------------------------------------------------------------"
+ifeq ($(usememanalyzer), yes)
+	$(vecho) "Section info:"
+	$(Q) $(SDK_TOOLS)/memanalyzer.exe $(OBJDUMP).exe $@
+	$(vecho) "------------------------------------------------------------------------------"
+endif
 
 $(FW_BASE): $(TARGET_OUT)
 	$(vecho) "FW $@"
 	$(Q) mkdir -p $@
 	$(Q) $(ESPTOOL) elf2image $(TARGET_OUT) --output $@/
 
-$(APP_AR):  libesphttpd $(OBJ)
+$(APP_AR): libesphttpd $(OBJ)
 	$(vecho) "AR $@"
 	$(Q) $(AR) cru $@ $(OBJ)
 
@@ -145,20 +162,42 @@ checkdirs: $(BUILD_DIR)
 $(BUILD_DIR):
 	$(Q) mkdir -p $@
 
-
 flash: $(TARGET_OUT) $(FW_BASE)
-	$(Q) $(ESPTOOL) --port $(ESPPORT) --baud $(ESPBAUD) write_flash 0x00000 $(FW_BASE)/0x00000.bin 0x40000 $(FW_BASE)/0x40000.bin
+	$(Q) $(ESPTOOL) --port $(ESPPORT) --baud $(BAUD) write_flash 0x00000 $(FW_BASE)/0x00000.bin 0x40000 $(FW_BASE)/0x40000.bin
 
 htmlflash: libesphttpd
 	$(Q) if [ $$(stat -c '%s' libesphttpd/webpages.espfs) -gt $$(( $(ESPFS_SIZE) )) ]; then echo "webpages.espfs too big!"; false; fi
-	$(Q) $(ESPTOOL) --port $(ESPPORT) --baud $(ESPBAUD) write_flash $(ESPFS_POS) libesphttpd/webpages.espfs
+	$(Q) $(ESPTOOL) --port $(ESPPORT) --baud $(BAUD) write_flash $(ESPFS_POS) libesphttpd/webpages.espfs
 
+# ===============================================================
+# From http://bbs.espressif.com/viewtopic.php?f=10&t=305
+# master-device-key.bin is only need if using espressive services
+# master_device_key.bin 0x3e000 is not used , write blank
+# See 2A-ESP8266__IOT_SDK_User_Manual__EN_v1.1.0.pdf
+# http://bbs.espressif.com/download/file.php?id=532
+#
+# System parameter area is the last 16KB of flash
+# 512KB flash - system parameter area starts from 0x7C000 
+# 	download blank.bin to 0x7E000 as initialization.
+# 1024KB flash - system parameter area starts from 0xFC000 
+# 	download blank.bin to 0xFE000 as initialization.
+# 2048KB flash - system parameter area starts from 0x1FC000 
+# 	download blank.bin to 0x1FE000 as initialization.
+# 4096KB flash - system parameter area starts from 0x3FC000 
+# 	download blank.bin to 0x3FE000 as initialization.
+# ===============================================================
+
+# FLASH SIZE
 flashinit:
 	$(vecho) "Flash init data:"
 	$(vecho) "Default config (Clear SDK settings):"
-	$(vecho) "blank.bin-------->0x7E000"
-	$(vecho) "esp_init_data_default.bin-------->0x7C000"
-	$(Q) $(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
+	$(vecho) "blank.bin-------->0x3e000"
+	$(vecho) "blank.bin-------->0x3fc000"
+	$(vecho) "esp_init_data_default.bin-------->0x3fc000"
+	$(ESPTOOL) -p $(ESPPORT) write_flash $(flashimageoptions) \
+		0x3e000 $(SDK_BASE)/bin/blank.bin \
+		0x3fc000 $(SDK_BASE)/bin/esp_init_data_default.bin \
+		0x3fe000 $(SDK_BASE)/bin/blank.bin
 
 clean:
 	$(Q) make -C libesphttpd clean

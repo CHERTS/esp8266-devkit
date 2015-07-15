@@ -5,6 +5,8 @@ v2.0.8 (19.07.2015):
 * SDRAM Optimization Patch for SDK_v1.2.0 (folder "ESP8266_SDK");
 * Update RTOS SDK (folder "ESP8266_RTOS_SDK");
 * Updated Makefile in all examples, added option USEMEMANALYZER, BAUD, SPI_SIZE_MAP;
+* Updated examples:
+  nodemcu-firmware;
 - Remove examples:
   hello_world_cpp_irom
 
