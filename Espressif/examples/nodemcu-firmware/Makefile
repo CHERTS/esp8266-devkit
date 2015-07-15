@@ -15,10 +15,14 @@ SDK_BASE	?= c:/Espressif/ESP8266_SDK_095
 FIRMWAREDIR = ..//bin//
 
 SDK_TOOLS	?= c:/Espressif/utils
-ESPTOOL		?= $(SDK_TOOLS)/esptool.exe
-ESPTOOL-CK	?= $(SDK_TOOLS)/esptool-ck.exe
-ESPPORT		?= COM2
+ESPTOOL		?= ..//tools//esptool.exe
+ESPPORT		?= COM3
 ESPBAUD		?= 115200
+
+# ATTENTION! For utility memanalyzer.exe needs microsoft .net version 3.5 or higher
+# USEMEMANALYZER = yes - use memanalyzer.exe utils 
+# USEMEMANALYZER = no - not use memanalyzer.exe utils
+USEMEMANALYZER ?= no
 
 # SPI_SPEED = 20MHz, 26.7MHz, 40MHz, 80MHz
 SPI_SPEED?=40
@@ -26,6 +30,12 @@ SPI_SPEED?=40
 SPI_MODE?=QIO
 # SPI_SIZE: 256KB, 512KB, 1024KB, 2048KB, 4096KB
 SPI_SIZE?=512
+
+ifeq ($(USEMEMANALYZER), yes)
+    usememanalyzer = yes
+else
+	usememanalyzer = no
+endif
 
 ifeq ($(SPI_SPEED), 26.7)
     freqdiv = 1
@@ -182,9 +192,11 @@ $(BINODIR)/%.bin: $(IMAGEODIR)/%.out
 	$(vecho) "Section info:"
 	$(Q) $(OBJDUMP) -h -j .data -j .rodata -j .bss -j .text -j .irom0.text $<
 	$(vecho) "------------------------------------------------------------------------------"
+ifeq ($(usememanalyzer), yes)
 	$(vecho) "Section info:"
 	$(Q) $(SDK_TOOLS)/memanalyzer.exe $(OBJDUMP).exe $<
 	$(vecho) "------------------------------------------------------------------------------"
+endif
 
 all: .subdirs $(OBJS) $(OLIBS) $(OIMAGES) $(OBINS) $(SPECIAL_MKTARGETS)
 
