@@ -19,7 +19,7 @@ SDK_BASE	?= $(TOOLS_ROOT)/ESP8266_RTOS_SDK
 
 # esptool path and port
 ESPTOOL		?= $(TOOLS_ROOT)/utils/esptool.exe
-ESPPORT		?= COM2
+ESPPORT		?= COM3
 ESPBAUD		?= 115200
 
 # name for the target project

@@ -19,7 +19,7 @@ SDK_BASE	?= $(TOOLS_ROOT)/ESP8266_RTOS_SDK
 
 # esptool path and port
 ESPTOOL		?= $(TOOLS_ROOT)/utils/esptool.exe
-ESPPORT		?= COM2
+ESPPORT		?= COM3
 ESPBAUD		?= 115200
 
 # name for the target project
@@ -31,7 +31,7 @@ EXTRA_INCDIR = include
 
 #LIBS       = cirom gccirom hal phy pp net80211 wpa main freertos lwip udhcp
 # linking libgccirom.a instead of libgcc.a causes reset when working with flash memory (ie spi_flash_erase_sector)
-LIBS		= gcc hal phy pp net80211 wpa main freertos lwip
+LIBS		= gcc hal phy pp net80211 wpa main freertos lwip minic
 
 # compiler flags using during compilation of source files
 CFLAGS		= -g -save-temps -std=gnu90 -Os -Wpointer-arith -Wundef -Werror -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals -mno-serialize-volatile -D__ets__ -DICACHE_FLASH
