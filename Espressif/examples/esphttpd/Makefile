@@ -23,15 +23,94 @@ ESPPORT ?= COM3
 # Baud rate for programmer
 BAUD ?= 256000
 
-# ATTENTION! For utility memanalyzer.exe needs microsoft .net version 3.5 or higher
-# USEMEMANALYZER = yes - use memanalyzer.exe utils 
-# USEMEMANALYZER = no - not use memanalyzer.exe utils
-USEMEMANALYZER ?= no
+# SPI_SPEED = 40, 26, 20, 80
+SPI_SPEED ?= 40
+# SPI_MODE: qio, qout, dio, dout
+SPI_MODE ?= qio
+# SPI_SIZE_MAP
+# 0 : 512 KB (256 KB + 256 KB)
+# 1 : 256 KB
+# 2 : 1024 KB (512 KB + 512 KB)
+# 3 : 2048 KB (512 KB + 512 KB)
+# 4 : 4096 KB (512 KB + 512 KB)
+# 5 : 2048 KB (1024 KB + 1024 KB)
+# 6 : 4096 KB (1024 KB + 1024 KB)
+SPI_SIZE_MAP ?= 0
 
-ifeq ($(USEMEMANALYZER), yes)
-    usememanalyzer = yes
+ifeq ($(SPI_SPEED), 26.7)
+    freqdiv = 1
+    flashimageoptions = -ff 26m
 else
-	usememanalyzer = no
+    ifeq ($(SPI_SPEED), 20)
+        freqdiv = 2
+        flashimageoptions = -ff 20m
+    else
+        ifeq ($(SPI_SPEED), 80)
+            freqdiv = 15
+            flashimageoptions = -ff 80m
+        else
+            freqdiv = 0
+            flashimageoptions = -ff 40m
+        endif
+    endif
+endif
+
+ifeq ($(SPI_MODE), QOUT)
+    mode = 1
+    flashimageoptions += -fm qout
+else
+    ifeq ($(SPI_MODE), DIO)
+		mode = 2
+		flashimageoptions += -fm dio
+    else
+        ifeq ($(SPI_MODE), DOUT)
+            mode = 3
+            flashimageoptions += -fm dout
+        else
+            mode = 0
+            flashimageoptions += -fm qio
+        endif
+    endif
+endif
+
+ifeq ($(SPI_SIZE_MAP), 1)
+  size_map = 1
+  flash = 256
+  flashimageoptions += -fs 2m
+else
+  ifeq ($(SPI_SIZE_MAP), 2)
+    size_map = 2
+    flash = 1024
+    flashimageoptions += -fs 8m
+  else
+    ifeq ($(SPI_SIZE_MAP), 3)
+      size_map = 3
+      flash = 2048
+      flashimageoptions += -fs 16m
+    else
+      ifeq ($(SPI_SIZE_MAP), 4)
+		size_map = 4
+		flash = 4096
+		flashimageoptions += -fs 32m
+      else
+        ifeq ($(SPI_SIZE_MAP), 5)
+          size_map = 5
+          flash = 2048
+          flashimageoptions += -fs 16m
+        else
+          ifeq ($(SPI_SIZE_MAP), 6)
+            size_map = 6
+            flash = 4096
+            flashimageoptions += -fs 32m
+          else
+            size_map = 0
+            flash = 512
+            flashimageoptions += -fs 4m
+          endif
+        endif
+      endif
+    endif
+  endif
 endif
 
 # name for the target project
@@ -125,7 +204,7 @@ endef
 
 .PHONY: all checkdirs clean libesphttpd
 
-all: checkdirs $(TARGET_OUT) $(FW_BASE)
+all: checkdirs $(TARGET_OUT)
 
 libesphttpd/Makefile:
 	$(Q) echo "No libesphttpd submodule found. Using git to fetch it..."
@@ -142,32 +221,31 @@ $(TARGET_OUT): $(APP_AR)
 	$(vecho) "Section info:"
 	$(Q) $(OBJDUMP) -h -j .data -j .rodata -j .bss -j .text -j .irom0.text $@
 	$(vecho) "------------------------------------------------------------------------------"
-ifeq ($(usememanalyzer), yes)
-	$(vecho) "Section info:"
-	$(Q) $(SDK_TOOLS)/memanalyzer.exe $(OBJDUMP).exe $@
+	$(Q) $(ESPTOOL) elf2image $(TARGET_OUT) -o$(FW_BASE)/ $(flashimageoptions)
 	$(vecho) "------------------------------------------------------------------------------"
-endif
+	$(vecho) "Generate 0x00000.bin and 0x40000.bin successully in folder $(FW_BASE)."
+	$(vecho) "0x00000.bin-------->0x00000"
+	$(vecho) "0x40000.bin-------->0x40000"
+	$(vecho) "Done"
 
-$(FW_BASE): $(TARGET_OUT)
-	$(vecho) "FW $@"
+$(FW_BASE):
 	$(Q) mkdir -p $@
-	$(Q) $(ESPTOOL) elf2image $(TARGET_OUT) --output $@/
 
 $(APP_AR): libesphttpd $(OBJ)
 	$(vecho) "AR $@"
 	$(Q) $(AR) cru $@ $(OBJ)
 
-checkdirs: $(BUILD_DIR)
+checkdirs: $(BUILD_DIR) $(FW_BASE)
 
 $(BUILD_DIR):
 	$(Q) mkdir -p $@
 
 flash: $(TARGET_OUT) $(FW_BASE)
-	$(Q) $(ESPTOOL) --port $(ESPPORT) --baud $(BAUD) write_flash 0x00000 $(FW_BASE)/0x00000.bin 0x40000 $(FW_BASE)/0x40000.bin
+	$(ESPTOOL) -p $(ESPPORT) -b $(BAUD) write_flash $(flashimageoptions) 0x00000 $(FW_BASE)/0x00000.bin 0x40000 $(FW_BASE)/0x40000.bin
 
 htmlflash: libesphttpd
 	$(Q) if [ $$(stat -c '%s' libesphttpd/webpages.espfs) -gt $$(( $(ESPFS_SIZE) )) ]; then echo "webpages.espfs too big!"; false; fi
-	$(Q) $(ESPTOOL) --port $(ESPPORT) --baud $(BAUD) write_flash $(ESPFS_POS) libesphttpd/webpages.espfs
+	$(ESPTOOL) -p $(ESPPORT) -b $(BAUD) write_flash $(flashimageoptions) $(ESPFS_POS) libesphttpd/webpages.espfs
 
 # ===============================================================
 # From http://bbs.espressif.com/viewtopic.php?f=10&t=305
