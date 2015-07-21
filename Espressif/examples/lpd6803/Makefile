@@ -24,11 +24,6 @@ ESPPORT ?= COM3
 # Baud rate for programmer
 BAUD ?= 256000
 
-# ATTENTION! For utility memanalyzer.exe needs microsoft .net version 3.5 or higher
-# USEMEMANALYZER = yes - use memanalyzer.exe utils 
-# USEMEMANALYZER = no - not use memanalyzer.exe utils
-USEMEMANALYZER ?= no
-
 # SPI_SPEED = 40, 26, 20, 80
 SPI_SPEED ?= 40
 # SPI_MODE: qio, qout, dio, dout
@@ -42,12 +37,6 @@ SPI_MODE ?= qio
 # 5 : 2048 KB (1024 KB + 1024 KB)
 # 6 : 4096 KB (1024 KB + 1024 KB)
 SPI_SIZE_MAP ?= 0
-
-ifeq ($(USEMEMANALYZER), yes)
-    usememanalyzer = yes
-else
-	usememanalyzer = no
-endif
 
 ifeq ($(SPI_SPEED), 26.7)
     freqdiv = 1
@@ -201,26 +190,11 @@ $(TARGET_OUT): $(APP_AR)
 	$(vecho) "Section info:"
 	$(Q) $(OBJDUMP) -h -j .data -j .rodata -j .bss -j .text -j .irom0.text $@
 	$(vecho) "------------------------------------------------------------------------------"
-ifeq ($(usememanalyzer), yes)
-	$(vecho) "Section info:"
-	$(Q) $(SDK_TOOLS)/memanalyzer.exe $(OBJDUMP).exe $@
+	$(Q) $(ESPTOOL) elf2image $(TARGET_OUT) -o$(FW_BASE)/ $(flashimageoptions)
 	$(vecho) "------------------------------------------------------------------------------"
-endif
-	$(vecho) "Run objcopy, please wait..."
-	$(Q) $(OBJCOPY) --only-section .text -O binary $@ eagle.app.v6.text.bin
-	$(Q) $(OBJCOPY) --only-section .data -O binary $@ eagle.app.v6.data.bin
-	$(Q) $(OBJCOPY) --only-section .rodata -O binary $@ eagle.app.v6.rodata.bin
-	$(Q) $(OBJCOPY) --only-section .irom0.text -O binary $@ eagle.app.v6.irom0text.bin
-	$(vecho) "objcopy done"
-	$(vecho) "Run gen_appbin.exe"
-	$(Q) $(SDK_TOOLS)/gen_appbin.exe $@ 0 $(mode) $(freqdiv) $(size_map)
-	$(Q) mv eagle.app.flash.bin $(FW_BASE)/eagle.flash.bin
-	$(Q) mv eagle.app.v6.irom0text.bin $(FW_BASE)/eagle.irom0text.bin
-	$(Q) rm eagle.app.v6.*
-	$(vecho) "No boot needed."
-	$(vecho) "Generate eagle.flash.bin and eagle.irom0text.bin successully in folder $(FW_BASE)."
-	$(vecho) "eagle.flash.bin-------->0x00000"
-	$(vecho) "eagle.irom0text.bin---->0x40000"
+	$(vecho) "Generate 0x00000.bin and 0x40000.bin successully in folder $(FW_BASE)."
+	$(vecho) "0x00000.bin-------->0x00000"
+	$(vecho) "0x40000.bin-------->0x40000"
 	$(vecho) "Done"
 
 $(APP_AR): $(OBJ)
@@ -236,14 +210,14 @@ $(FW_BASE):
 	$(Q) mkdir -p $@
 
 flashonefile: all
-	$(SDK_TOOLS)/gen_flashbin.exe $(FW_BASE)/eagle.flash.bin $(FW_BASE)/eagle.irom0text.bin 0x40000
+	$(SDK_TOOLS)/gen_flashbin.exe $(FW_BASE)/0x00000.bin $(FW_BASE)/0x40000.bin 0x40000
 	$(Q) mv eagle.app.flash.bin $(FW_BASE)/
 	$(vecho) "Generate eagle.app.flash.bin successully in folder $(FW_BASE)."
 	$(vecho) "eagle.app.flash.bin-------->0x00000"
 	$(ESPTOOL) -p $(ESPPORT) -b $(BAUD) write_flash $(flashimageoptions) 0x00000 $(FW_BASE)/eagle.app.flash.bin
 
 flash: all
-	$(ESPTOOL) -p $(ESPPORT) -b $(BAUD) write_flash $(flashimageoptions) 0x00000 $(FW_BASE)/eagle.flash.bin 0x40000 $(FW_BASE)/eagle.irom0text.bin
+	$(ESPTOOL) -p $(ESPPORT) -b $(BAUD) write_flash $(flashimageoptions) 0x00000 $(FW_BASE)/0x00000.bin 0x40000 $(FW_BASE)/0x40000.bin
 
 # ===============================================================
 # From http://bbs.espressif.com/viewtopic.php?f=10&t=305

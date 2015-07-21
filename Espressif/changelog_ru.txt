@@ -1,14 +1,17 @@
 Список изменений:
 -----------------
 
-v2.0.8 (19.07.2015):
+v2.0.8 (23.07.2015):
 * SDRAM Optimization Patch for SDK_v1.2.0 (папка "ESP8266_SDK");
 * Обновлена RTOS SDK (папка "ESP8266_RTOS_SDK");
 * Обновлены Makefile во всех примерах, добавлена опция USEMEMANALYZER, BAUD, SPI_SIZE_MAP;
+* Обновлена утилита "utils\esptool.exe" (Спасибо pvvx);
 * Обновлены примеры:
   nodemcu-firmware;
 - Удалены примеры;
   hello_world_cpp_irom
++ Добавлены примеры:
+  esp_rtos_sdk_example_2;
 
 v2.0.7 (09.07.2015):
 * Обновлен компилятор xtensa-lx106-gcc и xtensa-lx106-g++ до версии 5.1 (Огромное спасибо jcmvbkbc);

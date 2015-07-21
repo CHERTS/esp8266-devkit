@@ -109,7 +109,7 @@ gpio_input_get(void)
 void ICACHE_FLASH_ATTR
 gpio_intr_handler_register(void *fn)
 {
-    _xt_isr_attach(ETS_GPIO_INUM, fn);
+    _xt_isr_attach(ETS_GPIO_INUM, fn, NULL);
 }
 
 /*

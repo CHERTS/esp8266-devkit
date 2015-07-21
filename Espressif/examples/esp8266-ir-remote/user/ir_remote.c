@@ -87,7 +87,7 @@ void ICACHE_FLASH_ATTR ir_remote_init(uint16 gpio_pin_num, bool invert_logic_lev
 	GPIO_OUTPUT_SET(_gpio_pin_num, _logic_low);
 
 	portENTER_CRITICAL();
-	_xt_isr_attach(ETS_FRC_TIMER1_INUM, pwm_tim1_intr_handler);
+	_xt_isr_attach(ETS_FRC_TIMER1_INUM, pwm_tim1_intr_handler, NULL);
 	TM1_EDGE_INT_ENABLE();
 	_xt_isr_unmask((1 << ETS_FRC_TIMER1_INUM));
 
