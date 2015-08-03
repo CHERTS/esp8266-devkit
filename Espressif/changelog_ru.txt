@@ -1,11 +1,12 @@
 Список изменений:
 -----------------
 
-v2.0.8 (23.07.2015):
+v2.0.8 (09.08.2015):
 * SDRAM Optimization Patch for SDK_v1.2.0 (папка "ESP8266_SDK");
 * Обновлена RTOS SDK (папка "ESP8266_RTOS_SDK");
 * Обновлены Makefile во всех примерах, добавлена опция USEMEMANALYZER, BAUD, SPI_SIZE_MAP;
 * Обновлена утилита "utils\esptool.exe" (Спасибо pvvx);
+* Обновлена утилита "utils\esptool-ck.exe" до версии 0.4.6;
 * Обновлены примеры:
   nodemcu-firmware;
 - Удалены примеры;

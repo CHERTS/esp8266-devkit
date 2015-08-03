@@ -1,11 +1,12 @@
 Changelog:
 ----------
 
-v2.0.8 (23.07.2015):
+v2.0.8 (09.08.2015):
 * SDRAM Optimization Patch for SDK_v1.2.0 (folder "ESP8266_SDK");
 * Update RTOS SDK (folder "ESP8266_RTOS_SDK");
 * Updated Makefile in all examples, added option USEMEMANALYZER, BAUD, SPI_SIZE_MAP;
 * Update a utility "utils\esptool.exe" (big thanks pvvx);
+* Update a utility "utils\esptool-ck.exe" to version 0.4.6:
 * Updated examples:
   nodemcu-firmware;
 - Remove examples:
