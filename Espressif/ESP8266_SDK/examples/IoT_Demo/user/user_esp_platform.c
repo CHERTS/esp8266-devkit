@@ -540,7 +540,7 @@ user_esp_platform_sent(struct espconn *pespconn)
         if (esp_param.activeflag == 0) {
             uint8 token[token_size] = {0};
             uint8 bssid[6];
-            active_nonce = os_random();
+            active_nonce = os_random() && 0x7FFFFFFF;
 
             os_memcpy(token, esp_param.token, 40);
 
@@ -591,7 +591,7 @@ user_esp_platform_sent(struct espconn *pespconn)
 #endif
 #else
         else {
-            nonce = os_random();
+            nonce = os_random() && 0x7FFFFFFF;
             os_sprintf(pbuf, FIRST_FRAME, nonce , devkey);
         }
 
