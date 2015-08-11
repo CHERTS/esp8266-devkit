@@ -36,37 +36,40 @@ Tencent QQ group: 309957875<br />
 - cross compiler (done)
 
 # Change log
-2015-03-18<br />
-update u8glib.<br />
-merge everything to master.
+2015-06-27<br />
+fixed ap/station-ap cannot connect to the device.<br />
+added wifi.ap.getconfig().<br />
+fixed net.dns.getdnsserver().<br />
+added new base64 lua example.<br />
+added node.bootreason() to inspect boot cause.<br />
+optimization of u8g.<br />
 
-2015-03-17<br />
-add cjson module, only cjson.encode() and cjson.decode() is implemented.<br />
-read doc [here](https://github.com/nodemcu/nodemcu-firmware/blob/master/app/cjson/manual.txt)
+# Change log
+2015-06-25<br />
+move constants to ROM. Frees up 16k+ of RAM.<br />
+add dhtlib for DHT11/21/22/33/44, port from Arduino.<br />
+add 433MHz transmission.<br />
+add crypto library.<br />
+re-add ws2812.write().<br />
+add wifi.getchannel.<br />
+changed wifi_setip() to allow setting SoftAP gateway to 0.0.0.0.<br />
+added net.dns.setdnsserver and net.dns.getdnsserver.<br />
+add support for lm92 temperature sensor.<br />
+implement getStrWidth() and setFontLineSpacingFactor().<br />
+add -Os flag to release and debug builds.<br />
+changed output format of table that is output by wifi_scan_done.<br />
+added ability to set scan configuration to wifi.sta.getap.<br />
+added function wifi.sta.getconfig().<br />
+allow connecting to unsecured WiFi networks.<br />
+add setphymode and getphymode to wifi module.<br />
+add multicastJoin and multicastLeave to net module.<br />
+add Yeelink Modules.<br />
 
-2015-03-15<br />
-bugs fixed: #239, #273.<br />
-reduce coap module memory usage, add coap module to default built.
-
-2015-03-11<br />
-fix bugs of spiffs.<br />
-build both float and integer version [latest releases](https://github.com/nodemcu/nodemcu-firmware/releases/latest).<br />
-fix tmr.time().<br />
-fix memory leak when DNS fail.
-
-2015-03-10<br />
-update to the recent spiffs.<br />
-add file.fsinfo() api, usage: remain, used, total = file.fsinfo().<br />
-add Travis CI. please download the latest firmware from [releases](https://github.com/nodemcu/nodemcu-firmware/releases).<br />
-add math lib, partial api work.<br />
-u8g module, ws2812 module default enabled in dev-branch build.
-
-2015-02-13<br />
-add node.compile() api to compile lua text file into lua bytecode file.<br />
-this will reduce memory usage noticeably when require modules into NodeMCU.<br />
-raise internal LUA_BUFFERSIZE from 1024 to 4096.<br />
-lua require("mod") will load "mod.lc" file first if exist.<br />
-build latest pre_build bin.
+2015-03-31<br />
+polish mqtt module, add queue for mqtt module.<br />
+add reconnect option to mqtt.connect api, :connect( host, port, secure, auto_reconnect, function(client) )<br />
+move node.readvdd33 to adc.readvdd33.<br />
+tools/esptool.py supported NodeMCU devkit automatic flash.
 
 [more change log](https://github.com/nodemcu/nodemcu-firmware/wiki)<br />
 
@@ -139,6 +142,11 @@ build latest pre_build bin.
 #define LUA_USE_MODULES_CJSON
 #endif /* LUA_USE_MODULES */
 ```
+#Online firmware custom build
+
+For many application, some modules are not used, remove them can free many memory.<br />
+
+Please try Marcel's [NodeMCU custom builds](http://frightanic.com/nodemcu-custom-build) cloud service and you can get your own firmware.<br />
 
 #Flash the firmware
 nodemcu_latest.bin: 0x00000<br />
@@ -153,6 +161,13 @@ Or, if you build your own bin from source code.<br />
 
 #Connect the hardware in serial
 baudrate:9600
+
+#Write Lua script to filesystem
+####Esplorer
+Victor Brutskiy's [Esplorer](https://github.com/4refr0nt/ESPlorer) support most platforms such as Linux, Windows, Mac OS, etc. This software is opensource and can write lua/lc files to filesystem.
+
+####NodeMCU Studio
+[NodeMCU Studio](https://github.com/nodemcu/nodemcu-studio-csharp) is written in C# and support Windows. This software is opensource and can write lua files to filesystem.
 
 #Start play
 
@@ -225,8 +240,10 @@ m:on("message", function(conn, topic, data)
   end
 end)
 
--- for secure: m:connect("192.168.11.118", 1880, 1)
-m:connect("192.168.11.118", 1880, 0, function(conn) print("connected") end)
+-- m:connect( host, port, secure, auto_reconnect, function(client) )
+-- for secure: m:connect("192.168.11.118", 1880, 1, 0)
+-- for auto-reconnect: m:connect("192.168.11.118", 1880, 0, 1)
+m:connect("192.168.11.118", 1880, 0, 0, function(conn) print("connected") end)
 
 -- subscribe topic with qos = 0
 m:subscribe("/topic",0, function(conn) print("subscribe success") end)
@@ -235,7 +252,7 @@ m:subscribe("/topic",0, function(conn) print("subscribe success") end)
 -- publish a message with data = hello, QoS = 0, retain = 0
 m:publish("/topic","hello",0,0, function(conn) print("sent") end)
 
-m:close();
+m:close();  -- if auto-reconnect == 1, will disable auto-reconnect and then disconnect from host.
 -- you can call m:connect again
 
 ```
@@ -402,7 +419,8 @@ u8glib comes with a wide range of fonts for small displays. Since they need to b
 They'll be available as `u8g.<font_name>` in Lua.
 
 #####Bitmaps
-Bitmaps and XBMs are supplied as strings to `drawBitmap()` and `drawXBM()`. This off-loads all data handling from the u8g module to generic methods for binary files. See `lua_examples/u8glib/u8g_bitmaps.lua`. Binary files can be uploaded with [nodemcu-uploader.py](https://github.com/kmpm/nodemcu-uploader).
+Bitmaps and XBMs are supplied as strings to `drawBitmap()` and `drawXBM()`. This off-loads all data handling from the u8g module to generic methods for binary files. See `lua_examples/u8glib/u8g_bitmaps.lua`.
+In contrast to the source code based inclusion of XBMs into u8glib, it's required to provide precompiled binary files. This can be performed online with [Online-Utility's Image Converter](http://www.online-utility.org/image_converter.jsp): Convert from XBM to MONO format and upload the binary result with [nodemcu-uploader.py](https://github.com/kmpm/nodemcu-uploader).
 
 #####Unimplemented functions
 - [ ] Cursor handling
@@ -417,6 +435,7 @@ Bitmaps and XBMs are supplied as strings to `drawBitmap()` and `drawXBM()`. This
   - [ ] setPrintPos()
   - [ ] setHardwareBackup()
   - [ ] setRGB()
+  - [ ] setDefaultMidColor()
 
 
 ####Control a WS2812 based light strip

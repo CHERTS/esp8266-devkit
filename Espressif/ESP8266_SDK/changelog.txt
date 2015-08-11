@@ -1,3 +1,120 @@
+esp_iot_sdk_v1.3.0_15_08_08 Release Note 
+----------------------------------------
+
+Resolved Issues (Bugs below are eligible for Bug Bounty Program):
+1. Device can't connect to router after it gets ssid and password when using ESPTOUCH with router's ssid hidden.
+2. Format string of os_random can't be supported by atoi.
+3. Optimized os_printf seems to have an issue on 4 bytes aligned and other valuable suggestions. [Andrey Filimonov]
+4. SmartConfig can't get IP address after connected to router.
+
+Optimization:
+1. Memory optimization to save 12KBytes.
+2. Optimize RF calibration to short the booting time,more details in documentation "2A-ESP8266__IOT_SDK_User_Manual" chapter "Appendix".
+3. Optimize Wi-Fi function to solve issue that ESP8266 may fail to connect to a special router.
+4. Optimize software timer to solve the a connecting problem.Please do not call "os_delay_us" or "while" or "for" to occupy CPU more than 10 ms in timer callback.
+5. Optimize system_get_rst_info to obtain more accurate information about the start-up.
+6. Optimize function of Wi-Fi scanning to be more reliable.
+7. Optimize function of changing Wi-Fi mode to be more reliable.
+8. Optimize WPS to improve connectivity.And WPS does not support WEP, it will return status "WPS_CB_ST_WEP".
+9. Optimize Wi-Fi function to solve softAP multiple stations DHCP issue.
+10. Optimize TCP in LAST_ACK status.
+11. Optimize TLS to support SHA256, SHA384, SHA512.
+12. Memory optimization during TLS hand-shaking.
+13. Optimize OTA funtion to download big chunk of data.
+14. Add CRC32 in OTA function.Folder "tools" in esp_iot_sdk has to be updated, otherwise OTA will fail.
+15. Optimize mDNS to support both softAP and station interfaces.
+16. Optimize ESP-NOW, more details in "Add APIs"
+17. Update SmartConfig to version 2.4.7
+18. Remove "-O2" from makefile.
+19. Optimize header files to improve compatibility, will not affect compilation.
+
+Add APIs:
+1. system_soft_wdt_feed: feed software watchdog
+2. wifi_softap_get_dhcps_lease: get IP range of ESP8266 softAP DHCP server 
+3. ESP-NOW APIs
+esp_now_set_kok: set the secure key to encrypt ESP-NOW communication key
+esp_now_register_send_cb: register ESP-NOW send callback
+esp_now_unregister_send_cb: unregister ESP-NOW send callback
+
+AT_v0.40 Release Note: 
+Note: For AT firmware to support FOTA, flash size need to be 1024KB or more than that.
+
+1.Add parameter <max conn> in command "AT+CWSAP" to set the maximum number of connections allowed.
+
+esp_iot_sdk_v1.2.0_15_07_03 Release Note 
+----------------------------------------
+
+Resolved Issues (Bugs below are eligible for Bug Bounty Program):
+1.TLS server disconnect to ESP8266 may cause crash.
+
+Optimization:
+1. Update SmartConfig to version 2.4 , corresponding to ESPTOUCH APP v0.3.4,delete parameter "sc_type type" in smartconfig_start, SmartConfig type can be got automatically.
+2. Add parameter "sint16 freq_offset; " in structure "bss_info" to get AP's frequency offset.
+3. Folder "ld" is updated, please use the latest one (\esp_iot_sdk_v1.2.0\ld )
+4. Add UDP transparent transmission example in documentation "4B-ESP8266__AT Command Examples"
+5. Revise the scan issue that may cause Wi-Fi connection break.
+6. Add ESP-NOW function, more details in "Add APIs"
+7. Add WPS function,more details in "Add APIs"
+8. Fixed a DNS fail issue with special router
+9. Optimize espconn,revise issues below:
+(1) enter sent callback late in UDP transmission
+(2) TCP shakehand may fail issue
+(3) SSL connection fail may cause crash
+(4) optimize SSL error handler
+10. Memory optimization
+
+Add APIs:
+1. ESP-NOW APIs
+esp_now_init: init ESP-NOW function
+esp_now_deinit: deinit ESP-NOW function
+esp_now_register_recv_cb: register ESP-NOW receive callback
+esp_now_unregister_recv_cb: unregister ESP-NOW receive callback
+esp_now_send: send ESP-NOW packet
+esp_now_add_peer: add an ESP-NOW peer
+esp_now_del_peer: delete an ESP-NOW peer
+esp_now_set_self_role: set ESP-NOW role of device itself
+esp_now_get_self_role: get ESP-NOW role of device itself
+esp_now_set_peer_role: set ESP-NOW role about another device 
+esp_now_get_peer_role: get ESP-NOW role about another device 
+esp_now_set_peer_key: set ESP-NOW key of a device 
+esp_now_get_peer_key: get ESP-NOW key of a device 
+
+2. WPS APIs
+wifi_wps_enable : enable WPS function
+wifi_wps_disable: disable WPS function
+wifi_wps_start: start WPS communication
+wifi_set_wps_cb: set WPS callback
+ 
+3.software watchdog APIs
+system_soft_wdt_stop: stop software watchdog
+system_soft_wdt_restart: restart software watchdog
+
+4.sntp_get_timezone: get SNTP timezone 
+
+AT_v0.30 Release Note: 
+Note: For AT firmware to support FOTA, flash size need to be 1024KB or more than that.
+1. Command "AT+CWSTARTSMART" need not parameter any more, SmartConfig type can be got automatically.
+2. AP's frequency offset can be got by command "AT+CWLAP"
+3. Memory optimization
+
+esp_iot_sdk_v1.1.2_15_06_12 Release Note 
+----------------------------------------
+
+Optimization:
+1. Support certificate issuer verification for SSL
+2. Update SPI driver, support overlap mode
+
+Add APIs:
+1. wifi_station_set_hostname: set ESP8266 station DHCP hostname
+2. wifi_station_get_hostname: get ESP8266 station DHCP hostname
+3. spi_flash_set_read_func: set user specified reading SPI function on overlap mode
+4. espconn_secure_ca_disable: disable SSL CA verify
+5. espconn_secure_ca_enable: enable SSL CA verify
+
+Add Documentation:
+1. SPI overlap introduction: \esp_iot_sdk\document, sorry that it has only Chinese version now,we will add English version of this documentation ASAP.
+2. SSL introduction: \esp_iot_sdk\document
+
 esp_iot_sdk_v1.1.1_15_06_05 Release Note 
 ----------------------------------------
 

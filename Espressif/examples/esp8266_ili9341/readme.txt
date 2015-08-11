@@ -7,3 +7,5 @@ Specification on ESP8266 - http://www.esp8266.com/
 Example drawing 3D cube on LCD:
 
 https://www.youtube.com/watch?v=-v8q2nEihvc
+
+Original source: https://github.com/Sermus/ESP8266_Adafruit_ILI9341

@@ -5,7 +5,7 @@ MEMORY
   dport0_0_seg :                      	org = 0x3FF00000, len = 0x10
   dram0_0_seg :                       	org = 0x3FFE8000, len = 0x14000
   iram1_0_seg :                       	org = 0x40100000, len = 0x8000
-  irom0_0_seg :                       	org = 0x40210000, len = 0x5A000
+  irom0_0_seg :                       	org = 0x40210000, len = 0x80000
 }
 
 PHDRS
@@ -19,7 +19,7 @@ PHDRS
 
 
 /*  Default entry point:  */
-ENTRY(call_user_start)
+ENTRY(user_start_trampoline)
 PROVIDE(_memmap_vecbase_reset = 0x40000000);
 /* Various memory-map dependent cache attribute settings: */
 _memmap_cacheattr_wb_base = 0x00000110;
@@ -71,10 +71,9 @@ SECTIONS
     _irom0_text_start = ABSOLUTE(.);
     *(.irom0.literal .irom.literal .irom.text.literal .irom0.text .irom.text)
     *(.literal.* .text.*)
-    *(.rodata2.text)
 
-    /* put font and progmem data into irom0 */
-    *(.u8g_progmem.*)
+    /* Trade some performance for lots of ram. At the time of writing the
+     * available Lua heap went from 18248 to 34704. */
 
     _irom0_text_end = ABSOLUTE(.);
     _flash_used_end = ABSOLUTE(.);
@@ -125,10 +124,8 @@ SECTIONS
   .rodata : ALIGN(4)
   {
     _rodata_start = ABSOLUTE(.);
-    *(.rodata)
-    *(.rodata.*)
+    *(.rodata*)
     *(.gnu.linkonce.r.*)
-    *(.rodata1)
     __XT_EXCEPTION_TABLE__ = ABSOLUTE(.);
     *(.xt_except_table)
     *(.gcc_except_table)

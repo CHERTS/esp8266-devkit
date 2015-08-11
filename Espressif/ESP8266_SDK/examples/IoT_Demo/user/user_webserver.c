@@ -35,6 +35,9 @@ LOCAL struct softap_config *ap_conf;
 //LOCAL struct upgrade_server_info *server;
 //struct lewei_login_info *login_info;
 LOCAL scaninfo *pscaninfo;
+struct bss_info *bss;
+struct bss_info *bss_temp;
+struct bss_info *bss_head;
 
 extern u16 scannum;
 
@@ -675,14 +678,15 @@ scan_get(struct jsontree_context *js_ctx)
 {
     const char *path = jsontree_path_name(js_ctx, js_ctx->depth - 1);
     //    STAILQ_HEAD(, bss_info) *pbss = scanarg;
-    LOCAL struct bss_info *bss;
+//    LOCAL struct bss_info *bss;
 
     if (os_strncmp(path, "TotalPage", 9) == 0) {
         jsontree_write_int(js_ctx, pscaninfo->totalpage);
     } else if (os_strncmp(path, "PageNum", 7) == 0) {
         jsontree_write_int(js_ctx, pscaninfo->pagenum);
     } else if (os_strncmp(path, "bssid", 5) == 0) {
-        bss = STAILQ_FIRST(pscaninfo->pbss);
+    	if( bss == NULL )
+    		bss = bss_head;
         u8 buffer[32];
         //if (bss != NULL){
         os_memset(buffer, 0, sizeof(buffer));
@@ -726,8 +730,8 @@ scan_get(struct jsontree_context *js_ctx)
                 break;
         }
 
-        STAILQ_REMOVE_HEAD(pscaninfo->pbss, next);
-        os_free(bss);
+        bss = STAILQ_NEXT(bss, next);
+//        os_free(bss);
         //}
     }
 
@@ -1106,8 +1110,8 @@ json_send(void *arg, ParmType ParmType)
             u8 i = 0;
             u8 scancount = 0;
             struct bss_info *bss = NULL;
-            bss = STAILQ_FIRST(pscaninfo->pbss);
-
+//            bss = STAILQ_FIRST(pscaninfo->pbss);
+            bss = bss_head;
             if (bss == NULL) {
                 os_free(pscaninfo);
                 pscaninfo = NULL;
@@ -1223,6 +1227,35 @@ LOCAL void ICACHE_FLASH_ATTR json_scan_cb(void *arg, STATUS status)
     JSONTREE_OBJECT(total_tree,
                     JSONTREE_PAIR("total", &totalres_tree));
 
+    bss_temp = bss_head;
+    while(bss_temp !=NULL) {
+    	bss_head = bss_temp->next.stqe_next;
+    	os_free(bss_temp);
+    	bss_temp = bss_head;
+    }
+    bss_head = NULL;
+    bss_temp = NULL;
+    bss = STAILQ_FIRST(pscaninfo->pbss);
+    while(bss != NULL) {
+    	if(bss_temp == NULL){
+    		bss_temp = (struct bss_info *)os_zalloc(sizeof(struct bss_info));
+    		bss_head = bss_temp;
+    	} else {
+    		bss_temp->next.stqe_next = (struct bss_info *)os_zalloc(sizeof(struct bss_info));
+    		bss_temp = bss_temp->next.stqe_next;
+    	}
+    	if(bss_temp == NULL) {
+    		os_printf("malloc scan info failed\n");
+    		break;
+    	} else{
+    		os_memcpy(bss_temp->bssid,bss->bssid,sizeof(bss->bssid));
+    		os_memcpy(bss_temp->ssid,bss->ssid,sizeof(bss->ssid));
+    		bss_temp->authmode = bss->authmode;
+    		bss_temp->rssi = bss->rssi;
+    		bss_temp->channel = bss->channel;
+    	}
+    	bss = STAILQ_NEXT(bss,next);
+    }
     char *pbuf = NULL;
     pbuf = (char *)os_zalloc(jsonSize);
     json_ws_send((struct jsontree_value *)&total_tree, "total", pbuf);
@@ -1283,6 +1316,7 @@ local_upgrade_download(void * arg,char *pusrdata, unsigned short length)
     char lengthbuffer[32];
     static uint32 totallength = 0;
     static uint32 sumlength = 0;
+    static uint32 erase_length = 0;
     char A_buf[2] = {0xE9 ,0x03}; char	B_buf[2] = {0xEA,0x04};
     struct espconn *pespconn = arg;
     if (totallength == 0 && (ptr = (char *)os_strstr(pusrdata, "\r\n\r\n")) != NULL &&
@@ -1296,6 +1330,12 @@ local_upgrade_download(void * arg,char *pusrdata, unsigned short length)
 				os_memset(lengthbuffer, 0, sizeof(lengthbuffer));
 				os_memcpy(lengthbuffer, ptr, ptmp2 - ptr);
 				sumlength = atoi(lengthbuffer);
+				if (sumlength == 0) {
+					os_timer_disarm(&upgrade_check_timer);
+					os_timer_setfn(&upgrade_check_timer, (os_timer_func_t *)upgrade_check_func, pespconn);
+					os_timer_arm(&upgrade_check_timer, 10, 0);
+					return;
+				}
 			} else {
 				os_printf("sumlength failed\n");
 			}
@@ -1303,7 +1343,13 @@ local_upgrade_download(void * arg,char *pusrdata, unsigned short length)
 			os_printf("Content-Length: failed\n");
 		}
 		if (sumlength != 0) {
+			if (sumlength >= LIMIT_ERASE_SIZE){
+				system_upgrade_erase_flash(0xFFFF);
+				erase_length = sumlength - LIMIT_ERASE_SIZE;
+			} else {
 			system_upgrade_erase_flash(sumlength);
+				erase_length = 0;
+			}
 		}
         ptr = (char *)os_strstr(pusrdata, "\r\n\r\n");
         length -= ptr - pusrdata;
@@ -1314,6 +1360,13 @@ local_upgrade_download(void * arg,char *pusrdata, unsigned short length)
 
     } else {
         totallength += length;
+        if (erase_length >= LIMIT_ERASE_SIZE){
+			system_upgrade_erase_flash(0xFFFF);
+			erase_length -= LIMIT_ERASE_SIZE;
+		} else {
+			system_upgrade_erase_flash(erase_length);
+			erase_length = 0;
+		}
         system_upgrade(pusrdata, length);
     }
 
@@ -1405,6 +1458,16 @@ webserver_recv(void *arg, char *pusrdata, unsigned short length)
                                 } else {
                                     response_send(ptrespconn, false);
                                 }
+                            } else if(os_strncmp(strstr, "finish", 6) == 0){
+                            	bss_temp = bss_head;
+                            	while(bss_temp != NULL) {
+                            		bss_head = bss_temp->next.stqe_next;
+                            		os_free(bss_temp);
+                            		bss_temp = bss_head;
+                            	}
+                            	bss_head = NULL;
+                            	bss_temp = NULL;
+                            	response_send(ptrespconn, true);
                             } else {
                                 response_send(ptrespconn, false);
                             }

@@ -12,15 +12,107 @@ FW_BASE		= firmware
 TOOLS_ROOT ?= c:/Espressif
 
 # Base directory for the compiler
-XTENSA_TOOLS_ROOT ?= $(TOOLS_ROOT)/xtensa-lx106-elf/bin
+XTENSA_TOOLS_ROOT ?= c:/Espressif/xtensa-lx106-elf/bin
 
 # base directory of the ESP8266 SDK package, absolute
-SDK_BASE	?= $(TOOLS_ROOT)/ESP8266_RTOS_SDK
+SDK_BASE	?= c:/Espressif/ESP8266_RTOS_SDK
+SDK_TOOLS	?= c:/Espressif/utils
 
 # esptool path and port
-ESPTOOL		?= $(TOOLS_ROOT)/utils/esptool.exe
-ESPPORT		?= COM2
-ESPBAUD		?= 115200
+ESPTOOL ?= $(SDK_TOOLS)/esptool.exe
+ESPPORT ?= COM3
+# Baud rate for programmer
+BAUD ?= 256000
+
+# SPI_SPEED = 40, 26, 20, 80
+SPI_SPEED ?= 40
+# SPI_MODE: qio, qout, dio, dout
+SPI_MODE ?= qio
+# SPI_SIZE_MAP
+# 0 : 512 KB (256 KB + 256 KB)
+# 1 : 256 KB
+# 2 : 1024 KB (512 KB + 512 KB)
+# 3 : 2048 KB (512 KB + 512 KB)
+# 4 : 4096 KB (512 KB + 512 KB)
+# 5 : 2048 KB (1024 KB + 1024 KB)
+# 6 : 4096 KB (1024 KB + 1024 KB)
+SPI_SIZE_MAP ?= 0
+
+ifeq ($(SPI_SPEED), 26.7)
+    freqdiv = 1
+    flashimageoptions = -ff 26m
+else
+    ifeq ($(SPI_SPEED), 20)
+        freqdiv = 2
+        flashimageoptions = -ff 20m
+    else
+        ifeq ($(SPI_SPEED), 80)
+            freqdiv = 15
+            flashimageoptions = -ff 80m
+        else
+            freqdiv = 0
+            flashimageoptions = -ff 40m
+        endif
+    endif
+endif
+
+ifeq ($(SPI_MODE), QOUT)
+    mode = 1
+    flashimageoptions += -fm qout
+else
+    ifeq ($(SPI_MODE), DIO)
+		mode = 2
+		flashimageoptions += -fm dio
+    else
+        ifeq ($(SPI_MODE), DOUT)
+            mode = 3
+            flashimageoptions += -fm dout
+        else
+            mode = 0
+            flashimageoptions += -fm qio
+        endif
+    endif
+endif
+
+ifeq ($(SPI_SIZE_MAP), 1)
+  size_map = 1
+  flash = 256
+  flashimageoptions += -fs 2m
+else
+  ifeq ($(SPI_SIZE_MAP), 2)
+    size_map = 2
+    flash = 1024
+    flashimageoptions += -fs 8m
+  else
+    ifeq ($(SPI_SIZE_MAP), 3)
+      size_map = 3
+      flash = 2048
+      flashimageoptions += -fs 16m
+    else
+      ifeq ($(SPI_SIZE_MAP), 4)
+		size_map = 4
+		flash = 4096
+		flashimageoptions += -fs 32m
+      else
+        ifeq ($(SPI_SIZE_MAP), 5)
+          size_map = 5
+          flash = 2048
+          flashimageoptions += -fs 16m
+        else
+          ifeq ($(SPI_SIZE_MAP), 6)
+            size_map = 6
+            flash = 4096
+            flashimageoptions += -fs 32m
+          else
+            size_map = 0
+            flash = 512
+            flashimageoptions += -fs 4m
+          endif
+        endif
+      endif
+    endif
+  endif
+endif
 
 # name for the target project
 TARGET		= app
@@ -31,10 +123,10 @@ EXTRA_INCDIR = include
 
 #LIBS       = cirom gccirom hal phy pp net80211 wpa main freertos lwip udhcp
 # linking libgccirom.a instead of libgcc.a causes reset when working with flash memory (ie spi_flash_erase_sector)
-LIBS		= gcc hal phy pp net80211 wpa main freertos lwip udhcp
+LIBS		= gcc hal phy pp net80211 wpa main freertos lwip minic
 
 # compiler flags using during compilation of source files
-CFLAGS		= -g -save-temps -Os -Wpointer-arith -Wundef -Werror -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
+CFLAGS		= -g -save-temps -std=gnu90 -Os -Wpointer-arith -Wundef -Werror -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals -mno-serialize-volatile -D__ets__ -DICACHE_FLASH
 CXXFLAGS	= $(CFLAGS) -fno-rtti -fno-exceptions
 
 # linker flags used to generate the main object file
@@ -97,38 +189,22 @@ $1/%.o: %.cpp
 	$(Q) $(CXX) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CXXFLAGS)  -c $$< -o $$@
 endef
 
-.PHONY: all checkdirs clean iromlibs firmware flashonefile flash flashinit rebuild
+.PHONY: all checkdirs clean firmware flashonefile flash flashinit rebuild
 
 all: checkdirs $(TARGET_OUT)
-
-# create libgccirom.a from libgcc.a
-# create libcirom.a from libc.a
-iromlibs:
-	@echo "Creating irom version of libgcc and libc..."
-	$(Q) $(OBJCOPY) --rename-section .text=.irom0.text --rename-section .literal=.irom0.literal $(TOOLS_ROOT)/xtensa-lx106-elf/lib/gcc/xtensa-lx106-elf/4.8.2/libgcc.a $(TOOLS_ROOT)/xtensa-lx106-elf/lib/gcc/xtensa-lx106-elf/4.8.2/libgccirom.a
-	$(Q) $(OBJCOPY) --rename-section .text=.irom0.text --rename-section .literal=.irom0.literal $(TOOLS_ROOT)/xtensa-lx106-elf/xtensa-lx106-elf/lib/libc.a $(TOOLS_ROOT)/xtensa-lx106-elf/xtensa-lx106-elf/lib/libcirom.a
 
 $(TARGET_OUT): $(APP_AR)
 	$(vecho) "LD $@"
 	$(Q) $(LD) -L$(SDK_LIBDIR) $(LD_SCRIPT) $(LDFLAGS) -Wl,--start-group $(LIBS) $(APP_AR) -Wl,--end-group -o $@
-	$(vecho) "Run objcopy, please wait..."
-	$(Q) $(OBJCOPY) --only-section .text -O binary $@ eagle.app.v6.text.bin
-	$(Q) $(OBJCOPY) --only-section .data -O binary $@ eagle.app.v6.data.bin
-	$(Q) $(OBJCOPY) --only-section .rodata -O binary $@ eagle.app.v6.rodata.bin
-	$(Q) $(OBJCOPY) --only-section .irom0.text -O binary $@ eagle.app.v6.irom0text.bin
-	$(vecho) "objcopy done"
-	$(vecho) "Run gen_appbin.exe"
-	$(TOOLS_ROOT)/utils/gen_appbin_old.exe $(TARGET_OUT) v6
-	$(Q) mv eagle.app.v6.flash.bin $(FW_BASE)/eagle.flash.bin
-	$(Q) mv eagle.app.v6.irom0text.bin $(FW_BASE)/eagle.irom0text.bin
-	$(Q) rm eagle.app.v6.*
-	$(Q) rm eagle.app.sym
-	$(vecho) "Generate eagle.flash.bin and eagle.irom0text.bin successully in folder $(FW_BASE)."
-	$(vecho) "eagle.flash.bin-------->0x00000"
-	$(vecho) "eagle.irom0text.bin---->0x40000"
-	$(Q) rm -f *.ii
-	$(Q) rm -f *.i
-	$(Q) rm -f *.s
+	$(vecho) "------------------------------------------------------------------------------"
+	$(vecho) "Section info:"
+	$(Q) $(OBJDUMP) -h -j .data -j .rodata -j .bss -j .text -j .irom0.text $@
+	$(vecho) "------------------------------------------------------------------------------"
+	$(Q) $(ESPTOOL) elf2image $(TARGET_OUT) -o$(FW_BASE)/ $(flashimageoptions)
+	$(vecho) "------------------------------------------------------------------------------"
+	$(vecho) "Generate 0x00000.bin and 0x40000.bin successully in folder $(FW_BASE)."
+	$(vecho) "0x00000.bin-------->0x00000"
+	$(vecho) "0x40000.bin-------->0x40000"
 	$(vecho) "Done"
 
 $(APP_AR): $(OBJ)
@@ -140,37 +216,48 @@ checkdirs: $(BUILD_DIR) $(FW_BASE)
 $(BUILD_DIR):
 	$(Q) mkdir -p $@
 
-firmware:
+$(FW_BASE):
 	$(Q) mkdir -p $@
 
 flashonefile: all
-	$(OBJCOPY) --only-section .text -O binary $(TARGET_OUT) eagle.app.v6.text.bin
-	$(OBJCOPY) --only-section .data -O binary $(TARGET_OUT) eagle.app.v6.data.bin
-	$(OBJCOPY) --only-section .rodata -O binary $(TARGET_OUT) eagle.app.v6.rodata.bin
-	$(OBJCOPY) --only-section .irom0.text -O binary $(TARGET_OUT) eagle.app.v6.irom0text.bin
-	$(TOOLS_ROOT)/utils/gen_appbin_old.exe $(TARGET_OUT) v6
-	$(TOOLS_ROOT)/utils/gen_flashbin.exe eagle.app.v6.flash.bin eagle.app.v6.irom0text.bin 0x40000
-	rm -f eagle.app.v6.data.bin
-	rm -f eagle.app.v6.flash.bin
-	rm -f eagle.app.v6.irom0text.bin
-	rm -f eagle.app.v6.rodata.bin
-	rm -f eagle.app.v6.text.bin
-	rm -f eagle.app.sym
-	mv eagle.app.flash.bin $(FW_BASE)/
-	$(vecho) "No boot needed."
+	$(SDK_TOOLS)/gen_flashbin.exe $(FW_BASE)/0x00000.bin $(FW_BASE)/0x40000.bin 0x40000
+	$(Q) mv eagle.app.flash.bin $(FW_BASE)/
 	$(vecho) "Generate eagle.app.flash.bin successully in folder $(FW_BASE)."
 	$(vecho) "eagle.app.flash.bin-------->0x00000"
-	$(Q) rm -f *.ii
-	$(Q) rm -f *.i
-	$(Q) rm -f *.s
-	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash 0x00000 $(FW_BASE)/eagle.app.flash.bin
+	$(ESPTOOL) -p $(ESPPORT) -b $(BAUD) write_flash $(flashimageoptions) 0x00000 $(FW_BASE)/eagle.app.flash.bin
 
 flash: all
-	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash 0x00000 $(FW_BASE)/eagle.flash.bin 0x40000 $(FW_BASE)/eagle.irom0text.bin
+	$(ESPTOOL) -p $(ESPPORT) -b $(BAUD) write_flash $(flashimageoptions) 0x00000 $(FW_BASE)/0x00000.bin 0x40000 $(FW_BASE)/0x40000.bin
 
+# ===============================================================
+# From http://bbs.espressif.com/viewtopic.php?f=10&t=305
+# master-device-key.bin is only need if using espressive services
+# master_device_key.bin 0x3e000 is not used , write blank
+# See 2A-ESP8266__IOT_SDK_User_Manual__EN_v1.1.0.pdf
+# http://bbs.espressif.com/download/file.php?id=532
+#
+# System parameter area is the last 16KB of flash
+# 512KB flash - system parameter area starts from 0x7C000 
+# 	download blank.bin to 0x7E000 as initialization.
+# 1024KB flash - system parameter area starts from 0xFC000 
+# 	download blank.bin to 0xFE000 as initialization.
+# 2048KB flash - system parameter area starts from 0x1FC000 
+# 	download blank.bin to 0x1FE000 as initialization.
+# 4096KB flash - system parameter area starts from 0x3FC000 
+# 	download blank.bin to 0x3FE000 as initialization.
+# ===============================================================
+
+# FLASH SIZE
 flashinit:
-	$(vecho) "Flash init data default and blank data."
-	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
+	$(vecho) "Flash init data:"
+	$(vecho) "Default config (Clear SDK settings):"
+	$(vecho) "blank.bin-------->0x3e000"
+	$(vecho) "blank.bin-------->0x3fc000"
+	$(vecho) "esp_init_data_default.bin-------->0x3fc000"
+	$(ESPTOOL) -p $(ESPPORT) write_flash $(flashimageoptions) \
+		0x3e000 $(SDK_BASE)/bin/blank.bin \
+		0x3fc000 $(SDK_BASE)/bin/esp_init_data_default.bin \
+		0x3fe000 $(SDK_BASE)/bin/blank.bin
 
 rebuild: clean all
 

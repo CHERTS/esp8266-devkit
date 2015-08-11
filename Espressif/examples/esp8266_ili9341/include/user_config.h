@@ -8,11 +8,9 @@
 #include <user_interface.h>
 #include <mem.h>
 #include "driver/uart.h"
-#include "ili9341.h"
-#include "cube.h"
 
-#define DELAY_TIMER 	10 // Delay timer in milliseconds
-#define RUN_TEST  0
+#define DELAY_TIMER 	40 // Delay timer in milliseconds
+#define UPDATE_SCREEN  0
 #define TEST_QUEUE_LEN  4
 
 #endif

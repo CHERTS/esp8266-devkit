@@ -930,7 +930,7 @@ xQUEUE * const pxQueue = ( xQUEUE * ) xQueue;
 #endif /* configUSE_ALTERNATIVE_API */
 /*-----------------------------------------------------------*/
 
-signed portBASE_TYPE
+signed portBASE_TYPE ICACHE_FLASH_ATTR
 xQueueGenericSendFromISR( xQueueHandle xQueue, const void * const pvItemToQueue, signed portBASE_TYPE *pxHigherPriorityTaskWoken, portBASE_TYPE xCopyPosition )
 {
 signed portBASE_TYPE xReturn;
@@ -1201,7 +1201,7 @@ xQUEUE * const pxQueue = ( xQUEUE * ) xQueue;
 }
 /*-----------------------------------------------------------*/
 
-signed portBASE_TYPE 
+signed portBASE_TYPE ICACHE_FLASH_ATTR
 xQueueReceiveFromISR( xQueueHandle xQueue, const void * const pvBuffer, signed portBASE_TYPE *pxHigherPriorityTaskWoken )
 {
 signed portBASE_TYPE xReturn;
@@ -1279,7 +1279,7 @@ xQUEUE * const pxQueue = ( xQUEUE * ) xQueue;
 }
 /*-----------------------------------------------------------*/
 
-signed portBASE_TYPE 
+signed portBASE_TYPE ICACHE_FLASH_ATTR
 xQueuePeekFromISR( xQueueHandle xQueue, const void * const pvBuffer )
 {
 signed portBASE_TYPE xReturn;
@@ -1350,7 +1350,7 @@ unsigned portBASE_TYPE uxReturn;
 } /*lint !e818 Pointer cannot be declared const as xQueue is a typedef not pointer. */
 /*-----------------------------------------------------------*/
 
-unsigned portBASE_TYPE 
+unsigned portBASE_TYPE
 uxQueueMessagesWaitingFromISR( const xQueueHandle xQueue )
 {
 unsigned portBASE_TYPE uxReturn;
@@ -1602,7 +1602,7 @@ signed portBASE_TYPE xReturn;
 }
 /*-----------------------------------------------------------*/
 
-signed portBASE_TYPE 
+signed portBASE_TYPE ICACHE_FLASH_ATTR
 xQueueIsQueueEmptyFromISR( const xQueueHandle xQueue )
 {
 signed portBASE_TYPE xReturn;
@@ -1643,7 +1643,7 @@ signed portBASE_TYPE xReturn;
 }
 /*-----------------------------------------------------------*/
 
-signed portBASE_TYPE 
+signed portBASE_TYPE ICACHE_FLASH_ATTR
 xQueueIsQueueFullFromISR( const xQueueHandle xQueue )
 {
 signed portBASE_TYPE xReturn;
@@ -1822,7 +1822,7 @@ PortEnableInt_NoNest();
 
 #if ( configUSE_CO_ROUTINES == 1 )
 
-	signed portBASE_TYPE 
+	signed portBASE_TYPE ICACHE_FLASH_ATTR
 	xQueueCRSendFromISR( xQueueHandle xQueue, const void *pvItemToQueue, signed portBASE_TYPE xCoRoutinePreviouslyWoken )
 	{
 	xQUEUE * const pxQueue = ( xQUEUE * ) xQueue;
@@ -1855,7 +1855,7 @@ PortEnableInt_NoNest();
 
 #if ( configUSE_CO_ROUTINES == 1 )
 
-	signed portBASE_TYPE 
+	signed portBASE_TYPE ICACHE_FLASH_ATTR
 	xQueueCRReceiveFromISR( xQueueHandle xQueue, void *pvBuffer, signed portBASE_TYPE *pxCoRoutineWoken )
 	{
 	signed portBASE_TYPE xReturn;
@@ -2081,7 +2081,7 @@ PortEnableInt_NoNest();
 
 #if ( configUSE_QUEUE_SETS == 1 )
 
-	xQueueSetMemberHandle 
+	xQueueSetMemberHandle ICACHE_FLASH_ATTR
 	xQueueSelectFromSetFromISR( xQueueSetHandle xQueueSet )
 	{
 	xQueueSetMemberHandle xReturn = NULL;

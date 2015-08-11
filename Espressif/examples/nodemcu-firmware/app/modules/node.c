@@ -100,13 +100,15 @@ static int node_chipid( lua_State* L )
   lua_pushinteger(L, id);
   return 1;
 }
+
+// deprecated, moved to adc module
 // Lua: readvdd33()
-static int node_readvdd33( lua_State* L )
-{
-  uint32_t vdd33 = readvdd33();
-  lua_pushinteger(L, vdd33);
-  return 1;
-}
+// static int node_readvdd33( lua_State* L )
+// {
+//   uint32_t vdd33 = readvdd33();
+//   lua_pushinteger(L, vdd33);
+//   return 1;
+// }
 
 // Lua: flashid()
 static int node_flashid( lua_State* L )
@@ -412,6 +414,13 @@ static int node_setcpufreq(lua_State* L)
   return 1;
 }
 
+// Lua: code = bootreason()
+static int node_bootreason (lua_State *L)
+{
+  lua_pushnumber (L, rtc_get_reset_reason ());
+  return 1;
+}
+
 // Module function map
 #define MIN_OPT_LEVEL 2
 #include "lrodefs.h"
@@ -430,11 +439,13 @@ const LUA_REG_TYPE node_map[] =
 #endif
   { LSTRKEY( "input" ), LFUNCVAL( node_input ) },
   { LSTRKEY( "output" ), LFUNCVAL( node_output ) },
-  { LSTRKEY( "readvdd33" ), LFUNCVAL( node_readvdd33) },
+// Moved to adc module, use adc.readvdd33()  
+// { LSTRKEY( "readvdd33" ), LFUNCVAL( node_readvdd33) },
   { LSTRKEY( "compile" ), LFUNCVAL( node_compile) },
   { LSTRKEY( "CPU80MHZ" ), LNUMVAL( CPU80MHZ ) },
   { LSTRKEY( "CPU160MHZ" ), LNUMVAL( CPU160MHZ ) },
   { LSTRKEY( "setcpufreq" ), LFUNCVAL( node_setcpufreq) },
+  { LSTRKEY( "bootreason" ), LFUNCVAL( node_bootreason) },
 // Combined to dsleep(us, option)
 // { LSTRKEY( "dsleepsetoption" ), LFUNCVAL( node_deepsleep_setoption) },
 #if LUA_OPTIMIZE_MEMORY > 0

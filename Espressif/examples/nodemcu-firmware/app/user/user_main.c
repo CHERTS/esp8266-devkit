@@ -14,9 +14,9 @@
 #include "c_stdlib.h"
 #include "c_stdio.h"
 
-#include "romfs.h"
- 
+#include "flash_fs.h"
 #include "user_interface.h"
+#include "user_exceptions.h"
 
 #include "ets_sys.h"
 #include "driver/uart.h"
@@ -25,6 +25,21 @@
 #define SIG_LUA 0
 #define TASK_QUEUE_LEN 4
 os_event_t *taskQueue;
+
+
+/* Note: the trampoline *must* be explicitly put into the .text segment, since
+ * by the time it is invoked the irom has not yet been mapped. This naturally
+ * also goes for anything the trampoline itself calls.
+ */
+void user_start_trampoline (void) TEXT_SECTION_ATTR;
+void user_start_trampoline (void)
+{
+   __real__xtos_set_exception_handler (
+     EXCCAUSE_LOAD_STORE_ERROR, load_non_32_wide_handler);
+
+  call_user_start ();
+}
+
 
 void task_lua(os_event_t *e){
     char* lua_argv[] = { (char *)"lua", (char *)"-i", NULL };
@@ -44,7 +59,6 @@ void task_init(void){
     system_os_task(task_lua, USER_TASK_PRIO_0, taskQueue, TASK_QUEUE_LEN);
 }
 
-extern void spiffs_mount();
 // extern void test_spiffs();
 // extern int test_romfs();
 
@@ -69,7 +83,16 @@ void nodemcu_init(void)
         // Flash init data at FLASHSIZE - 0x04000 Byte.
         flash_init_data_default();
         // Flash blank data at FLASHSIZE - 0x02000 Byte.
-        flash_init_data_blank();        
+        flash_init_data_blank();
+        if( !fs_format() )
+        {
+            NODE_ERR( "\ni*** ERROR ***: unable to format. FS might be compromised.\n" );
+            NODE_ERR( "It is advised to re-flash the NodeMCU image.\n" );
+        }
+        else{
+            NODE_ERR( "format done.\n" );
+        }
+        fs_unmount();   // mounted by format.
     }
 #endif // defined(FLASH_SAFE_API)
 
@@ -94,7 +117,7 @@ void nodemcu_init(void)
 
     // test_romfs();
 #elif defined ( BUILD_SPIFFS )
-    spiffs_mount();
+    fs_mount();
     // test_spiffs();
 #endif
     // endpoint_setup();

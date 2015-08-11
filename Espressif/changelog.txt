@@ -1,9 +1,59 @@
 Changelog:
 ----------
 
-v2.0.7 (25.06.2015):
+v2.0.8 (10.08.2015):
+* Update SDK v1.3.0 (folder ESP8266_SDK);
+* SDK version 1.2.0 moved to a folder ESP8266_SDK_120;
+* SDRAM Optimization Patch for SDK_v1.2.0 (folder "ESP8266_SDK");
+* Update RTOS SDK (folder "ESP8266_RTOS_SDK");
+* Updated Makefile in all examples, added option USEMEMANALYZER, BAUD, SPI_SIZE_MAP;
+* Update a utility "utils\esptool.exe" (big thanks pvvx);
+* Update a utility "utils\esptool-ck.exe" to version 0.4.6:
+* Updated documentation:
+  - Delete files:
+    2A-ESP8266__IOT_SDK_User_Manual__EN_v1.1.0.pdf
+    2C-ESP8266__SDK__Programming Guide__EN_v1.2.0.pdf
+    4A-ESP8266__AT Instruction Set__EN_v0.30.pdf
+    4B-ESP8266__AT Command Examples__EN_v0.5.pdf
+  + Added files:
+    2A-ESP8266__IOT_SDK_User_Manual__EN_v1.3.0.pdf
+    2C-ESP8266__SDK__Programming Guide__EN_v1.3.0.pdf
+    4A-ESP8266__AT Instruction Set__EN_v0.40.pdf
+    4B-ESP8266__AT Command Examples__EN_v0.6.pdf
+    5A-ESP8266__SDK__SSL_User_Manual__EN_v1.1.pdf
+* Updated examples:
+  nodemcu-firmware;
+- Remove examples:
+  hello_world_cpp_irom
++ Added examples:
+  esp_rtos_sdk_example_2;
+
+v2.0.7 (09.07.2015):
+* Updated compiler xtensa-lx106-gcc and xtensa-lx106-g++ up to version 5.1 (big thanks jcmvbkbc);
+  ATTENTION! For correct build of your firmware, you must add the option -std=gnu90 in directive CFLAGS in Makefile
+* Update SDK v1.2.0 + Patch for SSL based on SDK_v1.2.0 + Patch for SmartConfig based on SDK_v1.2.0 (folder ESP8266_SDK);
+* Update RTOS SDK, directory "ESP8266_RTOS_SDK";
+* Update a utility "utils\esptool-ck.exe" to version 0.4.5-1:
+* Updated documentation:
+  - Delete files:
+    2C-ESP8266__SDK__Programming Guide__EN_v1.1.1.pdf
+    4A-ESP8266__AT Instruction Set__EN_v0.24.pdf
+    4B-ESP8266__AT Command Examples__EN_v0.4.pdf
+  + Added files:
+    2C-ESP8266__SDK__Programming Guide__EN_v1.2.0.pdf
+    4A-ESP8266__AT Instruction Set__EN_v0.30.pdf
+    4B-ESP8266__AT Command Examples__EN_v0.5.pdf
+    SSL\ESP8266__SDK__SSL_User_Manual__EN_v1.0.pdf
+  * Updated file:
+    4B-ESP8266__AT Command Examples__EN_v0.4.pdf
+    2A-ESP8266__IOT_SDK_User_Manual__EN_v1.1.0.pdf
+    2B-ESP8266__SDK__IOT_Demo__EN_v0.6.pdf
 * Updated examples:
   i2c_bmp180;
+  nodemcu-firmware;
+- Remove examples:
+  hello_world_optimized;
+  ESPWebFramework;
 
 v2.0.6 (10.06.2015):
 * Update SDK v1.1.1 (folder ESP8266_SDK);
@@ -27,10 +77,10 @@ v2.0.6 (10.06.2015):
 
 v2.0.5 (22.05.2015):
 + Added command line mode.
-  In command line mode, the open console with set compiler environment variables to build the projects from the command line.
-  To run the command line in the Start menu -> Espressif run "Command line Unofficial Development Kit for Espressif ESP8266"
-  or run "C:\Espressif\utils\console.bat", then go to the examples directory (cd hello_world)
-  and run make - must compile the firmware, make flash - firmware will be burn.
+Ð° In command line mode, the open console with set compiler environment variables to build the projects from the command line.
+Ð° To run the command line in the Start menu -> Espressif run "Command line Unofficial Development Kit for Espressif ESP8266"
+Ð° or run "C:\Espressif\utils\console.bat", then go to the examples directory (cd hello_world)
+Ð° and run make - must compile the firmware, make flash - firmware will be burn.
 * Update a utility "utils\esptool.exe";
 * Update a utility "utils\esptool-ck.exe" to version 0.4.4:
   + add flash size options for 8M, 16M, 32M;
@@ -52,8 +102,8 @@ v2.0.5 (22.05.2015):
 v2.0.4 (09.05.2015):
 + Added official AT firmware from Espressif, directory "ESP8266_SDK\bin\at";
 * Updated compiler xtensa-lx106-gcc and xtensa-lx106-g++
-  Changed build option newlib, resulting in increased amount of free firmware IRAM.
-  In the example "examples\nodemcu-firmware\" on the old compiler Free IRam was 810 Byte, the new compiler Free IRam was 2986 bytes (disabled LUA_USE_BUILTIN_MATH).
+Ð° Changed build option newlib, resulting in increased amount of free firmware IRAM.
+Ð° In the example "examples\nodemcu-firmware\" on the old compiler Free IRam was 810 Byte, the new compiler Free IRam was 2986 bytes (disabled LUA_USE_BUILTIN_MATH).
 * Update a utility "utils\esptool-ck.exe" to version 0.4.3;
 * Update a utility "utils\esptool.exe";
 * Updated library "libnet80211.a" and header file "user_interface.h" from Espressif SDK 1.0.1;
@@ -115,7 +165,7 @@ v2.0.0 (26.03.2015):
   "utils\MemAnalyzer.exe" - CLI utility for easy display information on the distribution of memory between the sections of the firmware, it can be used in the Makefile (see example hello_world_cpp_irom), is used to analyze the utility xtensa-lx106-elf-objdump.exe (sources https://github.com/Sermus/ESP8266_memory_analyzer);
 * Update SDK v1.0.0 (folder ESP8266_SDK);
 * The old version of SDK 0.9.5 moved to a folder ESP8266_SDK_095, it is necessary to build the firmware "examples\nodemcu-firmware";
-* All third-party libraries, header files (lwip and etñ) and additional linker scripts (eagle.app.v6.cpp.ld, eagle.app.v6.cpp.irom.ld and etc) are moved to the directory C:\Espressif\extra;
+* All third-party libraries, header files (lwip and etÑ‘) and additional linker scripts (eagle.app.v6.cpp.ld, eagle.app.v6.cpp.irom.ld and etc) are moved to the directory C:\Espressif\extra;
 * Updated documentation, added file "docs\ESP8266_IoT_SDK_Programming Guide_v1.0.0.pdf";
 * Updated all examples. In the Makefile added options for utility esptool.exe. Now you can program the ESP board with different flash-memory chips.
 * Updated installer, the installation process, you can choose which components to install: compiler, SDK, tools, examples, documentation.

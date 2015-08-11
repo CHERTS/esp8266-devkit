@@ -28,7 +28,8 @@ enum rst_reason {
 	REASON_EXCEPTION_RST	= 2,
 	REASON_SOFT_WDT_RST   	= 3,
 	REASON_SOFT_RESTART 	= 4,
-	REASON_DEEP_SLEEP_AWAKE	= 5
+	REASON_DEEP_SLEEP_AWAKE	= 5,
+	REASON_EXT_SYS_RST      = 6
 };
 
 struct rst_info{
@@ -135,6 +136,10 @@ void system_phy_set_rfoption(uint8 option);
 bool system_param_save_with_protect(uint16 start_sec, void *param, uint16 len);
 bool system_param_load(uint16 start_sec, uint16 offset, void *param, uint16 len);
 
+void system_soft_wdt_stop(void);
+void system_soft_wdt_restart(void);
+void system_soft_wdt_feed(void);
+
 #define NULL_MODE       0x00
 #define STATION_MODE    0x01
 #define SOFTAP_MODE     0x02
@@ -165,6 +170,7 @@ struct bss_info {
     sint8 rssi;
     AUTH_MODE authmode;
     uint8 is_hidden;
+    sint16 freq_offset;
 };
 
 typedef struct _scaninfo {
@@ -235,6 +241,9 @@ bool wifi_station_dhcpc_start(void);
 bool wifi_station_dhcpc_stop(void);
 enum dhcp_status wifi_station_dhcpc_status(void);
 
+char* wifi_station_get_hostname(void);
+bool wifi_station_set_hostname(char *name);
+
 struct softap_config {
     uint8 ssid[32];
     uint8 password[64];
@@ -276,6 +285,7 @@ void wifi_softap_free_station_info(void);
 bool wifi_softap_dhcps_start(void);
 bool wifi_softap_dhcps_stop(void);
 bool wifi_softap_set_dhcps_lease(struct dhcps_lease *please);
+bool wifi_softap_get_dhcps_lease(struct dhcps_lease *please);
 enum dhcp_status wifi_softap_dhcps_status(void);
 bool wifi_softap_set_dhcps_offer_option(uint8 level, void* optarg);
 
@@ -414,5 +424,27 @@ typedef struct _esp_event {
 typedef void (* wifi_event_handler_cb_t)(System_Event_t *event);
 
 void wifi_set_event_handler_cb(wifi_event_handler_cb_t cb);
+
+typedef enum wps_type {
+	WPS_TYPE_DISABLE = 0,
+	WPS_TYPE_PBC,
+	WPS_TYPE_PIN,
+	WPS_TYPE_DISPLAY,
+	WPS_TYPE_MAX,
+} WPS_TYPE_t;
+
+enum wps_cb_status {
+	WPS_CB_ST_SUCCESS = 0,
+	WPS_CB_ST_FAILED,
+	WPS_CB_ST_TIMEOUT,
+	WPS_CB_ST_WEP,
+};
+
+bool wifi_wps_enable(WPS_TYPE_t wps_type);
+bool wifi_wps_disable(void);
+bool wifi_wps_start(void);
+
+typedef void (*wps_st_cb_t)(int status);
+bool wifi_set_wps_cb(wps_st_cb_t cb);
 
 #endif

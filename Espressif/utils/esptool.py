@@ -96,7 +96,7 @@ class ESPROM:
         for b in data:
             state ^= ord(b)
         return state
-
+        
     """ Send a request and read the response """
     def command(self, op = None, data = None, chk = 0):
         if op:
@@ -385,13 +385,13 @@ class ESPFirmwareImage:
         if l > 0:
             if l % 4:
                 data += b"\x00" * (4 - l % 4)
-        self.segments.append((addr, len(data), data))
+            self.segments.append((addr, len(data), data))
 
     def save(self, filename):
         f = file(filename, 'wb')
         f.write(struct.pack('<BBBBI', ESPROM.ESP_IMAGE_MAGIC, len(self.segments),
             self.flash_mode, self.flash_size_freq, self.entrypoint))
-
+            
         checksum = ESPROM.ESP_CHECKSUM_MAGIC
         for (offset, size, data) in self.segments:
             f.write(struct.pack('<II', offset, size))
@@ -416,14 +416,23 @@ class ELFFile:
         try:
             tool_nm = "C:\\Espressif\\xtensa-lx106-elf\\bin\\xtensa-lx106-elf-nm.exe"
             if os.getenv('XTENSA_CORE')=='lx106':
-                tool_nm = "xt-nm"
+              tool_nm = "xt-nm"
             proc = subprocess.Popen([tool_nm, self.name], stdout=subprocess.PIPE)
         except OSError:
             print "Error calling "+tool_nm+", do you have Xtensa toolchain in PATH?"
             sys.exit(1)
         for l in proc.stdout:
-            fields = l.strip().split()
-            self.symbols[fields[2]] = int(fields[0], 16)
+           fields = l.strip().split()
+           try:
+              self.symbols[fields[2]] = int(fields[0], 16)
+           except ValueError as verr:
+              pass  
+           except Exception as ex:
+              pass 
+
+    def get_symbol_addr(self, sym):
+        self._fetch_symbols()
+        return self.symbols[sym]
 
     def get_symbol_addr(self, sym):
         self._fetch_symbols()
@@ -664,6 +673,7 @@ if __name__ == '__main__':
         e = ELFFile(args.input)
         image = ESPFirmwareImage()
         image.entrypoint = e.get_symbol_addr(args.entry_symbol)
+       
         for section, start in ((".text", "_text_start"), (".data", "_data_start"), (".rodata", "_rodata_start")):
             data = e.load_section(section)
             image.add_segment(e.get_symbol_addr(start), data)
@@ -679,6 +689,22 @@ if __name__ == '__main__':
         f = open(args.output + "0x%05x.bin" % off, "wb")
         f.write(data)
         f.close()
+        print "{0:>10}|{1:>30}|{2:>12}|{3:>12}|{4:>8}".format("Section", "Description", "Start (hex)", "End (hex)", "Used space")         
+        print "------------------------------------------------------------------------------"
+        sec_name = ["data", "rodata", "bss", "text", "irom0_text"]
+        sec_des = ["Initialized Data (RAM)", "ReadOnly Data (RAM)", "Uninitialized Data (RAM)", "Uncached Code (IRAM)", "Cached Code (SPI)"]
+        sec_size = []
+        for i in range(len(sec_name)):
+         ss = e.get_symbol_addr('_' + sec_name[i] + '_start')
+         se = e.get_symbol_addr('_' + sec_name[i] + '_end')
+         sec_size.append(int(se-ss))
+         print "{0:>10}|{1:>30}|{2:>12X}|{3:>12X}|{4:>8d}".format(sec_name[i], sec_des[i], ss, se, sec_size[i])
+        print "------------------------------------------------------------------------------"
+        print "{0} : {1:X} {2}()".format("Entry Point", image.entrypoint, args.entry_symbol)
+        ram_used = sec_size[0] + sec_size[1] + sec_size[2]
+        print "{0} : {1:d}".format("Total Used RAM", ram_used)
+        print "{0} : {1:d}".format("Free RAM", 0x014000 - ram_used)
+        print "{0} : {1:d} or {2:d} if 48k IRam".format("Free IRam", 0x08000 - sec_size[3], 0x0C000 - sec_size[3] )
 
     elif args.operation == 'read_mac':
         esp.get_mac()
