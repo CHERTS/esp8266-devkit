@@ -24,9 +24,11 @@ v2.0.8 (10.08.2015):
 * Updated examples:
   nodemcu-firmware;
 - Remove examples:
-  hello_world_cpp_irom
+  hello_world_cpp_irom;
+  lwip_lib;
 + Added examples:
   esp_rtos_sdk_example_2;
+  lwip_open_demo_app;
 
 v2.0.7 (09.07.2015):
 * Updated compiler xtensa-lx106-gcc and xtensa-lx106-g++ up to version 5.1 (big thanks jcmvbkbc);
