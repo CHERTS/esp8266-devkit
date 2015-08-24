@@ -50,12 +50,12 @@
 		</cconfiguration>
 	</storageModule>
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-		<project id="lwip_open_demo_app .null.44802767" name="lwip_open_demo_app "/>
+		<project id="lwip_open_demo_app.null.44802767" name="lwip_open_demo_app"/>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="refreshScope" versionNumber="2">
 		<configuration configurationName="Default">
-			<resource resourceType="PROJECT" workspacePath="/lwip_open_demo_app "/>
+			<resource resourceType="PROJECT" workspacePath="/lwip_open_demo_app"/>
 		</configuration>
 	</storageModule>
 	<storageModule moduleId="scannerConfiguration">
