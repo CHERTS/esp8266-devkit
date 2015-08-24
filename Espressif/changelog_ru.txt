@@ -5,7 +5,7 @@ v2.0.8 (25.08.2015):
 * Обновлена SDK до версии 1.3.0 (папка ESP8266_SDK);
 * SDK версии 1.2.0 перенесена в папку ESP8266_SDK_120;
 * SDRAM Optimization Patch for SDK_v1.2.0 (папка "ESP8266_SDK");
-* Обновлена RTOS SDK (папка "ESP8266_RTOS_SDK");
+* Обновлена RTOS SDK до версии 1.1.0 от 21.08.2015 (папка "ESP8266_RTOS_SDK");
 * Обновлены Makefile во всех примерах, добавлена опция USEMEMANALYZER, BAUD, SPI_SIZE_MAP;
 * Обновлена утилита "utils\esptool.exe" (Спасибо pvvx);
 * Обновлена утилита "utils\esptool-ck.exe" до версии 0.4.6;
