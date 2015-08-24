@@ -2,6 +2,7 @@ Changelog:
 ----------
 
 v2.0.8 (10.08.2015):
++ Added Espressif MESH SDK (beta) (folder ESP8266_MESH_SDK);
 * Update SDK v1.3.0 (folder ESP8266_SDK);
 * SDK version 1.2.0 moved to a folder ESP8266_SDK_120;
 * SDRAM Optimization Patch for SDK_v1.2.0 (folder "ESP8266_SDK");
@@ -29,6 +30,9 @@ v2.0.8 (10.08.2015):
 + Added examples:
   esp_rtos_sdk_example_2;
   lwip_open_demo_app;
+  esp_mesh_sdk_app_controller;
+  esp_mesh_sdk_app_light;
+  esp_mesh_sdk_app_switch;
 
 v2.0.7 (09.07.2015):
 * Updated compiler xtensa-lx106-gcc and xtensa-lx106-g++ up to version 5.1 (big thanks jcmvbkbc);
