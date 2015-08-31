@@ -1,7 +1,7 @@
 Список изменений:
 -----------------
 
-v2.0.8 (25.08.2015):
+v2.0.8 (01.09.2015):
 + Добавлена Espressif MESH SDK (beta) (папка ESP8266_MESH_SDK);
 * Обновлена SDK до версии 1.3.0 (папка ESP8266_SDK);
 * SDK версии 1.2.0 перенесена в папку ESP8266_SDK_120;
@@ -24,6 +24,8 @@ v2.0.8 (25.08.2015):
     5A-ESP8266__SDK__SSL_User_Manual__EN_v1.1.pdf
 * Обновлены примеры:
   nodemcu-firmware;
+  esphttpd;
+  esp_mqtt;
 - Удалены примеры;
   hello_world_cpp_irom;
   lwip_lib;

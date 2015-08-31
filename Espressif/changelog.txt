@@ -24,6 +24,8 @@ v2.0.8 (10.08.2015):
     5A-ESP8266__SDK__SSL_User_Manual__EN_v1.1.pdf
 * Updated examples:
   nodemcu-firmware;
+  esphttpd;
+  esp_mqtt;
 - Remove examples:
   hello_world_cpp_irom;
   lwip_lib;

@@ -40,6 +40,7 @@ Source: "Espressif\docs\*"; DestDir: "{app}\docs"; Flags: ignoreversion createal
 Source: "Espressif\utils\*"; DestDir: "{app}\utils"; Flags: ignoreversion createallsubdirs recursesubdirs; Components: utils
 Source: "Espressif\examples\*"; DestDir: "{app}\examples"; Flags: ignoreversion createallsubdirs recursesubdirs; Components: examples
 Source: "Espressif\extra\*"; DestDir: "{app}\extra"; Flags: ignoreversion createallsubdirs recursesubdirs; Components: sdk
+Source: "Espressif\ESP8266_MESH_SDK\*"; DestDir: "{app}\ESP8266_MESH_SDK"; Flags: ignoreversion createallsubdirs recursesubdirs; Components: sdk
 Source: "Espressif\ESP8266_RTOS_SDK\*"; DestDir: "{app}\ESP8266_RTOS_SDK"; Flags: ignoreversion createallsubdirs recursesubdirs; Components: sdk
 Source: "Espressif\ESP8266_SDK\*"; DestDir: "{app}\ESP8266_SDK"; Flags: ignoreversion createallsubdirs recursesubdirs; Components: sdk
 Source: "Espressif\ESP8266_SDK_094\*"; DestDir: "{app}\ESP8266_SDK_094"; Flags: ignoreversion createallsubdirs recursesubdirs; Components: sdk
@@ -66,6 +67,7 @@ Name: "{app}\docs"; Components: docs
 Name: "{app}\utils"; Components: utils
 Name: "{app}\examples"; Components: examples
 Name: "{app}\extra"; Components: sdk
+Name: "{app}\ESP8266_MESH_SDK"; Components: sdk
 Name: "{app}\ESP8266_RTOS_SDK"; Components: sdk
 Name: "{app}\ESP8266_SDK"; Components: sdk
 Name: "{app}\ESP8266_SDK_094"; Components: sdk
@@ -106,6 +108,7 @@ Type: filesandordirs; Name: "{app}\docs\*"; Components: docs
 Type: filesandordirs; Name: "{app}\utils\*"; Components: utils
 Type: filesandordirs; Name: "{app}\examples\*"; Components: examples
 Type: filesandordirs; Name: "{app}\extra\*"; Components: sdk
+Type: filesandordirs; Name: "{app}\ESP8266_MESH_SDK\*"; Components: sdk
 Type: filesandordirs; Name: "{app}\ESP8266_RTOS_SDK\*"; Components: sdk
 Type: filesandordirs; Name: "{app}\ESP8266_SDK\*"; Components: sdk
 Type: filesandordirs; Name: "{app}\ESP8266_SDK_094\*"; Components: sdk
