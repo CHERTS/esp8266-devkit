@@ -9,7 +9,7 @@ v2.0.8 (01.09.2015):
 * Обновлена RTOS SDK до версии 1.1.0 от 21.08.2015 (папка "ESP8266_RTOS_SDK");
 * Обновлены Makefile во всех примерах, добавлена опция USEMEMANALYZER, BAUD, SPI_SIZE_MAP;
 * Обновлена утилита "utils\esptool.exe" (Спасибо pvvx);
-* Обновлена утилита "utils\esptool-ck.exe" до версии 0.4.6;
+* Обновлена утилита "utils\esptool-ck.exe" до версии 0.4.6-1;
 * Обновлена документация:
   - Удалены файлы:
     2A-ESP8266__IOT_SDK_User_Manual__EN_v1.1.0.pdf
