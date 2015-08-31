@@ -22,6 +22,7 @@ v2.0.8 (01.09.2015):
     4A-ESP8266__AT Instruction Set__EN_v0.40.pdf
     4B-ESP8266__AT Command Examples__EN_v0.6.pdf
     5A-ESP8266__SDK__SSL_User_Manual__EN_v1.1.pdf
+    20A-ESP8266__RTOS_SDK__Programming Guide__EN_v1.0.5.pdf
 * Обновлены примеры:
   nodemcu-firmware;
   esphttpd;
