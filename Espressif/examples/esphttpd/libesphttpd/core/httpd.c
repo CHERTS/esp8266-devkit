@@ -235,12 +235,27 @@ int ICACHE_FLASH_ATTR cgiRedirect(HttpdConnData *connData) {
 //in the 'official' DNS and so will fail.
 int ICACHE_FLASH_ATTR cgiRedirectToHostname(HttpdConnData *connData) {
 	char buff[1024];
+	int isIP=0;
+	int x;
 	if (connData->conn==NULL) {
 		//Connection aborted. Clean up.
 		return HTTPD_CGI_DONE;
 	}
+	if (connData->hostName==NULL) {
+		os_printf("Huh? No hostname.\n");
+		return HTTPD_CGI_NOTFOUND;
+	}
+
+	//Quick and dirty code to see if host is an IP
+	if (os_strlen(connData->hostName)>8) {
+		isIP=1;
+		for (x=0; x<strlen(connData->hostName); x++) {
+			if (connData->hostName[x]!='.' && (connData->hostName[x]<'0' || connData->hostName[x]>'9')) isIP=0;
+		}
+	}
+	if (isIP) return HTTPD_CGI_NOTFOUND;
 	//Check hostname; pass on if the same
-	if (connData->hostName==NULL || os_strcmp(connData->hostName, (char*)connData->cgiArg)==0) return HTTPD_CGI_NOTFOUND;
+	if (os_strcmp(connData->hostName, (char*)connData->cgiArg)==0) return HTTPD_CGI_NOTFOUND;
 	//Not the same. Redirect to real hostname.
 	os_sprintf(buff, "http://%s/", (char*)connData->cgiArg);
 	os_printf("Redirecting to hostname url %s\n", buff);
