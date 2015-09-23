@@ -24,6 +24,11 @@
 #include "user_esp_platform.h"
 #endif
 
+#ifdef SERVER_SSL_ENABLE
+#include "ssl/cert.h"
+#include "ssl/private_key.h"
+#endif
+
 #if LIGHT_DEVICE
 #include "user_light.h"
 #endif
@@ -1776,6 +1781,8 @@ user_webserver_init(uint32 port)
     espconn_regist_connectcb(&esp_conn, webserver_listen);
 
 #ifdef SERVER_SSL_ENABLE
+    espconn_secure_set_default_certificate(default_certificate, default_certificate_len);
+    espconn_secure_set_default_private_key(default_private_key, default_private_key_len);
     espconn_secure_accept(&esp_conn);
 #else
     espconn_accept(&esp_conn);
