@@ -20,18 +20,6 @@
 #include "user_esp_platform.h"
 #endif
 
-#ifdef SERVER_SSL_ENABLE
-#include "ssl/cert.h"
-#include "ssl/private_key.h"
-#else
-#ifdef CLIENT_SSL_ENABLE
-unsigned char *default_certificate;
-unsigned int default_certificate_len = 0;
-unsigned char *default_private_key;
-unsigned int default_private_key_len = 0;
-#endif
-#endif
-
 void user_rf_pre_init(void)
 {
 }
