@@ -24,7 +24,8 @@ typedef enum{
     COLOR_CHG ,
     COLOR_TOGGLE,
     COLOR_LEVEL,
-    LIGHT_RESET
+    LIGHT_RESET,
+    LIGHT_TIMER,
 }EspnowCmdCode;
 
 
@@ -67,6 +68,8 @@ typedef enum{
     ACT_TYPE_ACK = 1,//NOT USED, REPLACED BY MAC ACK
     ACT_TYPE_SYNC = 2,
     ACT_TYPE_RSP = 3,
+    ACT_TYPE_PAIR_REQ = 4,
+    ACT_TYPE_PAIR_ACK = 5,
 }EspnowMsgType;
 
 
@@ -79,10 +82,11 @@ typedef enum {
 typedef struct{
     uint8 csum;
     uint8 type;
-    uint32 token;//for encryption, add random number to 
+    uint32 token;//for encryption, add random number
     uint16 cmd_index;
 	uint8 wifiChannel;
-	uint32 sequence;
+	uint16 sequence;
+	uint16 io_val;
 	uint8 rsp_if;
 
     union{
@@ -100,7 +104,6 @@ typedef struct {
 
 //Just save the state of one switch for now.
 SwitchBatteryStatus switchBattery;
-
 
 #define ACT_DEBUG 1
 
@@ -156,7 +159,7 @@ int ICACHE_FLASH_ATTR light_EspnowGetBatteryStatus(int idx, char *mac, int *stat
 
 #if LIGHT_DEVICE
 
-#if 1
+#if 0
 #define ESPNOW_PARAM_MAGIC 0x5c5caacc
 typedef struct{
     //uint8 csum;
@@ -166,11 +169,8 @@ typedef struct{
     uint8 esp_now_key[ESPNOW_KEY_LEN];
 	
 }LightEspnowParam;
-#endif
 
 LightEspnowParam lightEspnowParam;
-
-
 //load mac list from flash
 //load ESPNOW key from flash
 void ICACHE_FLASH_ATTR light_EspnowMasterMacInit()
@@ -232,6 +232,13 @@ void ICACHE_FLASH_ATTR light_EspnowMasterMacInit()
     //end of debug
 #endif
 }
+#endif
+
+
+LOCAL uint32 last_token = 0;
+
+
+
 
 
 
@@ -257,6 +264,13 @@ void ICACHE_FLASH_ATTR light_EspnowRcvCb(u8 *macaddr, u8 *data, u8 len)
             //ACT_TYPE_DATA: this is a set of data or command.
             ESPNOW_DBG("ESPNOW CMD CODE : %d \r\n",EspnowMsg.lightCmd.cmd_code);
             if(EspnowMsg.type == ACT_TYPE_DATA){
+				
+				if(EspnowMsg.token == last_token){
+					ESPNOW_DBG("Double cmd ... return...\r\n");
+					ESPNOW_DBG("last token: %d ; cur token: %d ;\r\n",last_token,EspnowMsg.token);
+					return;
+				}
+
                 ESPNOW_DBG("period: %d ; channel : %d \r\n",EspnowMsg.lightCmd.period,EspnowMsg.lightCmd.pwm_num);
                 for(i=0;i<EspnowMsg.lightCmd.pwm_num;i++){
                     ESPNOW_DBG(" duty[%d] : %d \r\n",i,EspnowMsg.lightCmd.duty[i]);
@@ -269,75 +283,106 @@ void ICACHE_FLASH_ATTR light_EspnowRcvCb(u8 *macaddr, u8 *data, u8 len)
                 ESPNOW_DBG("Battery status %d voltage %dmV\r\n", EspnowMsg.lightCmd.batteryStat.battery_status, EspnowMsg.lightCmd.batteryStat.battery_voltage_mv);
                 light_EspnowStoreBatteryStatus(macaddr, EspnowMsg.lightCmd.batteryStat.battery_status, EspnowMsg.lightCmd.batteryStat.battery_voltage_mv);
                 
-                os_printf("***************\r\n");
-                os_printf("EspnowMsg.lightCmd.colorChg: %d \r\n",EspnowMsg.lightCmd.cmd_code);
+                ESPNOW_DBG("***************\r\n");
+                ESPNOW_DBG("EspnowMsg.lightCmd.colorChg: %d \r\n",EspnowMsg.lightCmd.cmd_code);
                 if(EspnowMsg.lightCmd.cmd_code==COLOR_SET){
+					//replace with timer , for demo
+					//light_TimerAdd(EspnowMsg.lightCmd.duty);
+					//light_ShowDevLevel(1);
+					
+					light_hint_abort();
+					light_TimerAdd(NULL);
+					ESPNOW_DBG("SHUT DOWN ADD 20 SECONDS...\r\n");
+					//end 
+					
+					#if 0
                     color_bit = 1;
-                    toggle_flg= 0;
-                    os_printf("set color : %d %d %d %d %d %d \r\n",duty_set[0],duty_set[1],duty_set[2],duty_set[3],duty_set[4],EspnowMsg.lightCmd.period);
+                    toggle_flg= 1;
+                    ESPNOW_DBG("set color : %d %d %d %d %d %d \r\n",duty_set[0],duty_set[1],duty_set[2],duty_set[3],duty_set[4],EspnowMsg.lightCmd.period);
                     light_set_aim(duty_set[0],duty_set[1],duty_set[2],duty_set[3],duty_set[4],EspnowMsg.lightCmd.period,0);
-                }else if(EspnowMsg.lightCmd.cmd_code==COLOR_CHG){
-                    os_printf("light change color cmd \r\n");
+					#endif
+				}else if(EspnowMsg.lightCmd.cmd_code==COLOR_CHG){
+				    light_hint_abort();
+				    light_TimerStop();
+				    toggle_flg= 1;
+                    ESPNOW_DBG("light change color cmd \r\n");
                     for(i=0;i<PWM_CHANNEL;i++){
-                        duty_set[i] = ((color_bit>>i)&0x1)*20000;
+						if(i<3)
+                        	duty_set[i] = ((color_bit>>i)&0x1)*22222;
+						else
+							duty_set[i] = ((color_bit>>i)&0x1)*8000;
                     }
-                    os_printf("set color : %d %d %d %d %d %d\r\n",duty_set[0],duty_set[1],duty_set[2],duty_set[3],duty_set[4],EspnowMsg.lightCmd.period);
+                    ESPNOW_DBG("set color : %d %d %d %d %d %d\r\n",duty_set[0],duty_set[1],duty_set[2],duty_set[3],duty_set[4],EspnowMsg.lightCmd.period);
                     light_set_aim( duty_set[0],duty_set[1],duty_set[2],duty_set[3],duty_set[4],1000,0);	
                     color_bit++;
                     if(color_bit>=32) color_bit=1;
                 }else if(EspnowMsg.lightCmd.cmd_code==COLOR_TOGGLE){
+                    light_hint_abort();
+                    light_TimerStop();
+    				color_bit = 1;
+    				//toggle_flg= 1;
                     if(toggle_flg == 0){
                         light_set_aim( 0,0,0,0,0,1000,0); 
                         toggle_flg = 1;
                     }else{
-                        light_set_aim( 0,0,0,20000,20000,1000,0); 
+                        light_set_aim( 0,0,0,22222,22222,1000,0); 
                         toggle_flg = 0;
                     }
                 }else if(EspnowMsg.lightCmd.cmd_code==COLOR_LEVEL){
+                    light_hint_abort();
+                    light_TimerStop();
+
+					
                     struct ip_info sta_ip;
                     wifi_get_ip_info(STATION_IF,&sta_ip);
                 #if ESP_MESH_SUPPORT						
                     if( espconn_mesh_local_addr(&sta_ip.ip)){
-                        os_printf("THIS IS A MESH SUB NODE..\r\n");
+                        ESPNOW_DBG("THIS IS A MESH SUB NODE..\r\n");
                         uint32 mlevel = sta_ip.ip.addr&0xff;
                         light_ShowDevLevel(mlevel);
                     }else if(sta_ip.ip.addr!= 0){
-                        os_printf("THIS IS A MESH ROOT..\r\n");
+                        ESPNOW_DBG("THIS IS A MESH ROOT..\r\n");
                         light_ShowDevLevel(1);
+                        
                     }else{
-                        os_printf("THIS IS A MESH ROOT..\r\n");
+                        ESPNOW_DBG("THIS IS A MESH ROOT..\r\n");
                         light_ShowDevLevel(0);
                     }
                 #else
                     if(sta_ip.ip.addr!= 0){
-                        os_printf("wifi connected..\r\n");
+                        ESPNOW_DBG("wifi connected..\r\n");
                         light_ShowDevLevel(1);
                     }else{
-                        os_printf("wifi not connected..\r\n");
+                        ESPNOW_DBG("wifi not connected..\r\n");
                         light_ShowDevLevel(0);
                     }
                 #endif
                     
                 
                 }else if(EspnowMsg.lightCmd.cmd_code==LIGHT_RESET){
-                system_restore();
-                extern struct esp_platform_saved_param esp_param;
-                esp_param.reset_flg=0;
-                esp_param.activeflag = 0;
-                os_memset(esp_param.token,0,40);
-                system_param_save_with_protect(ESP_PARAM_START_SEC, &esp_param, sizeof(esp_param));
-                os_printf("--------------------\r\n");
-                os_printf("SYSTEM PARAM RESET !\r\n");
-                os_printf("RESET: %d ;  ACTIVE: %d \r\n",esp_param.reset_flg,esp_param.activeflag);
-                os_printf("--------------------\r\n\n\n");
-                UART_WaitTxFifoEmpty(0,3000);
-                system_restart();
+                    system_restore();
+                    extern struct esp_platform_saved_param esp_param;
+                    esp_param.reset_flg=0;
+                    esp_param.activeflag = 0;
+                    os_memset(esp_param.token,0,40);
+                    system_param_save_with_protect(ESP_PARAM_START_SEC, &esp_param, sizeof(esp_param));
+                    ESPNOW_DBG("--------------------\r\n");
+                    ESPNOW_DBG("SYSTEM PARAM RESET !\r\n");
+                    ESPNOW_DBG("RESET: %d ;  ACTIVE: %d \r\n",esp_param.reset_flg,esp_param.activeflag);
+                    ESPNOW_DBG("--------------------\r\n\n\n");
+                    UART_WaitTxFifoEmpty(0,3000);
+                    system_restart();
+                }else if(EspnowMsg.lightCmd.cmd_code==LIGHT_TIMER){
+					light_TimerAdd(EspnowMsg.lightCmd.duty);
+					ESPNOW_DBG("SHUT DOWN ADD 20 SECONDS...\r\n");
                 }
+				
+				last_token = EspnowMsg.token;
 
 				if(EspnowMsg.rsp_if ==1){
 					EspnowMsg.type=ACT_TYPE_RSP;
 				}else{
-                    ESPNOW_DBG("do not send response,in app layer, MAC ACKed \r\n");
+                    ESPNOW_DBG("do not send response\r\n");
                     return;
 				}
             }
@@ -376,11 +421,15 @@ void ICACHE_FLASH_ATTR light_EspnowRcvCb(u8 *macaddr, u8 *data, u8 len)
 }
 
 
+LOCAL void ICACHE_FLASH_ATTR espnow_send_cb(u8 *mac_addr, u8 status)
+{
+	os_printf("send_cb: mac[%02x:%02x:%02x:%02x:%02x:%02x], status: [%d]\n", MAC2STR(mac_addr),status); 
+}
+
+
 //ESPNOW INIT,if encryption is enabled, the slave device number is limited.
 void ICACHE_FLASH_ATTR light_EspnowInit()
 {
-	//light_EspnowMasterMacInit();
-
     _LINE_DESP();
     ESPNOW_DBG("CHANNEL : %d \r\n",wifi_get_channel());
     _LINE_DESP();
@@ -388,33 +437,45 @@ void ICACHE_FLASH_ATTR light_EspnowInit()
     if (esp_now_init()==0) {
         ESPNOW_DBG("direct link  init ok\n");
         esp_now_register_recv_cb(light_EspnowRcvCb);
+		esp_now_register_send_cb(espnow_send_cb);	 
     } else {
         ESPNOW_DBG("esp-now already init\n");
     }
     //send data from station interface of switch to softap interface of light
     esp_now_set_self_role(ESP_NOW_ROLE_SLAVE);  //role 1: switch   ;  role 2 : light;
+    //-------chg 151008------------
+    //send ESPNOW through STATION interface
+    //esp_now_set_self_role(ESP_NOW_ROLE_CONTROLLER); 
+	//----------------------------
+
+	
+	PairedButtonParam* sp_dev = (PairedButtonParam*)sp_GetPairedParam();
+	
     #if ESPNOW_KEY_HASH
     //esp_now_set_kok((uint8*)esp_now_key, ESPNOW_KEY_LEN);
-    esp_now_set_kok((uint8*)lightEspnowParam.esp_now_key, ESPNOW_KEY_LEN);
+    //esp_now_set_kok((uint8*)lightEspnowParam.esp_now_key, ESPNOW_KEY_LEN);
+    esp_now_set_kok((uint8*)(sp_dev->PairedList.key_t), ESPNOW_KEY_LEN);
     #endif
     
     int j,res;
-    for(j=0;j<lightEspnowParam.MasterNum;j++){
+    //for(j=0;j<lightEspnowParam.MasterNum;j++){
+    for(j=0;j<sp_dev->PairedNum;j++){
     #if ESPNOW_ENCRYPT
 	//res = esp_now_add_peer((uint8*)SWITCH_MAC[j], (uint8)ESP_NOW_ROLE_CONTROLLER,(uint8)WIFI_DEFAULT_CHANNEL, (uint8*)esp_now_key, (uint8)ESPNOW_KEY_LEN);
-	res = esp_now_add_peer((uint8*)lightEspnowParam.MasterMac[j], (uint8)ESP_NOW_ROLE_CONTROLLER,(uint8)WIFI_DEFAULT_CHANNEL, (uint8*)lightEspnowParam.esp_now_key, (uint8)ESPNOW_KEY_LEN);
+	res = esp_now_add_peer((uint8*)(sp_dev->PairedList[j].mac_t), (uint8)ESP_NOW_ROLE_CONTROLLER,(uint8)WIFI_DEFAULT_CHANNEL, (uint8*)(sp_dev->PairedList[j].key_t), (uint8)ESPNOW_KEY_LEN);
     #else
 	//res = esp_now_add_peer((uint8*)SWITCH_MAC[j], (uint8)ESP_NOW_ROLE_CONTROLLER,(uint8)WIFI_DEFAULT_CHANNEL, NULL, (uint8)ESPNOW_KEY_LEN);
-	res = esp_now_add_peer((uint8*)lightEspnowParam.MasterMac[j], (uint8)ESP_NOW_ROLE_CONTROLLER,(uint8)WIFI_DEFAULT_CHANNEL, NULL, (uint8)ESPNOW_KEY_LEN);
+	res = esp_now_add_peer((uint8*)(sp_dev->PairedList[j].mac_t), (uint8)ESP_NOW_ROLE_CONTROLLER,(uint8)WIFI_DEFAULT_CHANNEL, NULL, (uint8)ESPNOW_KEY_LEN);
     #endif
 	    if(res == 0){
 		    //ESPNOW_DBG("INIT OK: MAC[%d]:"MACSTR"\r\n",j,MAC2STR(((uint8*)SWITCH_MAC[j])));
-		    ESPNOW_DBG("INIT OK: MAC[%d]:"MACSTR"\r\n",j,MAC2STR(((uint8*)lightEspnowParam.MasterMac[j])));
+		    ESPNOW_DBG("INIT OK: MAC[%d]:"MACSTR"\r\n",j,MAC2STR(((uint8*)(sp_dev->PairedList[j].mac_t))));
 	    }else{
 		    //ESPNOW_DBG("INIT OK: MAC[%d]:"MACSTR"\r\n",j,MAC2STR(((uint8*)SWITCH_MAC[j])));
-		    ESPNOW_DBG("INIT OK: MAC[%d]:"MACSTR"\r\n",j,MAC2STR(((uint8*)lightEspnowParam.MasterMac[j])));
+		    ESPNOW_DBG("INIT OK: MAC[%d]:"MACSTR"\r\n",j,MAC2STR(((uint8*)(sp_dev->PairedList[j].mac_t))));
 	    }
     }
+	
 
 }
 
@@ -424,7 +485,6 @@ void ICACHE_FLASH_ATTR light_EspnowDeinit()
     esp_now_unregister_recv_cb(); 
     esp_now_deinit();
 }
-
 
 
 

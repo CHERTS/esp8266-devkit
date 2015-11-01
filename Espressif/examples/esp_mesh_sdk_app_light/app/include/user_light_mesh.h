@@ -18,6 +18,7 @@ typedef void (*mesh_FailCallback)(void *para);
 typedef void (*mesh_SuccessCallback)(void *para);
 typedef void (*mesh_InitTimeoutCallback)(void *para);
 
+
 typedef struct  {
 	mesh_FailCallback mesh_fail_cb;
 	mesh_SuccessCallback mesh_suc_cb;

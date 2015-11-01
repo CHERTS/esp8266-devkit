@@ -20,9 +20,14 @@
 #include "user_iot_version.h"
 #include "upgrade.h"
 #include "esp_send.h"
+
 #if ESP_MESH_SUPPORT
 	#include "mesh.h"
 #endif
+#include "user_webserver.h"
+#include "user_json.h"
+#include "user_simplepair.h"
+
 
 #if ESP_PLATFORM
 
@@ -70,6 +75,7 @@ LOCAL uint32 count = 0;
 #if PLUG_DEVICE || LIGHT_DEVICE
 #define BEACON_FRAME    "{\"path\": \"/v1/ping/\", \"method\": \"POST\",\"meta\": {\"Authorization\": \"token %s\"}}\n"
 #define RPC_RESPONSE_FRAME  "{\"status\": %d, \"nonce\": %u, \"deliver_to_device\": true}\n"
+#define RPC_RESPONSE_ELEMENT  "\"status\": %d, \"nonce\": %u, \"deliver_to_device\": true"
 #define TIMER_FRAME     "{\"body\": {}, \"get\":{\"is_humanize_format_simple\":\"true\"},\"meta\": {\"Authorization\": \"Token %s\"},\"path\": \"/v1/device/timers/\",\"post\":{},\"method\": \"GET\"}\n"
 #define pheadbuffer "Connection: keep-alive\r\n\
 Cache-Control: no-cache\r\n\
@@ -87,11 +93,9 @@ LOCAL os_timer_t beacon_timer;
 ip_addr_t esp_server_ip;
 #endif
 
-#define IOT_BIN_VERSION_LEN (15)
 
-extern u8 g_ip_filter;
-
-LOCAL bool g_sent_identify = false;
+//extern u8 g_ip_filter;
+//LOCAL bool g_sent_identify = false;
 LOCAL char *g_sip = NULL, *g_sport = NULL,*g_mac = NULL;
 LOCAL struct espconn user_conn;
 LOCAL struct _esp_tcp user_tcp;
@@ -103,13 +107,29 @@ LOCAL uint32 active_nonce = 0xffffffff;
 LOCAL uint8 iot_version[IOT_BIN_VERSION_LEN + 1] = {0};
 LOCAL uint8_t g_mesh_version[IOT_BIN_VERSION_LEN + 1] = {0};
 LOCAL uint8_t g_devkey[TOKEN_SIZE] = {0};//
-LOCAL uint8 mdns_init_flg = 0;
+//LOCAL uint8 mdns_init_flg = 0;
 struct rst_info rtc_info;
+
+
+
 void user_esp_platform_check_ip(uint8 reset_flag);
-#if ESP_MESH_SUPPORT
-bool mesh_json_add_elem(char *pbuf, size_t buf_size, char *elem, size_t elem_size);
-#endif
 LOCAL void user_esp_platform_sent_beacon(struct espconn *pespconn);
+
+
+uint32 ota_start_time=0,ota_finished_time=0;
+#if ESP_MESH_SUPPORT
+
+bool mesh_json_add_elem(char *pbuf, size_t buf_size, char *elem, size_t elem_size);
+uint32 get_ota_start_time()
+{
+	return ota_start_time;
+}
+uint32 get_ota_finish_time()
+{
+	return ota_start_time;
+}
+#endif
+
 
 
 char* ICACHE_FLASH_ATTR user_json_find_section(const char *pbuf,uint16 len,const char* section)
@@ -123,7 +143,6 @@ char* ICACHE_FLASH_ATTR user_json_find_section(const char *pbuf,uint16 len,const
 		return NULL;
 
 	sect = (char*)os_strstr(pbuf,section);
-
     /*
     * the formal json format
     *{"elem":"value"}\r\n
@@ -170,7 +189,6 @@ uint32 ICACHE_FLASH_ATTR
 	uint16 val_size=0;
 
 	pstr = user_json_find_section(pbuffer,buf_len,json_key);
-
 	if(pstr){
         //find the end char of value
         if( (pparse = (char*)os_strstr(pstr,","))!= NULL ||
@@ -190,16 +208,14 @@ uint32 ICACHE_FLASH_ATTR
 
 		result = atol(val);
 
-
 	}
-
 	return result;
 
 #endif
 
 }
 
-void ICACHE_FLASH_ATTR espconn_esp_sent(struct espconn *pconn, uint8_t *buf, uint16_t len)
+sint8 ICACHE_FLASH_ATTR espconn_esp_sent(struct espconn *pconn, uint8_t *buf, uint16_t len)
 {
 #if 0
 #ifdef CLIENT_SSL_ENABLE
@@ -213,7 +229,7 @@ void ICACHE_FLASH_ATTR espconn_esp_sent(struct espconn *pconn, uint8_t *buf, uin
 #else
 	sint8 res;
 	bool queue_empty = espSendQueueIsEmpty(espSendGetRingbuf());
-	
+	os_printf("send in espconn_esp_sent\r\n");
     res = espSendEnq(buf, len, pconn, ESP_DATA,TO_SERVER,espSendGetRingbuf());
 	if(res==-1){
 		os_printf("espconn send error , no buf in app...\r\n");
@@ -224,6 +240,7 @@ void ICACHE_FLASH_ATTR espconn_esp_sent(struct espconn *pconn, uint8_t *buf, uin
 	if(queue_empty){
 		system_os_post(ESP_SEND_TASK_PRIO, 0, (os_param_t)espSendGetRingbuf());
 	}
+	return res;
 #endif
 }
 #if 0
@@ -299,6 +316,17 @@ user_esp_platform_get_token(uint8_t *token)
 
     os_memcpy(token, esp_param.token, sizeof(esp_param.token));
 }
+
+void ICACHE_FLASH_ATTR
+user_esp_platform_get_devkey(uint8_t *devkey)
+{
+    if (devkey == NULL) {
+        return;
+    }
+
+    os_memcpy(devkey, esp_param.devkey, sizeof(esp_param.devkey));
+}
+
 
 /******************************************************************************
  * FunctionName : user_esp_platform_set_token
@@ -393,6 +421,7 @@ user_esp_platform_get_info(struct espconn *pconn, uint8 *pbuffer)
         os_sprintf(pbuf, RESPONSE_FRAME, user_plug_get_status(), nonce);
 #elif LIGHT_DEVICE
         uint32 white_val;
+
         white_val = (PWM_CHANNEL>LIGHT_COLD_WHITE?user_light_get_duty(LIGHT_COLD_WHITE):0);
         os_sprintf(pbuf, RESPONSE_FRAME, nonce, user_light_get_period(),
                    user_light_get_duty(LIGHT_RED), user_light_get_duty(LIGHT_GREEN),
@@ -407,7 +436,6 @@ user_esp_platform_get_info(struct espconn *pconn, uint8 *pbuffer)
 			g_mac = (char*)mesh_GetMdevMac();
 			mesh_json_add_elem(pbuf, sizeof(pbuf), g_mac, ESP_MESH_JSON_DEV_MAC_ELEM_LEN);
 		}
-		
 #endif
         ESP_DBG("user_esp_platform_get_info %s\n", pbuf);
         espconn_esp_sent(pconn, pbuf, os_strlen(pbuf));
@@ -422,7 +450,7 @@ user_esp_platform_get_info(struct espconn *pconn, uint8 *pbuffer)
  * Returns      : none
 *******************************************************************************/
 void ICACHE_FLASH_ATTR
-user_esp_platform_set_info(struct espconn *pconn, uint8 *pbuffer)
+user_esp_platform_set_info(struct espconn *pconn, uint8 *pbuffer,uint8 cmd_type)
 {
     char *pstr = NULL;
 #if PLUG_DEVICE
@@ -444,52 +472,109 @@ user_esp_platform_set_info(struct espconn *pconn, uint8 *pbuffer)
     //char recvbuf[10];    
     uint16 length = 0;
     uint32 data = 0;
-    static uint32 rr,gg,bb,cw,ww,period;
+    static uint32 rr,gg,bb,cw,ww,period=1000;
 	static uint8 ctrl_mode = 0;
+	int check_group;
     ww=0;
     cw=0;
     extern uint8 light_sleep_flg;
-    pstr = (char *)os_strstr(pbuffer, "\"path\": \"/v1/datastreams/light/datapoint/\"");
 
-    //if (pstr != NULL) {
-        pstr = (char *)os_strstr(pbuffer, "{\"datapoint\": ");
-
-        if (pstr != NULL) {
-            pbuf = (char *)os_strstr(pbuffer, "}}");
-            length = pbuf - pstr;
-            length += 2;
-            //pdata = (char *)os_zalloc(length + 1);
-            //os_memcpy(pdata, pstr, length);
-
-            period = user_JsonGetValueInt(pstr, length, "\"x\"");
-            //user_light_set_period(data);
-            rr = user_JsonGetValueInt(pstr, length, "\"y\"");
-            gg = user_JsonGetValueInt(pstr, length, "\"z\"");
-            bb = user_JsonGetValueInt(pstr, length, "\"k\"");
-			cw = user_JsonGetValueInt(pstr, length, "\"l\"");
-			ww = cw;
-        }
-    //}
+	if(cmd_type==CMD_TYPE_UNICAST){
+		os_printf("UNICAST CMD...\r\n");
+            pstr = (char *)os_strstr(pbuffer, "{\"datapoint\": ");
+            if (pstr != NULL) {
+                pbuf = (char *)os_strstr(pbuffer, "}}");
+                length = pbuf - pstr;
+                length += 2;
+                //pdata = (char *)os_zalloc(length + 1);
+                //os_memcpy(pdata, pstr, length);
     
-    if((rr|gg|bb|cw|ww) == 0){
-        if(light_sleep_flg==0){
+                period = user_JsonGetValueInt(pstr, length, "\"x\"");
+                //user_light_set_period(data);
+                rr = user_JsonGetValueInt(pstr, length, "\"y\"");
+                gg = user_JsonGetValueInt(pstr, length, "\"z\"");
+                bb = user_JsonGetValueInt(pstr, length, "\"k\"");
+    			cw = user_JsonGetValueInt(pstr, length, "\"l\"");
+    			ww = cw;
+            }
 
-        }
+		
+		if((rr|gg|bb|cw|ww) == 0){
+			if(light_sleep_flg==0){
+				
+			}
+			
+		}else{
+			if(light_sleep_flg==1){
+				os_printf("modem sleep en\r\n");
+				wifi_set_sleep_type(MODEM_SLEEP_T);
+				light_sleep_flg =0;
+			}
+		}
+		light_set_aim(rr,gg,bb,cw,ww,period,ctrl_mode);
+		//user_light_restart();
+	}
+#if ESP_MESH_SUPPORT
+	else if(cmd_type==CMD_TYPE_MULITCAST){
+		os_printf("MULTICAST CMD...\r\n");
+		check_group = webserver_RootCheckGroupMsg(pbuffer);
+		os_printf("check group res: %d \r\n",check_group);
+		if(MULTICAST_CMD_ROOT_INGROUP==check_group || MULTICAST_CMD_NODE_INGROUP==check_group){
+    		os_printf("glen:%p \r\n",user_json_find_section(pbuffer, length, "\"glen\""));
+    		os_printf("group:%p \r\n",user_json_find_section(pbuffer, length, "\"group\""));
+    			
+    	    if(os_strstr(pbuffer,"\"glen\"") &&
+    			os_strstr(pbuffer,"\"group\"")){
+    			os_printf("tt1\r\n");
+    			pstr = (char *)os_strstr(pbuffer, "\"datapoint\":");
+                if (pstr != NULL) {
+                    pbuf = (char *)os_strstr(pbuffer, "}");
+                    length = pbuf - pstr;
+                    length += 1;
         
-    }else{
-        if(light_sleep_flg==1){
-            os_printf("modem sleep en\r\n");
-            wifi_set_sleep_type(MODEM_SLEEP_T);
-            light_sleep_flg =0;
-        }
-    }
+                    period = user_JsonGetValueInt(pstr, length, "\"x\"");
+                    rr = user_JsonGetValueInt(pstr, length, "\"y\"");
+                    gg = user_JsonGetValueInt(pstr, length, "\"z\"");
+                    bb = user_JsonGetValueInt(pstr, length, "\"k\"");
+        			cw = user_JsonGetValueInt(pstr, length, "\"l\"");
+        			ww = cw;
+                }
+    			os_printf("tt2: %d %d %d %d %d %d ; \r\n",period,rr,gg,bb,cw,ww);
+    	    }
+			
+			if((rr|gg|bb|cw|ww) == 0){
+				if(light_sleep_flg==0){
+				}
+				
+			}else{
+				if(light_sleep_flg==1){
+					os_printf("modem sleep en\r\n");
+					wifi_set_sleep_type(MODEM_SLEEP_T);
+					light_sleep_flg =0;
+				}
+			}
+			light_set_aim(rr,gg,bb,cw,ww,period,ctrl_mode);
+			//user_light_restart();
+		}
+	
+	}
+#endif
 
-    light_set_aim(rr,gg,bb,cw,ww,period,ctrl_mode);
-    //user_light_restart();
 
 #endif
 
+
+#if ESP_MESH_SUPPORT
+    if(cmd_type==CMD_TYPE_MULITCAST && MULTICAST_CMD_ROOT_INGROUP==check_group){
+        user_esp_platform_get_info(pconn, pbuffer);
+    }else if(cmd_type == CMD_TYPE_UNICAST){
+        user_esp_platform_get_info(pconn, pbuffer);
+    }
+#else
     user_esp_platform_get_info(pconn, pbuffer);
+#endif
+
+	os_printf("end of platform_set_info\r\n");
 }
 
 /******************************************************************************
@@ -506,7 +591,7 @@ user_esp_platform_reconnect(struct espconn *pespconn)
     if (wifi_get_opmode() == SOFTAP_MODE)
         return;
 
-    g_sent_identify = false;
+    //g_sent_identify = false;
     user_esp_platform_check_ip(0);
 }
 
@@ -734,18 +819,10 @@ user_esp_platform_sent(struct espconn *pespconn)
         //ESP_DBG("%s\n", pbuf);
         //ESP_DBG("%s\n", pbuf);
         //ESP_DBG("\r\n\r\n==============================\r\n");
-        g_sent_identify = true;
+        //g_sent_identify = true;
         //os_printf("activate: %s\n", pbuf);
 
 #if ESP_MESH_SUPPORT
-   //debug only
-		char *router = ESP_MESH_ROUTER_STRING;
-		if (!mesh_json_add_elem(pbuf, sizeof(pbuf), router, ESP_MESH_JSON_ROUTER_ELEM_LEN)) {
-			return;
-		}
-	//debug end
-
-
 		if(g_mac){
 			mesh_json_add_elem(pbuf, sizeof(pbuf), g_mac, ESP_MESH_JSON_DEV_MAC_ELEM_LEN);
 		}else{
@@ -758,7 +835,7 @@ user_esp_platform_sent(struct espconn *pespconn)
 
         //os_free(pbuf);
     }
-    os_timer_arm(&beacon_timer, BEACON_TIME, 0);//
+    //os_timer_arm(&beacon_timer, BEACON_TIME, 0);//
 }
 
 #if PLUG_DEVICE || LIGHT_DEVICE
@@ -797,15 +874,22 @@ user_esp_platform_sent_beacon(struct espconn *pespconn)
                     user_esp_platform_discon(pespconn);
 				#else
 				    //user_esp_platform_check_ip(0);
-				
-				if (!espconn_mesh_local_addr(&ipconfig.ip)) {
-                    os_timer_disarm(&beacon_timer);
-                    ping_status = 1;
-                    user_esp_platform_discon(pespconn);
-                }else{
-					user_esp_platform_check_ip(0);
-                }
-                
+
+				#if 0
+    				if (!espconn_mesh_local_addr(&ipconfig.ip)) {
+                        os_timer_disarm(&beacon_timer);
+                        ping_status = 1;
+                        user_esp_platform_discon(pespconn);
+                    }else{
+    					user_esp_platform_check_ip(0);
+                    }
+				#else
+    				os_printf("send beacon in timer now...\r\n");
+				    ping_status = 1;
+    				os_timer_arm(&beacon_timer, 0, 0);
+				#endif
+
+				                
 				#endif
             } else {
                 //char *pbuf = (char *)os_zalloc(packet_size);
@@ -840,7 +924,8 @@ user_esp_platform_sent_beacon(struct espconn *pespconn)
 						    if(mesh_root_if()){
 						        os_sprintf(g_prnt_mac,"\"parent_mdev_mac\":\"%02X%02X%02X%02X%02X%02X\"",MAC2STR(info_mesh));
                             }else{
-							    os_sprintf(g_prnt_mac,"\"parent_mdev_mac\":\"%02X%02X%02X%02X%02X%02X\"",0x18,MAC2STR5BYTES(info_mesh));
+							    //os_sprintf(g_prnt_mac,"\"parent_mdev_mac\":\"%02X%02X%02X%02X%02X%02X\"",0x18,MAC2STR5BYTES(info_mesh));
+							    os_sprintf(g_prnt_mac,"\"parent_mdev_mac\":\"%02X%02X%02X%02X%02X%02X\"",MAC2STR(info_mesh));
 						   	}
 							os_printf("g_prnt_mac: %s \r\n",g_prnt_mac);
 						}
@@ -856,14 +941,7 @@ user_esp_platform_sent_beacon(struct espconn *pespconn)
 						mesh_json_add_elem(pbuf, sizeof(pbuf), "000000000000", ESP_MESH_JSON_DEV_PRNT_MAC_ELEM_LEN);
 					}
 
-					
-					//debug only
-					char *router = ESP_MESH_ROUTER_STRING;
-					if (!mesh_json_add_elem(pbuf, sizeof(pbuf), router, ESP_MESH_JSON_ROUTER_ELEM_LEN)) {
-						return;
-					}
-					//debug
-		            if (!espconn_mesh_local_addr(&ipconfig.ip)){
+					if (!espconn_mesh_local_addr(&ipconfig.ip)){
                         ping_status = 0;
                     }
                     #endif
@@ -908,12 +986,6 @@ user_platform_rpc_set_rsp(struct espconn *pespconn, int nonce, int status)
         mesh_json_add_elem(pbuf, sizeof(pbuf), g_sip, ESP_MESH_JSON_IP_ELEM_LEN);
     if (g_sport)
         mesh_json_add_elem(pbuf, sizeof(pbuf), g_sport, ESP_MESH_JSON_PORT_ELEM_LEN);
-//debug only
-	char *router = ESP_MESH_ROUTER_STRING;
-	if (!mesh_json_add_elem(pbuf, sizeof(pbuf), router, ESP_MESH_JSON_ROUTER_ELEM_LEN)) {
-		return;
-	}
-//debug
 	if(g_mac){
 		mesh_json_add_elem(pbuf, sizeof(pbuf), g_mac, ESP_MESH_JSON_DEV_MAC_ELEM_LEN);
 	}else{
@@ -927,49 +999,59 @@ user_platform_rpc_set_rsp(struct espconn *pespconn, int nonce, int status)
     //os_free(pbuf);
 }
 
-LOCAL void ICACHE_FLASH_ATTR
-user_platform_rpc_battery_rsp(struct espconn *pespconn, int nonce, int status)
+LOCAL bool ICACHE_FLASH_ATTR
+user_platform_rpc_build_rsp( char* pdata,int data_max_size,int nonce, int status)
 {
-    //char *pbuf = (char *)os_zalloc(packet_size);
     char pbuf[256];
-
     os_memset(pbuf, 0, sizeof(pbuf));
+    os_sprintf(pbuf, RPC_RESPONSE_ELEMENT, status, nonce);
+	
+	if(!mesh_json_add_elem(pdata,data_max_size, pbuf, os_strlen(pbuf))){
+		os_printf("user_platform_rpc_build_rsp error...\r\n");
+		return false;
+	}
+
+	while(1){
+		char* ptmp = os_strchr(pdata,'\n');
+		if(ptmp){
+		    *ptmp = ' ';
+		}else{
+			break;
+		}
+
+	}
+	int idx = os_strlen(pdata);
+	if(pdata[idx-1]!='\n'){
+		pdata[idx]='\n';
+	}
+	os_printf("debug:\r\nbuild rsp:%s\r\n",pdata);
+	return true;
+}
+
+
+LOCAL void ICACHE_FLASH_ATTR
+user_platform_rpc_battery_rsp(struct espconn *pespconn, char* data_buf,int data_buf_len, int nonce, int status)
+{
     if (pespconn == NULL) {
         return;
     }
 
-    os_sprintf(pbuf, RPC_RESPONSE_FRAME, status, nonce);
     #if ESP_MESH_SUPPORT
-	
-    if (g_sip){
-		ESP_DBG("G_SIP: %s\r\n",g_sip);
-        mesh_json_add_elem(pbuf, sizeof(pbuf), g_sip, ESP_MESH_JSON_IP_ELEM_LEN);
-    }
-    if (g_sport){
-		ESP_DBG("G_SPORT: %s\r\n",g_sport);
-        mesh_json_add_elem(pbuf, sizeof(pbuf), g_sport, ESP_MESH_JSON_PORT_ELEM_LEN);
-    }
 	if(g_mac){
 		ESP_DBG("G_MAC: %s\r\n",g_mac);
-		mesh_json_add_elem(pbuf, sizeof(pbuf), g_mac, ESP_MESH_JSON_DEV_MAC_ELEM_LEN);
+		mesh_json_add_elem(data_buf, data_buf_len, g_mac, ESP_MESH_JSON_DEV_MAC_ELEM_LEN);
 	}else{
 		ESP_DBG("G_MAC: %s\r\n",g_mac);
 		g_mac = (char*)mesh_GetMdevMac();
-		mesh_json_add_elem(pbuf, sizeof(pbuf), g_mac, ESP_MESH_JSON_DEV_MAC_ELEM_LEN);
+		mesh_json_add_elem(data_buf, data_buf_len, g_mac, ESP_MESH_JSON_DEV_MAC_ELEM_LEN);
 	}
-//debug only
-	char *router = ESP_MESH_ROUTER_STRING;
-	if (!mesh_json_add_elem(pbuf, sizeof(pbuf), router, ESP_MESH_JSON_ROUTER_ELEM_LEN)) {
+
+	if(! user_platform_rpc_build_rsp( data_buf,data_buf_len,nonce, status)){
 		return;
 	}
-//debug
-
-
-
-	
 	#endif
-    espconn_esp_sent(pespconn, pbuf, os_strlen(pbuf));
-	ESP_DBG("PBUF4 MAX:256; LEN: %d \r\n",os_strlen(pbuf));
+    espconn_esp_sent(pespconn, data_buf, os_strlen(data_buf));
+	ESP_DBG("PBUF4 MAX:256; LEN: %d \r\n",os_strlen(data_buf));
     //os_free(pbuf);
 }
 
@@ -1002,12 +1084,6 @@ user_platform_timer_get(struct espconn *pespconn)
 		g_mac = (char*)mesh_GetMdevMac();
 		mesh_json_add_elem(pbuf, sizeof(pbuf), g_mac, ESP_MESH_JSON_DEV_MAC_ELEM_LEN);
 	}
-//debug only
-	char *router = ESP_MESH_ROUTER_STRING;
-	if (!mesh_json_add_elem(pbuf, sizeof(pbuf), router, ESP_MESH_JSON_ROUTER_ELEM_LEN)) {
-		return;
-	}
-//debug
 #endif
 
 	
@@ -1142,14 +1218,16 @@ void ICACHE_FLASH_ATTR
     os_memset(pbuf, 0, sizeof(pbuf));
 	if( system_upgrade_flag_check() == UPGRADE_FLAG_FINISH ) {
         os_sprintf(pbuf, UPGRADE_FRAME, g_devkey, "device_upgrade_success", iot_version, g_mesh_version);
-		#if LIGHT_DEVICE
-    		light_shadeStart(HINT_WHITE,1000,4);
+		#if LIGHT_DEVICE&&ESP_DEBUG_MODE
+    		//light_shadeStart(HINT_WHITE,1000,4,1,NULL);
+			light_set_aim(0,22222,0,10000,10000,1000,0);
 		#endif
 	} else {
         os_sprintf(pbuf, UPGRADE_FRAME, g_devkey, "device_upgrade_failed", iot_version, g_mesh_version);
 		system_upgrade_flag_set(UPGRADE_FLAG_IDLE);
-        #if LIGHT_DEVICE
-    		light_shadeStart(HINT_RED,1000,4);
+        #if LIGHT_DEVICE&&ESP_DEBUG_MODE
+    		//light_shadeStart(HINT_RED,1000,4,1,NULL);
+		    light_set_aim(22222,0,0,0,0,1000,0);
         #endif
 	}
     if (g_sip)
@@ -1163,12 +1241,6 @@ void ICACHE_FLASH_ATTR
 		g_mac = (char*)mesh_GetMdevMac();
 		mesh_json_add_elem(pbuf, sizeof(pbuf), g_mac, ESP_MESH_JSON_DEV_MAC_ELEM_LEN);
 	}
-//debug only
-	char *router = ESP_MESH_ROUTER_STRING;
-	if (!mesh_json_add_elem(pbuf, sizeof(pbuf), router, ESP_MESH_JSON_ROUTER_ELEM_LEN)) {
-		return;
-	}
-//debug
 	
     espconn_esp_sent(pespconn, pbuf, os_strlen(pbuf));
     if (g_mesh_esp)
@@ -1220,12 +1292,6 @@ user_mesh_upgrade_continue(struct espconn *esp, char *pkt, size_t pkt_len,
 		g_mac = (char*)mesh_GetMdevMac();
 		mesh_json_add_elem(buffer, sizeof(buffer), g_mac, ESP_MESH_JSON_DEV_MAC_ELEM_LEN);
 	}
-//debug only
-	char *router = ESP_MESH_ROUTER_STRING;
-	if (!mesh_json_add_elem(buffer, sizeof(buffer), router, ESP_MESH_JSON_ROUTER_ELEM_LEN)) {
-		return;
-	}
-//debug
 
     espconn_esp_sent(esp, buffer, os_strlen(buffer));
 }
@@ -1259,7 +1325,8 @@ user_esp_mesh_upgrade(struct espconn *esp, char *pkt, size_t pkt_len, char *base
 		//os_printf("-----------\r\n");
 		if(UPGRADE_FLAG_START != system_upgrade_flag_check()){
 			os_printf("-------------------\r\n");
-			os_printf("UPGRADE ALREADY STOPPED...ERROR OR TIMEOUT...\r\n");
+			os_printf("UPGRADE ALREADY STOPPED...ERROR OR TIMEOUT...status:%d\r\n",system_upgrade_flag_check());
+			
 			os_printf("-------------------\r\n");
 			return;
 		}
@@ -1268,10 +1335,15 @@ user_esp_mesh_upgrade(struct espconn *esp, char *pkt, size_t pkt_len, char *base
             os_free(bin_file);
         base64_bin[base64_len] = c;
         if (offset + sect_len < total_len) {
+			os_printf("%d / %d \r\n",offset + sect_len,total_len);
             user_mesh_upgrade_continue(esp, pkt, pkt_len, offset + sect_len, MESH_UPGRADE_SEC_SIZE);
             return;
         }
         system_upgrade_flag_set(UPGRADE_FLAG_FINISH);
+		ota_finished_time = system_get_time();
+		esp_param.ota_finish_time = ota_finished_time;
+		system_param_save_with_protect(ESP_PARAM_START_SEC, &esp_param, sizeof(esp_param));
+
 		os_printf("=================\r\n");
 		os_printf("upgrade finish...SET FLAG : %d\r\n",system_upgrade_flag_check());
 		os_printf("=================\r\n");
@@ -1301,7 +1373,10 @@ user_esp_mesh_upgrade_begin(struct espconn *esp, int nonce, uint8_t *pkt, uint16
     user_mesh_upgrade_continue(esp, pkt, pkt_len, 0, MESH_UPGRADE_SEC_SIZE);//1000
     os_timer_disarm(&g_mesh_upgrade_timer);
     os_timer_setfn(&g_mesh_upgrade_timer, (os_timer_func_t *)mesh_upgrade_check_func, g_mesh_esp);
-    os_timer_arm(&g_mesh_upgrade_timer, 600000, 0);
+    os_timer_arm(&g_mesh_upgrade_timer, 3600000, 0); //20 min
+    #if ESP_DEBUG_MODE
+        light_set_aim(0,22222,22222,5000,5000,1000,0);
+	#endif
 }
 
 #endif
@@ -1319,6 +1394,149 @@ user_esp_upgrade_begin(struct espconn *pespconn, int nonce, char *version)
             IOT_VERSION_MINOR,IOT_VERSION_REVISION, device_type,UPGRADE_FALG);
     user_esp_platform_upgrade_begin(pespconn, server);
 }
+/*
+csc add for simple pair
+*/
+LOCAL int ICACHE_FLASH_ATTR
+button_status_set(struct jsontree_context *js_ctx, struct jsonparse_state *parser)
+{
+#if 1
+    os_printf("---button set----\n");
+    
+    int type;
+    
+    uint8 mdev_mac_address[13]={0};
+    uint32 replace=0;
+    
+    uint8 tempkey[33]={0};
+    uint8 button_address[13]={0};
+    uint8 mac_len=0;
+    uint8 mac[13]={0};
+    mac[12]=0;
+    mdev_mac_address[12]=0;
+    tempkey[32]=0;
+    button_address [12]=0; 
+    while ((type = jsonparse_next(parser)) != 0) {
+        //os_printf("Type=%c\n",type);
+        if (type == JSON_TYPE_PAIR_NAME) {
+            if(jsonparse_strcmp_value(parser, "mdev_mac") == 0){
+                jsonparse_next(parser);
+                jsonparse_next(parser);
+                jsonparse_copy_value(parser, mdev_mac_address, sizeof(mdev_mac_address));
+                os_printf("mdev_mac_address: %s \n",mdev_mac_address);
+            } 
+			else if (jsonparse_strcmp_value(parser, "temp_key") == 0) {
+                jsonparse_next(parser);
+                jsonparse_next(parser);
+                jsonparse_copy_value(parser, tempkey, sizeof(tempkey));
+                //os_memcpy(buttonPairingInfo.tempkey_p,tempkey,sizeof(buttonPairingInfo.tempkey_p));
+                int j;
+                char tmp[17];
+                char* ptmp = tempkey;
+                for(j=0;j<16;j++){
+                    os_bzero(tmp,sizeof(tmp));
+                    os_memcpy(tmp,ptmp,2);
+                    uint8 val = strtol(tmp,NULL,16);
+                    os_printf("val[%d]: %02x \r\n",j,val);
+                    buttonPairingInfo.tempkey[j] = val;
+                    ptmp+=2;
+                }
+                os_printf("tempkey: %s\n",tempkey,js_ctx->depth);
+                // buttonPairingInfo.tempkey= strtol(tempkey,NULL,16);
+                //debug_print("button_tempkey:",buttonPairingInfo.tempkey,sizeof(buttonPairingInfo.tempkey));
+                //user_light_set_duty(status, LIGHT_RED);
+                //light_set_aim_r( r);
+            } 
+			else if (jsonparse_strcmp_value(parser, "button_mac") == 0) {
+                #if 1
+                jsonparse_next(parser);
+                jsonparse_next(parser);
+                jsonparse_copy_value(parser, button_address, sizeof(button_address));
+                os_printf("button_mac: %s \n",button_address);
+                //os_memcpy(buttonPairingInfo.button_mac_p,button_address,sizeof(button_address));
+                int j;
+                char tmp[4];
+                char* ptmp = button_address;
+                for(j=0;j<6;j++){
+                    os_bzero(tmp,sizeof(tmp));
+                    os_memcpy(tmp,ptmp,2);
+                    uint8 val = strtol(tmp,NULL,16);
+                    os_printf("val[%d]: %02x \r\n",j,val);
+                    buttonPairingInfo.button_mac[j] = val;
+                    ptmp+=2;
+                }
+                //long long data= strtol(button_address,NULL,16);
+                //os_printf("data=%x\n",data);
+                // debug_print("button_mac change value:",buttonPairingInfo.button_mac,sizeof(buttonPairingInfo.button_mac));
+                #endif
+                //user_light_set_duty(status, LIGHT_GREEN);
+                //light_set_aim_g( g);
+            }
+			else if  (jsonparse_strcmp_value(parser, "replace") == 0) {
+                jsonparse_next(parser);
+                jsonparse_next(parser);
+                replace = jsonparse_get_value_as_int(parser);
+                os_printf("replace=%d\n",replace);
+            }
+            else if (jsonparse_strcmp_value(parser, "mac_len") == 0) {
+                jsonparse_next(parser);
+                jsonparse_next(parser);
+                
+                mac_len = jsonparse_get_value_as_int(parser);
+                os_printf("mac_len=%d\n",mac_len);
+            
+            }else if(jsonparse_strcmp_value(parser, "test") == 0){
+                jsonparse_next(parser);
+                jsonparse_next(parser);
+                jsonparse_copy_value(parser, mac, sizeof(mac));
+                os_printf("test: %s \n",mac);
+                //user_light_set_duty(status, LIGHT_GREEN);
+            }
+        
+        }
+    }
+	os_printf("Type=%d\n",type);
+    return 1;
+#endif
+}
+LOCAL int ICACHE_FLASH_ATTR
+button_status_get(struct jsontree_context *js_ctx)
+{
+   os_printf("button get\n");
+   return 1;
+}
+
+LOCAL struct jsontree_callback button_callback =
+    JSONTREE_CALLBACK(button_status_get, button_status_set);
+
+JSONTREE_OBJECT(button_remove_tree,
+              JSONTREE_PAIR("mac_len", &button_callback),
+              JSONTREE_PAIR("test", &button_callback),
+                 );
+
+JSONTREE_OBJECT(button_new_tree,
+              JSONTREE_PAIR("temp_key", &button_callback),
+              JSONTREE_PAIR("button_mac", &button_callback),
+                 );
+
+JSONTREE_OBJECT(buttonPairingInfom,
+                JSONTREE_PAIR("mdev_mac", &button_callback),
+                JSONTREE_PAIR("button_new", &button_new_tree),
+                 JSONTREE_PAIR("replace", &button_callback),
+                 JSONTREE_PAIR("button_remove", &button_remove_tree),
+                //JSONTREE_PAIR("switches", &switch_tree)
+                );
+JSONTREE_OBJECT(button_info_tree,
+	           JSONTREE_PAIR("button_info", &buttonPairingInfom));
+
+
+          	/*
+		  csc add simple pair end
+		*/
+
+
+
+
 
 /******************************************************************************
  * FunctionName : user_esp_platform_recv_cb
@@ -1336,16 +1554,14 @@ user_esp_platform_recv_cb(void *arg, char *pusrdata, unsigned short length)
 #endif
     char *pstr = NULL;
 	#if ESP_MESH_SUPPORT
-	//char pbuffer[1024 * 2] = {0};//It is suppoosed that in mesh solution, we will only receive a entire packet
+	//char pbuffer[1024 * 2] = {0};//It is supposed that in mesh solution, we will only receive a entire packet
 	char* pbuffer = pusrdata;
 	#else
     LOCAL char pbuffer[1024 * 2] = {0};
 	#endif
     struct espconn *pespconn = arg;
 	
-#if (PLUG_DEVICE || LIGHT_DEVICE)
-    os_timer_disarm(&beacon_timer);
-#endif
+
 
     if (length >= 1460) { //BUG : RCV 1640
         #if ESP_MESH_SUPPORT
@@ -1366,19 +1582,118 @@ user_esp_platform_recv_cb(void *arg, char *pusrdata, unsigned short length)
 		
 	    if(NULL != (char*)os_strstr(pbuffer,"Content-Length")){
 			webserver_recv(pespconn, pbuffer, length);
-	        #if (PLUG_DEVICE || LIGHT_DEVICE)
-				os_timer_disarm(&beacon_timer);
-				os_timer_arm(&beacon_timer, BEACON_TIME, 0);
-	        #endif
+			return;
+		}else{
+			#if (PLUG_DEVICE || LIGHT_DEVICE)
+			    //os_timer_disarm(&beacon_timer);
+            #endif
+		}
+		/*
+		  csc add simple pair
+		*/
+		
+		extern char* sip;
+		extern char* sport;
+         if(os_strstr(pbuffer,PAIR_START_PATH))
+		{
+			os_printf("~~~~~~~~~~\r\n");
+			os_printf("start pairing mode \r\n");
+			os_printf("~~~~~~~~~~\r\n");
+
+#if 1//data from iot platfom,not mesh ?
+			sip = (char *)os_strstr(pusrdata, ESP_MESH_SIP_STRING);
+			sport = (char *)os_strstr(pusrdata, ESP_MESH_SPORT_STRING);
+
+			if(sip) {
+				os_bzero(pair_sip,sizeof(pair_sip));
+				os_memcpy(pair_sip,sip,ESP_MESH_JSON_IP_ELEM_LEN);
+				os_printf("pair_sip,%d: %s \r\n",os_strlen(pair_sip),pair_sip);
+			}
+			if(sport){
+				os_bzero(pair_sport,sizeof(pair_sport));
+				os_memcpy(pair_sport,sport,ESP_MESH_JSON_PORT_ELEM_LEN);
+				os_printf("pair_sport,%d: %s \r\n",os_strlen(pair_sport),pair_sport);
+			}
+#endif
+			os_printf("Recv Button inform\n");
+			struct jsontree_context js;
+			jsontree_setup(&js, (struct jsontree_value *)&button_info_tree, json_putchar);
+			json_parse(&js, pbuffer);
+			//response_send(ptrespconn, true);
+			char data_resp[100];
+			os_bzero(data_resp,sizeof(data_resp));
+			os_sprintf(data_resp, "{\"status\":200,\"path\":\"/device/button/configure\"}");
+			os_printf("response send str...\r\n");
+			
+			//response_send_str(void *arg, bool responseOK,char* pJsonDataStr , int str_len,char* url,uint16 url_len,uint8 tag_if,uint8 header_if)
+			response_send_str(pespconn, true, data_resp,os_strlen(data_resp),PAIR_START_PATH,os_strlen(PAIR_START_PATH),1,0);
+			buttonPairingInfo.simple_pair_state=USER_PBULIC_BUTTON_INFO;
+			sp_LightPairState();
+			return;
+
+
+		}
+		else if(os_strstr(pbuffer,PAIR_FOUND_REQUEST))
+		{
+			os_printf("PAIR_FOUND_REQUEST \r\n");
+			if((char*)os_strstr(pbuffer,"200")!=NULL){
+				os_printf("device can pair\n");
+				buttonPairingInfo.simple_pair_state=USER_PERMIT_SIMPLE_PAIR;
+			}
+			else if((char*)os_strstr(pbuffer,"403")){
+				os_printf("device cannot pair\n");
+				buttonPairingInfo.simple_pair_state=USER_REFUSE_SIMPLE_PAIR;
+			}
+			//pairStatus=SP_LIGHT_PAIR_REQ_RES;
+			sp_LightPairState();
 			return;
 		}
-		
-		ESP_DBG("========================\r\n");
-		ESP_DBG("user_esp_platform_recv_cb \r\n");
-		ESP_DBG("RCV LEN: %d \r\n",length);
-		ESP_DBG("------------------\r\n");
-		ESP_DBG("%s \r\n",pbuffer);
-		ESP_DBG("========================\r\n");
+		else if(os_strstr(pbuffer,PAIR_RESULT))
+		{
+			if((char*)os_strstr(pbuffer,"200")!=NULL){
+				os_printf("device pair stop\n");
+				buttonPairingInfo.simple_pair_state=USER_CONFIG_STOP_SIMPLE_PAIR;
+			}
+			else if((char*)os_strstr(pbuffer,"100")){
+				os_printf("device pair continue\n");
+				buttonPairingInfo.simple_pair_state=USER_CONFIG_CONTIUE_SIMPLE_PAIR;
+			}
+			//response_send(pespconn, true);
+			return;
+		}				
+		else if(os_strstr(pbuffer,PAIR_KEEP_ALIVE)){
+			os_printf("PAIR KEEP ALIVE: \r\n");
+			sip = (char *)os_strstr(pusrdata, ESP_MESH_SIP_STRING);
+			sport = (char *)os_strstr(pusrdata, ESP_MESH_SPORT_STRING);
+			sp_LightPairReplyKeepAlive();
+			return;
+		}
+		#if 0
+		else if(os_strstr(pbuffer,PAIR_BUTTONS_MAC))
+		{
+			uint8 SaveStrBuffer[MAX_BUTTON_NUM*6*2+40];
+			ResonseUserInquireButtonMacBody(SaveStrBuffer);
+			os_printf("ResonseUserInquireButtonMacBody:\n%s",SaveStrBuffer);
+			data_send(pespconn,true,SaveStrBuffer);
+		}
+		#endif
+
+          	/*
+		  csc add simple pair end
+		*/
+		#if ESP_DEBUG_MODE
+			if(NULL == (char*)os_strstr(pbuffer,"download_rom_base64")){
+        		ESP_DBG("========================\r\n");
+        		ESP_DBG("user_esp_platform_recv_cb \r\n");
+        		ESP_DBG("RCV LEN: %d \r\n",length);
+        		ESP_DBG("------------------\r\n");
+        		ESP_DBG("%s \r\n",pbuffer);
+        		ESP_DBG("========================\r\n");
+			}else{
+        		ESP_DBG("========================\r\n");
+        		ESP_DBG("platform recv: %d \r\n",length);
+			}
+		#endif
 
 		
 
@@ -1391,18 +1706,12 @@ user_esp_platform_recv_cb(void *arg, char *pusrdata, unsigned short length)
 		////g_mac = (char *)os_strstr(pusrdata, ESP_MESH_DEV_MAC_STRING);
 		
 		//if(g_mac==NULL) g_mac = (char*)mesh_GetMdevMac();
-
-	
 		#endif
-
-
 		//ESP_DBG("================================\r\n");
 		//ESP_DBG("ACTIVATE INFO: \r\n");
 		//ESP_DBG("TEST NOUNCE: %u	;	%u	\r\n",user_esp_platform_parse_nonce(pbuffer,length),active_nonce);
 		//ESP_DBG(" TEST PARSE: %s \r\n",(char *)os_strstr(pbuffer, "\"activate_status\": "));
 		//ESP_DBG("================================\r\n");
-
-
         if ((pstr = user_json_find_section(pbuffer, length, "\"activate_status\":")) != NULL &&
         //if ((pstr = user_json_find_section(pbuffer, length, "\"status\": ")) != NULL &&
             user_esp_platform_parse_nonce(pbuffer, length) == active_nonce) {
@@ -1424,17 +1733,6 @@ user_esp_platform_recv_cb(void *arg, char *pusrdata, unsigned short length)
                 ESP_DBG("device activates failed.\n");
 				ESP_DBG("\r\n\r\n===========================\r\n");
 				device_status = DEVICE_ACTIVE_FAIL;
-				/*
-				#if ESP_MESH_SUPPORT
-                	if(MESH_DISABLE == espconn_mesh_get_status() ){
-                		os_printf("======================\r\n");
-                		os_printf("CONNECTED TO ROUTER, ENABLE MESH\r\n");
-                		os_printf("======================\r\n");
-                		espconn_mesh_enable(NULL,MESH_LOCAL);
-                	}
-                	
-                #endif
-                */
             }
         }
 	
@@ -1443,6 +1741,18 @@ user_esp_platform_recv_cb(void *arg, char *pusrdata, unsigned short length)
         else if ((pstr = user_json_find_section(pbuffer, length, "\"action\"")) != NULL) {
             int nonce = user_esp_platform_parse_nonce(pbuffer, length);
             if (!os_memcmp(pstr, "sys_upgrade", os_strlen("sys_upgrade"))) {  // upgrade start
+            	if(UPGRADE_FLAG_START == system_upgrade_flag_check()){
+					os_printf("Under Upgrading...return...\r\n");
+                    user_platform_rpc_set_rsp(pespconn, nonce, 401);
+					return;
+            	}
+                os_printf("upgrade start....!!!\r\n");
+				ota_start_time = system_get_time();
+				esp_param.ota_start_time = ota_start_time;
+				esp_param.ota_finish_time = ota_start_time;
+				system_param_save_with_protect(ESP_PARAM_START_SEC, &esp_param, sizeof(esp_param));
+
+				
                 if ((pstr = user_json_find_section(pbuffer, length, "\"version\"")) != NULL) {
 					#if ESP_MESH_SUPPORT
                     if (espconn_mesh_get_status() == MESH_DISABLE) {  // normal upgrade start
@@ -1451,7 +1761,7 @@ user_esp_platform_recv_cb(void *arg, char *pusrdata, unsigned short length)
                         user_esp_mesh_upgrade_begin(pespconn, nonce, pbuffer, length);
                     }
 					#else
-                    user_esp_upgrade_begin(pespconn, nonce, pstr);
+                        user_esp_upgrade_begin(pespconn, nonce, pstr);
 					#endif
                 } else {
                     user_platform_rpc_set_rsp(pespconn, nonce, 400);
@@ -1466,16 +1776,59 @@ user_esp_platform_recv_cb(void *arg, char *pusrdata, unsigned short length)
                     user_platform_rpc_set_rsp(pespconn, nonce, 400);
 				}
             } else if (!os_memcmp(pstr, "sys_reboot", os_strlen("sys_reboot"))) {
-                ESP_DBG("upgrade reboot..");
-				UART_WaitTxFifoEmpty(0,50000);
-                //espconn_mesh_setup_timer(&client_timer, 100,(os_timer_func_t *)system_upgrade_reboot, NULL, 0);
-				os_timer_disarm(&client_timer);
-				os_timer_setfn(&client_timer, (os_timer_func_t *)system_upgrade_reboot, NULL);
-				os_timer_arm(&client_timer, 500, 0);
+                if(system_upgrade_flag_check() == UPGRADE_FLAG_FINISH){
+					user_platform_rpc_set_rsp(pespconn, nonce, 200);
+                    ESP_DBG("upgrade reboot..");
+    				UART_WaitTxFifoEmpty(0,50000);
+                    //espconn_mesh_setup_timer(&client_timer, 100,(os_timer_func_t *)system_upgrade_reboot, NULL, 0);
+    				os_timer_disarm(&client_timer);
+    				os_timer_setfn(&client_timer, (os_timer_func_t *)system_upgrade_reboot, NULL);
+    				os_timer_arm(&client_timer, 1000, 0);
+                }else{
+                    user_platform_rpc_set_rsp(pespconn, nonce, 400);
+					ESP_DBG("upgrade not finished..");
+                }
+    				
+                
+            } else if(!os_memcmp(pstr, "get_switches", os_strlen("get_switches"))){
+                ESP_DBG("GET BUTTON STATUS CMD:\r\n");
+				//json_send(pespconn, BATTERY_STATUS);
+				char pbuf[512];
+				os_memset(pbuf,0,sizeof(pbuf));
+				json_build_packet(pbuf, BATTERY_STATUS);
+				//user_platform_rpc_build_rsp( pbuf,sizeof(pbuf),nonce,200);
+				user_platform_rpc_battery_rsp(pespconn,pbuf,sizeof(pbuf), nonce, 200);
+				os_printf("debug cmd switches:\r\n %s \r\n",pbuf);
 				
-                user_platform_rpc_set_rsp(pespconn, nonce, 200);
-            } else if(!os_memcmp(pstr, "get_battery", os_strlen("get_battery"))){
             
+			} else if(!os_memcmp(pstr, "test", os_strlen("test"))){
+                ESP_DBG("GET BUTTON STATUS CMD:\r\n");
+				//json_send(pespconn, BATTERY_STATUS);
+				char pbuf[512];
+				os_memset(pbuf,0,sizeof(pbuf));
+				//os_sprintf(pbuf,"{\"switches\":[{\"mac\":\"00:00:00:00:00:00\",\"status\":\"NA\",\"voltagemv\":0}]}");
+				//os_sprintf(pbuf,"{\"switches\":{\"mac\":\"00:00:00:00:00:00\",\"status\":\"NA\",\"voltagemv\":0}}");
+				//os_sprintf(pbuf,"{\"deliver_to_device\": true,\"router\":\"FFFFFFFF\"}\n");
+				json_build_packet(pbuf, BATTERY_STATUS);
+				//user_platform_rpc_build_rsp( pbuf,sizeof(pbuf),nonce,200);
+				user_platform_rpc_battery_rsp(pespconn,pbuf,sizeof(pbuf), nonce, 200);
+				os_printf("debug cmd test:\r\n %s \r\n",pbuf);
+			}
+			else if(!os_memcmp(pstr, "multicast", os_strlen("multicast"))){
+			    if((pstr = user_json_find_section(pbuffer, length, "\"method\"")) != NULL){
+					os_printf("test find section: %s\r\n",pstr);
+					
+                    if (!os_memcmp(pstr, "GET", os_strlen("GET"))) {
+        				os_printf("FIND GET...\r\n");
+                        user_esp_platform_get_info(pespconn, pbuffer);
+                    } else if (!os_memcmp(pstr, "POST", os_strlen("POST"))) {
+                        os_printf("FIND POST...\r\n");
+						//os_printf("------------\r\n");
+						//os_printf("pbuffer: %s\r\n",pbuffer);
+						//os_printf("------------\r\n");
+                        user_esp_platform_set_info(pespconn, pbuffer,CMD_TYPE_MULITCAST);
+                    }
+			    }
 			}else {
                 user_platform_rpc_set_rsp(pespconn, nonce, 400);
             }
@@ -1488,9 +1841,11 @@ user_esp_platform_recv_cb(void *arg, char *pusrdata, unsigned short length)
             os_timer_arm(&client_timer, 2000, 0);
         } else if ((pstr = (char *)os_strstr(pbuffer, "\"method\": ")) != NULL) {
             if (os_strncmp(pstr + 11, "GET", 3) == 0) {
+				os_printf("FIND GET...\r\n");
                 user_esp_platform_get_info(pespconn, pbuffer);
             } else if (os_strncmp(pstr + 11, "POST", 4) == 0) {
-                user_esp_platform_set_info(pespconn, pbuffer);
+                os_printf("FIND POST...\r\n");
+                user_esp_platform_set_info(pespconn, pbuffer,CMD_TYPE_UNICAST);
             }
         } else if ((pstr = (char *)os_strstr(pbuffer, "ping success")) != NULL) {
             ESP_DBG("ping success\n");
@@ -1526,11 +1881,11 @@ user_esp_platform_recv_cb(void *arg, char *pusrdata, unsigned short length)
     }
 
 #if (PLUG_DEVICE || LIGHT_DEVICE)
-    os_timer_disarm(&beacon_timer);
-    os_timer_arm(&beacon_timer, BEACON_TIME, 0);
+    //os_timer_disarm(&beacon_timer);
+    //os_timer_arm(&beacon_timer, BEACON_TIME, 0);
 #endif
 
-ESP_DBG("END OF RCV CB\r\n");
+//ESP_DBG("END OF RCV CB\r\n");
 }
 
 #if AP_CACHE
@@ -1659,10 +2014,17 @@ user_esp_platform_connect_cb(void *arg)
     ESP_DBG("user_esp_platform_connect_cb\n");
 	os_printf("=======================\r\n");
 	os_printf("test in connect cb\r\n");
+	
+	os_printf("==============\r\n");
+	os_printf("CONN STATUS : %d , %p\r\n",pespconn->state , pespconn);
+
 	os_printf("=======================\r\n");
     if (wifi_get_opmode() ==  STATIONAP_MODE ) {
         //wifi_set_opmode(STATION_MODE);
     }
+	#if ESP_DEBUG_MODE
+	debug_UploadExceptionInfo(pespconn);
+	#endif
 
 #if (PLUG_DEVICE || SENSOR_DEVICE)
     user_link_led_timer_done();
@@ -1693,6 +2055,10 @@ user_esp_platform_connect(struct espconn *pespconn)
 
 #if ESP_MESH_SUPPORT
     #if ESP_MESH_STRIP
+	os_printf("==============\r\n");
+	os_printf("CONN STATUS : %d , %p\r\n",pespconn->state , pespconn);
+	os_printf("ip: "IPSTR"\r\n",IP2STR(pespconn->proto.tcp->remote_ip));
+	
     espconn_mesh_connect(pespconn);
 	#else
 	espconn_connect(pespconn);
@@ -1752,11 +2118,9 @@ user_esp_platform_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
 
     if (esp_server_ip.addr == 0 && ipaddr->addr != 0) {
         os_timer_disarm(&client_timer);
-
 		//#if ESP_MESH_SUPPORT
 		//    mesh_StartReconnCheck(10000);
 		//#endif
-		
 		#if ESP_MESH_SUPPORT
 		    ESP_DBG("MESH STATUS : %d \r\n",espconn_mesh_get_status());
 			//if(MESH_LOCAL_AVAIL == espconn_mesh_get_status()){
@@ -1825,9 +2189,7 @@ user_esp_platform_dns_check_cb(void *arg)
 				os_printf("MESH DISABLE , RETURN...\r\n");
 				return;
 			}
-			
 			//#endif
-
 			
 			if(device_recon_count<5){
                 os_timer_arm(&client_timer, 1000, 0);
@@ -1890,23 +2252,38 @@ void ICACHE_FLASH_ATTR
 	espconn_mdns_close();
     struct ip_info ipconfig;
     wifi_get_ip_info(STATION_IF, &ipconfig);
-	if(mdns_info == NULL){
-        mdns_info = (struct mdns_info *)os_zalloc(sizeof(struct mdns_info));
-	}else{
-		os_memset(mdns_info,0,sizeof(struct mdns_info));
-	}
+	#if 1
+    	if(mdns_info == NULL){
+            mdns_info = (struct mdns_info *)os_zalloc(sizeof(struct mdns_info));
+    	}else{
+    		os_memset(mdns_info,0,sizeof(struct mdns_info));
+    	}
+		mdns_info->host_name = "ESP_LIGHT";
+        mdns_info->ipAddr= ipconfig.ip.addr; //sation ip
+    	//os_printf("mDNS ip: "IPSTR,IP2STR(info->ipAddr));
+        mdns_info->server_name = "ESP_MESH";
+        mdns_info->server_port = 8000;
+        mdns_info->txt_data[0] = "version = 1.2.0";
+    	mdns_info->txt_data[1] = "vendor = espressif";
+    	mdns_info->txt_data[2] = "mesh_support = 1";
+    	mdns_info->txt_data[3] = "PWM channel = 5";
+        espconn_mdns_init(mdns_info);
+	#else
+    	static struct mdns_info mdns_info_t;
+    	mdns_info_t.host_name = "ESP_LIGHT";
+        mdns_info_t.ipAddr= ipconfig.ip.addr; //sation ip
+    	//os_printf("mDNS ip: "IPSTR,IP2STR(info->ipAddr));
+        mdns_info_t.server_name = "ESP_MESH";
+        mdns_info_t.server_port = 8000;
+        mdns_info_t.txt_data[0] = "version = 1.2.0";
+    	mdns_info_t.txt_data[1] = "vendor = espressif";
+    	mdns_info_t.txt_data[2] = "mesh_support = 1";
+    	mdns_info_t.txt_data[3] = "PWM channel = 5";
+        espconn_mdns_init(&mdns_info_t);
+	#endif
 
-	mdns_info->host_name = "ESP_LIGHT";
-    mdns_info->ipAddr= ipconfig.ip.addr; //sation ip
-	//os_printf("mDNS ip: "IPSTR,IP2STR(info->ipAddr));
-    mdns_info->server_name = "ESP_MESH";
-    mdns_info->server_port = 8000;
-    mdns_info->txt_data[0] = "version = 1.2.0";
-	mdns_info->txt_data[1] = "vendor = espressif";
-	mdns_info->txt_data[2] = "mesh_support = 1";
-	mdns_info->txt_data[3] = "PWM channel = 5";
-    espconn_mdns_init(mdns_info);
 	espconn_mdns_server_register();
+	
 }
 #endif
 
@@ -1944,10 +2321,7 @@ user_esp_platform_check_ip(uint8 reset_flag)
 //***************************
 #if LIGHT_DEVICE
    #if ESP_MDNS_SUPPORT
-    if(mdns_init_flg==0){
-	    user_mdns_conf();
-		mdns_init_flg = 1;
-    }
+		user_mdns_conf();
 	#endif
 #endif
 #if ESP_MESH_SUPPORT
@@ -1996,7 +2370,6 @@ user_esp_platform_check_ip(uint8 reset_flag)
 #else
         user_conn.proto.tcp->remote_port = 8000;
 #endif
-
         espconn_regist_connectcb(&user_conn, user_esp_platform_connect_cb);
         espconn_regist_reconcb(&user_conn, user_esp_platform_recon_cb);
         user_esp_platform_connect(&user_conn);
@@ -2030,7 +2403,7 @@ user_esp_platform_check_ip(uint8 reset_flag)
 void ICACHE_FLASH_ATTR
 user_esp_platform_init(void)
 {
-
+	debug_FlashBufInit();
     os_memset(iot_version, 0, sizeof(iot_version));
 	os_sprintf(iot_version,"%s%d.%d.%dt%d(%s)",VERSION_TYPE,IOT_VERSION_MAJOR,\
 	IOT_VERSION_MINOR,IOT_VERSION_REVISION,device_type,UPGRADE_FALG);
@@ -2049,6 +2422,8 @@ user_esp_platform_init(void)
 		if (rtc_info->reason == REASON_EXCEPTION_RST) {
 			os_printf("Fatal exception (%d):\n", rtc_info->exccause);
 		}
+		
+		debug_FlashSvExceptInfo(rtc_info);
 		os_printf("epc1=0x%08x, epc2=0x%08x, epc3=0x%08x, excvaddr=0x%08x, depc=0x%08x\n",
 				rtc_info->epc1, rtc_info->epc2, rtc_info->epc3, rtc_info->excvaddr, rtc_info->depc);
 	}
@@ -2169,7 +2544,7 @@ void ICACHE_FLASH_ATTR
 void ICACHE_FLASH_ATTR
 user_esp_platform_init_peripheral(void)
 {
-		
+	debug_FlashBufInit();
 	espSendQueueInit();
 	#if ESP_MESH_SUPPORT
 	    g_mac = (char*)mesh_GetMdevMac();
@@ -2186,6 +2561,10 @@ user_esp_platform_init_peripheral(void)
 
 	struct rst_info *rtc_info = system_get_rst_info();
 
+	#if ESP_DEBUG_MODE
+	debug_SvExceptionInfo(rtc_info);
+	#endif
+	
 	os_printf("reset reason: %x\n", rtc_info->reason);
 
 	if (rtc_info->reason == REASON_WDT_RST ||
@@ -2194,6 +2573,9 @@ user_esp_platform_init_peripheral(void)
 		if (rtc_info->reason == REASON_EXCEPTION_RST) {
 			os_printf("Fatal exception (%d):\n", rtc_info->exccause);
 		}
+		#if ESP_DEBUG_MODE
+		debug_FlashSvExceptInfo(rtc_info);
+		#endif
 		os_printf("epc1=0x%08x, epc2=0x%08x, epc3=0x%08x, excvaddr=0x%08x, depc=0x%08x\n",
 				rtc_info->epc1, rtc_info->epc2, rtc_info->epc3, rtc_info->excvaddr, rtc_info->depc);
 	}
@@ -2305,15 +2687,14 @@ user_esp_platform_connect_ap_cb()
 #if LIGHT_DEVICE
 #if ESP_MDNS_SUPPORT
 	#if ESP_MESH_SUPPORT
-    if(mdns_init_flg==0 && !espconn_mesh_local_addr(&ipconfig.ip)){
+    if(!espconn_mesh_local_addr(&ipconfig.ip)){
 	    user_mdns_conf();
-	    mdns_init_flg=1;
+    }else{
+        os_printf("mDNS close...\r\n");
+		espconn_mdns_close();
     }
 	#else
-    if(mdns_init_flg==0){
-	    user_mdns_conf();
-	    mdns_init_flg=1;
-    }
+	user_mdns_conf();
 	#endif
 #endif
 

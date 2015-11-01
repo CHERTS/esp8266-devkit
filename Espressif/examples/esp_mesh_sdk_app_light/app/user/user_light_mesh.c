@@ -18,9 +18,16 @@ void ICACHE_FLASH_ATTR
 {
 	if(mdev_mac){
 		os_printf("Mesh mdev_mac: %s \r\n",mdev_mac);
+		return;
 	}
 	mdev_mac = (char*)os_zalloc(ESP_MESH_JSON_DEV_MAC_ELEM_LEN+1);	
 	uint32 MAC_FLG = READ_PERI_REG(0x3ff00054);
+	
+    uint8 mac_sta[6] = {0};
+    wifi_get_macaddr(STATION_IF, mac_sta);
+	os_sprintf(mdev_mac,"\"mdev_mac\":\"%02X%02X%02X%02X%02X%02X\"",MAC2STR(mac_sta));
+
+	#if 0
 	MAC_FLG = ((MAC_FLG>>16)&0xff);
 	if(MAC_FLG == 0){
 		os_sprintf(mdev_mac,"\"mdev_mac\":\"18FE34%06X\"",system_get_chip_id());
@@ -30,6 +37,7 @@ void ICACHE_FLASH_ATTR
 		os_printf("dev mac error? 0x%02x\r\n",MAC_FLG);
 		return;
 	}
+	#endif
 	os_printf("Disp mdev_mac: %s\r\n",mdev_mac);
 
 }
@@ -149,6 +157,9 @@ void ICACHE_FLASH_ATTR
 void ICACHE_FLASH_ATTR
 	mesh_SuccessCb(void* arg)
 {
+	////light_hint_abort();
+	////light_set_aim(0,0,0,22222,22222,1000,0);
+	
 	_LINE_DESP();
 	MESH_INFO("mesh log: mesh success!\r\n");
 	MESH_INFO("CONNECTED, DO RUN ESP PLATFORM...\r\n");
@@ -162,10 +173,10 @@ void ICACHE_FLASH_ATTR
     	if( espconn_mesh_local_addr(&sta_ip.ip)){
     		MESH_INFO("THIS IS A MESH SUB NODE..\r\n");
     		uint32 mlevel = sta_ip.ip.addr&0xff;
-    		light_ShowDevLevel(mlevel);
+    		light_ShowDevLevel(mlevel);//debug
     	}else{
     		MESH_INFO("THIS IS A MESH ROOT..\r\n");
-    	    light_ShowDevLevel(1);
+    	    light_ShowDevLevel(1);//debug
     	}
 		mesh_init_flag = false;
 	}else{
@@ -176,9 +187,9 @@ void ICACHE_FLASH_ATTR
 	//init ESP-NOW ,so that light can be controlled by ESP-NOW SWITCHER.
 	light_EspnowInit();
 #endif
-	WIFI_StartCheckIp();
+	WIFI_StartCheckIp();//debug
 	//run esp-platform procedure,register to server.
-	user_esp_platform_connect_ap_cb();
+	user_esp_platform_connect_ap_cb();//debug
 	return;
 }
 
@@ -189,6 +200,9 @@ void ICACHE_FLASH_ATTR
 void ICACHE_FLASH_ATTR
 	mesh_FailCb(void* arg)
 {
+	////light_hint_abort();
+	////light_set_aim(22222,0,0,5000,5000,1000,0);
+
 	MESH_INFO("mesh fail\r\n");
 	mesh_StopCheckTimer();
 #if ESP_NOW_SUPPORT
@@ -299,7 +313,9 @@ void ICACHE_FLASH_ATTR
     }	//if(mesh_status == MESH_LOCAL_AVAIL){
     else{
 		espconn_mesh_enable(mesh_EnableCb, MESH_ONLINE);
+		os_timer_setfn(&mesh_user_t,mesh_ReconCheck,NULL);
 		os_timer_arm(&mesh_user_t,20000,1);
+		
 	}
 }
 
@@ -358,7 +374,16 @@ void ICACHE_FLASH_ATTR
 	LightMeshProc.init_retry = 0;
 
     os_printf("test: %s\n", __func__);
+	
+	////light_shadeStart(HINT_WHITE,1000,0,1,NULL);
+    user_MeshSetInfo();
     espconn_mesh_enable(mesh_EnableCb, MESH_ONLINE);
+	//----add 151008---
+	os_printf("mesh max hops: %d \r\n",espconn_mesh_get_max_hops());
+	espconn_mesh_set_max_hops(5);
+	os_printf("mesh set max hops: %d \r\n",espconn_mesh_get_max_hops());
+	//----------------
+	
 	if(LightMeshProc.mesh_init_tout_cb){
     	os_timer_disarm(&mesh_tout_t);
     	os_timer_setfn(&mesh_tout_t,LightMeshProc.mesh_init_tout_cb,NULL);
@@ -383,6 +408,14 @@ void ICACHE_FLASH_ATTR
 void ICACHE_FLASH_ATTR
 	user_MeshSetInfo()
 {
+#if 1
+	uint8 group_id[6] = {0x18,0xfe,0x34,0x00,0x00,0x01};
+	//espconn_mesh_init_group_list(group_id, 0);//CNT=1,MAC=GROUPID
+	espconn_mesh_group_id_init(group_id,6);
+	os_printf("==========================\r\n");
+	os_printf("SET GROUP ID: "MACSTR"",MAC2STR(group_id));
+	os_printf("==========================\r\n");
+#endif	
 	//If the device is in MESH mode,the SSID would finally be MESH_SSID_PREFIX_X_XXXXXX
 	#if LIGHT_DEVICE
 	    espconn_mesh_set_dev_type(ESP_DEV_LIGHT);
@@ -405,5 +438,13 @@ void ICACHE_FLASH_ATTR
 	}
 }
 
+void ICACHE_FLASH_ATTR mesh_enable_task()
+{
+
+	//espconn_mesh_enable(mesh_EnableCb, MESH_ONLINE);
+	espconn_mesh_enable(NULL, MESH_ONLINE);
+
+
+}
 #endif
 

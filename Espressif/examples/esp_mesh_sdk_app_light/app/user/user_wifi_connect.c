@@ -64,7 +64,7 @@ void ICACHE_FLASH_ATTR
 	//INFO("ESP_TOUCH FLG: %d \r\n",esptouch_getAckFlag());
 	if(false == esptouch_getAckFlag()){
 	    esptouch_FlowStart();
-		esptouch_setAckFlag(true);
+		//esptouch_setAckFlag(true);
 		return;
 	}
 #endif
@@ -72,13 +72,13 @@ void ICACHE_FLASH_ATTR
 	//else{
 	    INFO("AP CACHE TOUT,ALREADY DID ESP-TOUCH\r\n");
 		mesh_SetSoftap();
-		INFO("RE-SEARCH MESH NETWORK,in 60s \r\n");
+		INFO("RE-SEARCH MESH NETWORK,in 5s \r\n");
 		//user_StopClientTimer();
 		//user_MeshInit();
 		
 		os_timer_disarm(&mesh_scan_t);
 		os_timer_setfn(&mesh_scan_t,user_MeshInit,NULL);
-		os_timer_arm(&mesh_scan_t,60000,0);
+		os_timer_arm(&mesh_scan_t,5000,0);
 		return;
 	//}
 #endif
@@ -171,7 +171,7 @@ void ICACHE_FLASH_ATTR
 		if(false == esptouch_getAckFlag()){
 			
 			esptouch_FlowStart();
-			esptouch_setAckFlag(true);
+			//esptouch_setAckFlag(true);
 			return;
 		}
 		
@@ -363,7 +363,7 @@ void ICACHE_FLASH_ATTR
 	struct station_config stationConf;
 
 	INFO("WIFI_INIT\r\n");
-	wifi_set_opmode(STATION_MODE);//
+	wifi_set_opmode(STATIONAP_MODE);//
 	//wifi_station_set_auto_connect(FALSE);
 	if(cb){
 	    wifiCb = cb;

@@ -25,7 +25,9 @@
 #include "esp_send.h"
 #include "ip_addr.h"
 #include "espconn.h"
-
+#include "user_webserver.h"
+#include "user_simplepair.h"
+#include "user_light_hint.h"
 
 // UartDev is defined and initialized in rom code.
 extern UartDevice    UartDev;
@@ -349,7 +351,8 @@ uart_recvTask(os_event_t *events)
         uint8 fifo_len = (READ_PERI_REG(UART_STATUS(UART0))>>UART_RXFIFO_CNT_S)&UART_RXFIFO_CNT;
         uint8 d_tmp = 0;
         uint8 idx=0;
-		
+		extern enum SimplePairStatus pairStatus;
+		extern uint8 stamac[6];
 		int i;
 		extern struct esp_platform_saved_param esp_param;
         for(idx=0;idx<fifo_len;idx++) {
@@ -537,7 +540,7 @@ uart_recvTask(os_event_t *events)
 					_LINE_DESP();
 					os_printf("connect to wifi\r\n");
 					user_esp_platform_set_token("0123456789012345678901234567890123456789");
-					WIFI_Connect("TP-LINK_3E392E","11111111",wifi_con_cb_t);
+					WIFI_Connect("WGPR-Oriental","",NULL);
 					_LINE_DESP();
 					break;
 				case 'e':
@@ -561,7 +564,14 @@ uart_recvTask(os_event_t *events)
 					_LINE_DESP();
 					os_printf("connect to wifi\r\n");
 					user_esp_platform_set_token("0123456789012345678901234567890123456789");
-					WIFI_Connect("MESH_AP","123456789",NULL);
+					#if ESP_MESH_SUPPORT
+					WIFI_Connect("MESH_AP_WJL","123456789",NULL);
+					#else
+					WIFI_Connect("MESH_AP_WJL","123456789",user_esp_platform_connect_ap_cb);
+					
+
+					#endif
+					
 					_LINE_DESP();
 					break;
 				case 'h':
@@ -693,6 +703,50 @@ uart_recvTask(os_event_t *events)
 					os_printf("light_MeshShowLevel : %d \r\n",rnd);
 					light_ShowDevLevel((rnd++)%4);
 					break;
+				case 'w':
+					os_printf("debug flash init...\r\n");
+					debug_FlashBufInit();
+					break;
+				case 'x':
+					//os_printf("reset flash debug info...\r\n");
+					//debug_FlashBufReset();
+
+				
+					//extern uint8 stamac[6];
+					{uint8 mac_tmp2[6] = {0x18,0xfe,0x34,0xA2,0xc6,0xdc};
+                                   LOCAL uint8 CNT=0;
+				       CNT++;
+					 os_memset(mac_tmp2,CNT,sizeof(mac_tmp2));
+					uint8 key[16]={1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4};
+					 sp_AddPairedDev(&PairedDev,mac_tmp2,key,1);
+					 sp_DispPairedDev(&PairedDev);
+					//sp_LightPairState();
+					//break;
+					break;}
+				case 'y':
+					//os_printf("disp flash debug info ...\r\n");
+					//debug_DispFlashExceptInfo();
+
+					os_printf("ALLOW PAIRING...\r\n");
+					//extern uint8 stamac[6];
+					uint8 mac_tmp[] = {0x18,0xfe,0x34,0xA4,0x8c,0xA3};
+					//os_memcpy(stamac,mac_tmp,6);
+					os_memcpy(buttonPairingInfo.button_mac,mac_tmp,6);
+					//pairStatus=SP_LIGHT_PAIR_REQ_RES;
+					sp_LightPairState();
+					break;
+				case 'z':
+					{//uint8 mac_tmp2[6] = {0x18,0xfe,0x34,0xA2,0xc6,0xdc};
+                        //          LOCAL uint8 CNT=10;
+				      //CNT--;
+					 //os_memset(mac_tmp2,CNT,sizeof(mac_tmp2));
+					
+					 //sp_DelPairedDev(&PairedDev,mac_tmp2);
+					 sp_DispPairedDev(&PairedDev);
+					 sp_PairedDevParamReset(&PairedDev,MAX_BUTTON_NUM);
+					//sp_LightPairState();
+					//break;
+					break;}
 					
 				case '0':
 					_LINE_DESP();
@@ -706,7 +760,22 @@ uart_recvTask(os_event_t *events)
 					
 					//system_restart();
 					break;
-					
+				case 'A':
+					light_shadeStart(HINT_RED,500,1,1,NULL);
+					break;
+				case 'B':
+					light_shadeStart(HINT_RED,500,2,0,NULL);
+					break;
+				case 'C':
+					light_shadeStart(HINT_BLUE,500,3,2,NULL);
+					break;
+				case 'D':
+					light_shadeStart(HINT_BLUE,500,4,2,NULL);
+					break;				
+				case 'E':
+				    light_shadeStart(HINT_BLUE,500,4,2,NULL);
+				    break;
+
 				default:
 					break;
 
@@ -730,7 +799,12 @@ uart_init(UartBautRate uart0_br, UartBautRate uart1_br)
 {
     /*this is a example to process uart data from task,please change the priority to fit your application task if exists*/
     system_os_task(uart_recvTask, uart_recvTaskPrio, uart_recvTaskQueue, uart_recvTaskQueueLen);  //demo with a task to process the uart data
-    
+
+	os_printf("test UartDev.rcv_buff.RcvBuffSize ,  %d \r\n",UartDev.rcv_buff.RcvBuffSize);
+	UART_WaitTxFifoEmpty(0,50000);
+
+
+	
     UartDev.baut_rate = uart0_br;
     uart_config(UART0);
     UartDev.baut_rate = uart1_br;

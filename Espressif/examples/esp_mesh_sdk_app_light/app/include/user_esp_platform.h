@@ -15,6 +15,9 @@
 #define TOKEN_SIZE 41
 #endif
 
+#define IOT_BIN_VERSION_LEN (15)
+
+
 enum{
 	MODE_NORMAL,
 	MODE_RESET,
@@ -27,6 +30,8 @@ struct esp_platform_saved_param {
     uint8 activeflag;
 	uint8 reset_flg;
     uint8 pad[2];
+	uint32 ota_start_time;
+	uint32 ota_finish_time;
 };
 
 struct esp_platform_sec_flag_param {
@@ -46,6 +51,12 @@ struct dhcp_client_info {
 	ip_addr_t gw;
 	uint8 flag;
 	uint8 pad[3];
+};
+
+enum {
+    CMD_TYPE_MULITCAST,
+	CMD_TYPE_UNICAST,
+	CMD_TYPE_BROADCAST,
 };
 
 

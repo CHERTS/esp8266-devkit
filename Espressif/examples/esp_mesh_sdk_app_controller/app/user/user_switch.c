@@ -100,6 +100,7 @@ uint8 ICACHE_FLASH_ATTR
 
 
 uint8 switch_gpio_val = 0;
+uint8 key_val_err_flg = 0;
 
 void ICACHE_FLASH_ATTR
 	user_SwitchInit()
@@ -129,16 +130,25 @@ LIGHT_RESET
 
 
 void ICACHE_FLASH_ATTR
-	user_startChannelSync()
+	user_LongPressAction()
 {
 	_SWITCH_GPIO_HOLD();
 
+	os_printf("switch_gpio_val: %02X\r\n",switch_gpio_val);
+	os_printf("-------------\r\n");
 	if(switch_gpio_val == 0xd){
     	os_printf("\r\n\n==========================\r\n");
     	os_printf("SEND LIGHT RESET \r\n");
     	os_printf("==========================\r\n\n\n");
 		uint32 code = LIGHT_RESET;
 		switch_EspnowSendCmdByChnl(1, 5, pwm_duty_data, 1000,code);
+	}else if(switch_gpio_val == 0x6){
+		os_printf("\r\n================\r\n");
+		os_printf("PAIR START\r\n");
+		buttonSimplePairStart(NULL);
+		os_printf("================\r\n");
+
+
 	}else{
     	os_printf("\r\n\n==========================\r\n");
     	os_printf("SEND LIGHT SYNC \r\n");
@@ -154,10 +164,12 @@ void ICACHE_FLASH_ATTR
 	user_SwitchReact()
 {
     os_printf("switch_GetGpioVal in action: 0x%02x\r\n",switch_gpio_val);	
-        
-	if(switch_gpio_val==0x0 || switch_gpio_val == 0x3){
-        _SWITCH_GPIO_RELEASE(); //first power on when exchange battery
-	}
+	//UART_WaitTxFifoEmpty(0,50000);
+	//_SWITCH_GPIO_RELEASE();//DEBUG!!!!!
+	
+	//if(switch_gpio_val==0x0 || switch_gpio_val == 0x3){
+    //    _SWITCH_GPIO_RELEASE(); //first power on when exchange battery
+	//}
 	//======================================
     switch_EspnowInit();
     os_printf("test action init ,CHANNEL %d \r\n",wifi_get_channel());
@@ -182,28 +194,36 @@ void ICACHE_FLASH_ATTR
 		break;
 	case 0x0a:
 		break;
+	
 	default:
+		os_printf("KEY VALUE ERROR!!!!!!!!!!! %02x\r\n",switch_gpio_val);
+		key_val_err_flg=1;
+		_SWITCH_GPIO_RELEASE();
 		break;
 
 
 	}
-	pwm_duty_data[0]=r;
-	pwm_duty_data[1]=g;
-	pwm_duty_data[2]=b;
-	pwm_duty_data[3]=cw;
-	pwm_duty_data[4]=ww;
 
-	int i;
-	os_printf("\r\n\n==========================\r\n");
-	os_printf("SEND LIGHT CMD by channel \r\n");
-	os_printf("==========================\r\n\n\n");
-	os_printf("cmd code: %d \r\n",code);
-	switch_EspnowSendCmdByChnl(1, 5, pwm_duty_data, 1000,code);
+	if(key_val_err_flg == 0){
+    	pwm_duty_data[0]=r;
+    	pwm_duty_data[1]=g;
+    	pwm_duty_data[2]=b;
+    	pwm_duty_data[3]=cw;
+    	pwm_duty_data[4]=ww;
+    
+    	int i;
+    	os_printf("\r\n\n==========================\r\n");
+    	os_printf("SEND LIGHT CMD by channel \r\n");
+    	os_printf("==========================\r\n\n\n");
+    	os_printf("cmd code: %d \r\n",code);
+    	switch_EspnowSendCmdByChnl(1, 5, pwm_duty_data, 1000,code);
+	}else{
 
+	}
 
 	//if there is a long press, run channel synchronization.
 	os_timer_disarm(&light_sync_t);
-	os_timer_setfn(&light_sync_t,user_startChannelSync,NULL);
+	os_timer_setfn(&light_sync_t,user_LongPressAction,NULL);
 	os_timer_arm(&light_sync_t,2000,0);
 	
 	

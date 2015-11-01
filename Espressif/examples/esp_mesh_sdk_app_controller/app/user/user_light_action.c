@@ -9,7 +9,10 @@
 #include "user_switch.h"
 #include "user_interface.h"
 #include "espnow.h"
+#include "user_buttonsimplepair.h"
 
+
+extern uint8 switch_gpio_val;
 //The espnow packet struct used for light<->switch intercommunications
 typedef struct{
     uint16 battery_voltage_mv;
@@ -59,6 +62,7 @@ typedef enum{
     ACT_TYPE_ACK = 1,//NOT USED, REPLACED BY MAC ACK
     ACT_TYPE_SYNC = 2,
     ACT_TYPE_RSP = 3,
+    ACT_TYPE_SIMPLE_CMD = 4, //CMD 1-32
 }EspnowMsgType;
 
 
@@ -68,15 +72,15 @@ typedef enum {
 	ACT_BAT_EMPTY = 2
 }ACT_BAT_TYPE;
 
-
 typedef struct{
-    uint8 csum;
-    uint8 type;
-    uint32 token;//for encryption, add random number to 
-    uint16 cmd_index;
-	uint8 wifiChannel;
-	uint32 sequence;
-	uint8 rsp_if;
+    uint8 csum;//checksum
+    uint8 type;//frame type
+    uint32 token;//random value
+    uint16 cmd_index;//for retry
+	uint8 wifiChannel;//self channel
+	uint16 sequence;//sequence
+	uint16 io_val;//gpio read value
+	uint8 rsp_if;//need response
     union{
     EspnowLightCmd lightCmd;
     EspnowLightRsp lightRsp;
@@ -85,23 +89,18 @@ typedef struct{
 }EspnowProtoMsg;
 
 
-
-#define ESPNOW_PARAM_MAGIC 0x5c5caacc
-#define ESPNOW_PARAM_SEC 0X7D
-#define ESPNOW_DATA_MAGIC 0x5cc5
-
+#if 0
 typedef struct{
     //uint8 csum;
     uint32 magic;
     uint16 SlaveNum;
     uint8 SlaveMac[LIGHT_DEV_NUM][DEV_MAC_LEN];
     uint8 esp_now_key[ESPNOW_KEY_LEN];
-	
 	uint8 wifiChannel[LIGHT_DEV_NUM];
 }SwitchEspnowParam;
 
 SwitchEspnowParam switchEspnowParam;
-
+#endif
 
 
 
@@ -122,7 +121,7 @@ SwitchEspnowParam switchEspnowParam;
 typedef void (*ActionToutCallback)(uint32* act_idx);
 
 typedef struct{
-    uint32 sequence;
+    uint16 sequence;//chg u32 to u16
     EspnowMsgStatus status;
     os_timer_t req_timer;
     uint32 retry_num;
@@ -190,7 +189,8 @@ switch_CheckCmdResult()
 {
     int i;
     EspnowReqRet ret = CUR_CHL_OK;// ALL_CHL_OK;
-    for(i=0;i<switchEspnowParam.SlaveNum;i++){
+    //for(i=0;i<switchEspnowParam.SlaveNum;i++){
+	for(i=0;i<PairedDev.PairedNum;i++){
         //os_printf("actionReqStatus[channel_group[i]]:%d\r\n",actionReqStatus[channel_group[i]]);
         if(actionReqStatus[channel_group[i]].status == ACT_REQ) return CUR_CHL_WAIT;
 		#if ACTION_CMD_RSP
@@ -230,7 +230,7 @@ switch_CheckSyncResult()
 {
     int i;
     EspnowReqRet ret = ALL_CHL_OK;
-    for(i=0;i<switchEspnowParam.SlaveNum;i++){ //CMD NUM QUEALS PRACTICAL LIGHT NUMBER
+    for(i=0;i<PairedDev.PairedNum;i++){ //CMD NUM QUEALS PRACTICAL LIGHT NUMBER
         //USING MAC ACK CB, SYNC NEED A ACT_RSP
         if(actionReqStatus[i].status == ACT_REQ || actionReqStatus[i].status == ACT_ACK ) return CUR_CHL_WAIT;
         if(actionReqStatus[i].status==ACT_TIME_OUT)	ret=CUR_CHL_OK ;
@@ -245,12 +245,13 @@ switch_EspnowSyncExit()
 {
     ESPNOW_DBG("release power\r\n");
     int i;
-    for(i=0;i<switchEspnowParam.SlaveNum;i++){
-        switchEspnowParam.magic = ESPNOW_PARAM_MAGIC;
-        switchEspnowParam.wifiChannel[i] = actionReqStatus[i].wifichannel;
+    for(i=0;i<PairedDev.PairedNum;i++){
+        //switchEspnowParam.magic = ESPNOW_PARAM_MAGIC;
+        PairedDev.PairedList[i].channel_t = actionReqStatus[i].wifichannel;
     }
 	
-    system_param_save_with_protect(ESPNOW_PARAM_SEC,&switchEspnowParam,sizeof(switchEspnowParam));
+    //system_param_save_with_protect(ESPNOW_PARAM_SEC,&switchEspnowParam,sizeof(switchEspnowParam));
+	sp_PairedParamSave(&PairedDev);
     _SWITCH_GPIO_RELEASE();
 }
 
@@ -305,7 +306,8 @@ switch_EspnowSendRetry(void* arg)
         if(EspnowSendStatus->status== ACT_REQ){
             if(EspnowSendStatus->retry_num < ACTION_RETRY_NUM){
                 os_printf("retry send data\r\n");
-                esp_now_send((uint8*)switchEspnowParam.SlaveMac[_idx], (uint8*)EspnowRetryMsg, sizeof(EspnowProtoMsg));
+                //esp_now_send((uint8*)switchEspnowParam.SlaveMac[_idx], (uint8*)EspnowRetryMsg, sizeof(EspnowProtoMsg));
+                esp_now_send((uint8*)PairedDev.PairedList[_idx].mac_t, (uint8*)EspnowRetryMsg, sizeof(EspnowProtoMsg));
                 EspnowSendStatus->retry_num++;
                 //os_timer_arm( &action_status->req_timer, action_status->retry_expire,0);
             }
@@ -314,7 +316,8 @@ switch_EspnowSendRetry(void* arg)
         else if(EspnowSendStatus->status== ACT_ACK){
         	if(EspnowSendStatus->retry_num < ACTION_RETRY_NUM){
         		os_printf("retry send data\r\n");
-        		esp_now_send((uint8*)switchEspnowParam.SlaveMac[_idx], (uint8*)EspnowRetryMsg, sizeof(EspnowProtoMsg));
+        		//esp_now_send((uint8*)switchEspnowParam.SlaveMac[_idx], (uint8*)EspnowRetryMsg, sizeof(EspnowProtoMsg));
+        		esp_now_send((uint8*)PairedDev.PairedList[_idx].mac_t, (uint8*)EspnowRetryMsg, sizeof(EspnowProtoMsg));
         		EspnowSendStatus->retry_num++;
         		//os_timer_arm( &action_status->req_timer, action_status->retry_expire,0);
         	}
@@ -328,7 +331,7 @@ switch_EspnowSendRetry(void* arg)
         if(EspnowSendStatus->status== ACT_REQ || EspnowSendStatus->status== ACT_ACK){
             if(EspnowSendStatus->retry_num < ACTION_RETRY_NUM){
                 os_printf("retry send sync\r\n");
-                esp_now_send((uint8*)switchEspnowParam.SlaveMac[_idx], (uint8*)EspnowRetryMsg, sizeof(EspnowProtoMsg));
+                esp_now_send((uint8*)PairedDev.PairedList[_idx].mac_t, (uint8*)EspnowRetryMsg, sizeof(EspnowProtoMsg));
                 EspnowSendStatus->retry_num++;
                 //os_timer_arm( &action_status->req_timer, action_status->retry_expire,0);
             }
@@ -368,7 +371,7 @@ switch_EspnowSendCmdByChnl(uint16 chn,uint16 channelNum, uint32* duty, uint32 pe
     os_memcpy(pwm_duty,duty,sizeof(pwm_duty));
     pwm_chn_num = channelNum;
     
-    for(i=0;i<switchEspnowParam.SlaveNum;i++){
+    for(i=0;i<PairedDev.PairedNum;i++){
         if(actionReqStatus[i].wifichannel == chn){
             channel_group[channel_num++]=i;
             ESPNOW_DBG("CHANNEL %d : add idx %d\r\n",chn,i);
@@ -428,6 +431,7 @@ switch_EspnowSendLightCmd(uint16 idx, uint16 channelNum, uint32* duty, uint32 pe
     EspnowMsg.cmd_index=idx;
     EspnowMsg.wifiChannel = wifi_get_channel();
     EspnowMsg.sequence = actionReqStatus[idx].sequence;
+	EspnowMsg.io_val = switch_gpio_val;
 	#if ACTION_CMD_RSP
 	EspnowMsg.rsp_if = 1;
     #else
@@ -453,14 +457,14 @@ switch_EspnowSendLightCmd(uint16 idx, uint16 channelNum, uint32* duty, uint32 pe
     
 #if ACT_DEBUG
     ESPNOW_DBG("send to :\r\n");
-	ESPNOW_DBG("MAC: "MACSTR"\r\n",MAC2STR(switchEspnowParam.SlaveMac[idx]));
+	ESPNOW_DBG("MAC: "MACSTR"\r\n",MAC2STR(PairedDev.PairedList[idx].mac_t));
     int j;
     for(j=0;j<sizeof(EspnowMsg);j++) ESPNOW_DBG("%02x ",*((uint8*)(&EspnowMsg)+j));
     ESPNOW_DBG("\r\n");
 #endif
     os_memcpy(  &(actionReqStatus[idx].EspnowMsg), &EspnowMsg, sizeof(EspnowProtoMsg));
 
-    int res = esp_now_send((uint8*)switchEspnowParam.SlaveMac[idx], (uint8*)&EspnowMsg, sizeof(EspnowProtoMsg));
+    int res = esp_now_send((uint8*)PairedDev.PairedList[idx].mac_t, (uint8*)&EspnowMsg, sizeof(EspnowProtoMsg));
 	os_printf("ESPNOW SEND RES: %d \r\n",res);
     
     //os_timer_arm( &actionReqStatus[idx].req_timer, actionReqStatus[idx].retry_expire,0);
@@ -476,7 +480,7 @@ switch_EspnowSendChnSync(uint8 channel)
     //ESPNOW_DBG("TEST SIZEOF actionReqStatus: %d \r\n",sizeof(actionReqStatus));
     int idx;
     bool skip_flg = true;
-    for(idx=0;idx<switchEspnowParam.SlaveNum;idx++){
+    for(idx=0;idx<PairedDev.PairedNum;idx++){
         if(actionReqStatus[idx].wifichannel == 0){
             skip_flg = false;
             os_timer_disarm(&actionReqStatus[idx].req_timer); //disarm retry timer;
@@ -491,6 +495,7 @@ switch_EspnowSendChnSync(uint8 channel)
             EspnowMsg.cmd_index = idx;
             EspnowMsg.wifiChannel = wifi_get_channel();
             EspnowMsg.sequence = actionReqStatus[idx].sequence;
+			EspnowMsg.io_val = switch_gpio_val;
 			EspnowMsg.rsp_if = 1;
 			
             EspnowMsg.lightSync.switchChannel=wifi_get_channel();
@@ -509,13 +514,13 @@ switch_EspnowSendChnSync(uint8 channel)
             ESPNOW_DBG("send to :\r\n");
             //ESPNOW_DBG("MAC: %02X %02X %02X %02X %02X %02X\r\n",LIGHT_MAC[idx][0],LIGHT_MAC[idx][1],LIGHT_MAC[idx][2],
             //LIGHT_MAC[idx][3],LIGHT_MAC[idx][4],LIGHT_MAC[idx][5]);
-			ESPNOW_DBG("MAC: "MACSTR"\r\n",MAC2STR(switchEspnowParam.SlaveMac[idx]));
+			ESPNOW_DBG("MAC: "MACSTR"\r\n",MAC2STR(PairedDev.PairedList[idx].mac_t));
             int j;
             for(j=0;j<sizeof(EspnowProtoMsg);j++) ESPNOW_DBG("%02x ",*((uint8*)(&EspnowMsg)+j));
             ESPNOW_DBG("\r\n");
         #endif
             os_memcpy(  &(actionReqStatus[idx].EspnowMsg), &EspnowMsg, sizeof(EspnowProtoMsg));
-            esp_now_send((uint8*)switchEspnowParam.SlaveMac[idx], (uint8*)&EspnowMsg, sizeof(EspnowProtoMsg));
+            esp_now_send((uint8*)PairedDev.PairedList[idx].mac_t, (uint8*)&EspnowMsg, sizeof(EspnowProtoMsg));
             //os_timer_arm( &actionReqStatus[idx].req_timer, actionReqStatus[idx].retry_expire,0);
         }
     }
@@ -557,7 +562,7 @@ switch_EspnowRcvCb(u8 *macaddr, u8 *data, u8 len)
     if(light_EspnowCmdValidate(&EspnowMsg) ){
         ESPNOW_DBG("cmd check sum OK\r\n");
         uint32 _idx=EspnowMsg.cmd_index;
-        if(0 == os_memcmp(macaddr+1, (uint8*)(switchEspnowParam.SlaveMac[_idx])+1,sizeof(switchEspnowParam.SlaveMac[_idx])-1)){
+        if(0 == os_memcmp(macaddr+1, (uint8*)(PairedDev.PairedList[_idx].mac_t)+1,sizeof(PairedDev.PairedList[_idx].mac_t)-1)){
             ESPNOW_DBG("switch MAC match...\r\n");
             if(EspnowMsg.sequence == actionReqStatus[_idx].sequence && EspnowMsg.type == ACT_TYPE_RSP ){  
                 //ACT WOULD NOT HAPPEN AFTER WE USE MAC LAYER ACK
@@ -591,7 +596,7 @@ switch_EspnowRcvCb(u8 *macaddr, u8 *data, u8 len)
         
         }else{
             ESPNOW_DBG("SOURCE MAC: "MACSTR,MAC2STR(macaddr));
-            ESPNOW_DBG("LIGHT RECORD MAC: "MACSTR"\r\n",MAC2STR(switchEspnowParam.SlaveMac[_idx]));
+            ESPNOW_DBG("LIGHT RECORD MAC: "MACSTR"\r\n",MAC2STR(PairedDev.PairedList[_idx].mac_t));
             ESPNOW_DBG("LIGHT IDX: %d \r\n",EspnowMsg.cmd_index); 
             ESPNOW_DBG("switch MAC mismatch...\r\n");
         }
@@ -609,8 +614,8 @@ switch_GetLightMacIdx(uint8* mac_addr)
     int i;
     uint8 m_l = *(mac_addr+DEV_MAC_LEN-1);
     for(i=0;i<LIGHT_DEV_NUM;i++){
-        if( m_l== switchEspnowParam.SlaveMac[i][DEV_MAC_LEN-1]){
-            if(0==os_memcmp(mac_addr,switchEspnowParam.SlaveMac[i],DEV_MAC_LEN)){
+        if( m_l== PairedDev.PairedList[i].mac_t[DEV_MAC_LEN-1]){
+            if(0==os_memcmp(mac_addr,PairedDev.PairedList[i].mac_t,DEV_MAC_LEN)){
                 return i;
             }
         }
@@ -630,7 +635,7 @@ void ICACHE_FLASH_ATTR
     os_printf("====================\r\n");
 
     int mac_idx = switch_GetLightMacIdx(mac_addr) ;
-    if(mac_idx < 0 && mac_idx>=switchEspnowParam.SlaveNum){
+    if(mac_idx < 0 && mac_idx>=PairedDev.PairedNum){
         os_printf("MAC idx error: %d \r\n",mac_idx);
         return;
     }
@@ -676,7 +681,7 @@ SET_RETRY:
 
 
 
-#if 1
+#if 0
 //load espnow mac list from flash
 
 #define SWITCH_SLAVE_MAC_LIST_ADDR
@@ -734,35 +739,37 @@ void ICACHE_FLASH_ATTR switch_EspnowInit()
     //system_param_load(ESPNOW_PARAM_SEC,0,&switchEspnowParam,sizeof(switchEspnowParam));
     ESPNOW_DBG("==============================\r\n");
 	ESPNOW_DBG("ADD ESPNOW MAC LIST INIT...\r\n");
-    switch_EspnowSlaveMacInit();
+    //switch_EspnowSlaveMacInit();
+	sp_MacInit();
     ESPNOW_DBG("==============================\r\n");
+	
 
 		
-    ESPNOW_DBG("MAGIC: %08x\r\n",switchEspnowParam.magic);
+    ESPNOW_DBG("MAGIC: %08x\r\n",PairedDev.magic);
 	
 #if ESPNOW_KEY_HASH
-	esp_now_set_kok(switchEspnowParam.esp_now_key, ESPNOW_KEY_LEN);
+	esp_now_set_kok(PairedDev.PairedList[0].key_t, ESPNOW_KEY_LEN);
 #endif
 
-    for(i=0;i<switchEspnowParam.SlaveNum;i++){
+    for(i=0;i<PairedDev.PairedNum;i++){
         
     #if ESPNOW_ENCRYPT
-        e_res = esp_now_add_peer((uint8*)switchEspnowParam.SlaveMac[i], (uint8)ESP_NOW_ROLE_SLAVE,(uint8)WIFI_DEFAULT_CHANNEL, switchEspnowParam.esp_now_key, (uint8)ESPNOW_KEY_LEN);//wjl
+        e_res = esp_now_add_peer((uint8*)(PairedDev.PairedList[i].mac_t), (uint8)ESP_NOW_ROLE_SLAVE,(uint8)WIFI_DEFAULT_CHANNEL, PairedDev.PairedList[i].key_t, (uint8)ESPNOW_KEY_LEN);//wjl
         if(e_res){
             os_printf("ADD PEER ERROR!!!!!MAX NUM!!!!!\r\n");
             return;
         }else{
-			os_printf("ADD PEER OK: MAC[%d]:"MACSTR"\r\n",i,MAC2STR(((uint8*)switchEspnowParam.SlaveMac[i])));
+			os_printf("ADD PEER OK: MAC[%d]:"MACSTR"\r\n",i,MAC2STR(((uint8*)(PairedDev.PairedList[i].mac_t))));
         }
     #else
-        esp_now_add_peer((uint8*)switchEspnowParam.SlaveMac[i], (uint8)ESP_NOW_ROLE_SLAVE,(uint8)WIFI_DEFAULT_CHANNEL, NULL, (uint8)ESPNOW_KEY_LEN);//wjl
+        esp_now_add_peer((uint8*)(PairedDev.PairedList[i].mac_t), (uint8)ESP_NOW_ROLE_SLAVE,(uint8)WIFI_DEFAULT_CHANNEL, NULL, (uint8)ESPNOW_KEY_LEN);//wjl
     #endif
         actionReqStatus[i].actionToutCb = (ActionToutCallback)switch_EspnowSendRetry;
         
         os_memset(&(actionReqStatus[i].EspnowMsg),0,sizeof(EspnowProtoMsg));
         os_timer_disarm(&actionReqStatus[i].req_timer);
         os_timer_setfn(&actionReqStatus[i].req_timer,  actionReqStatus[i].actionToutCb , &(actionReqStatus[i].EspnowMsg.cmd_index)  );
-        actionReqStatus[i].wifichannel = ( (switchEspnowParam.magic==ESPNOW_PARAM_MAGIC)?switchEspnowParam.wifiChannel[i]:WIFI_DEFAULT_CHANNEL);
+        actionReqStatus[i].wifichannel = ( (PairedDev.magic==SP_PARAM_MAGIC)?(PairedDev.PairedList[i].channel_t):WIFI_DEFAULT_CHANNEL);
         ESPNOW_DBG("LIGHT %d : channel %d \r\n",i,actionReqStatus[i].wifichannel);
         actionReqStatus[i].retry_num=0;
         actionReqStatus[i].sequence =0;

@@ -50,6 +50,9 @@ void user_rf_pre_init(void)
 void ICACHE_FLASH_ATTR
     light_switch_action()
 {
+	extern void ieee80211_mesh_quick_init();
+	ieee80211_mesh_quick_init();
+
 	os_printf("ESPNOW ENABLE 6M TX RATE\r\n");
 	wifi_enable_6m_rate(true);
     user_SwitchReact();

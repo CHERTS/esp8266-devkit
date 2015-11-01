@@ -213,7 +213,7 @@ void ICACHE_FLASH_ATTR light_dh_pwm_adj_proc(void *Targ)
 
 }
 
-LOCAL bool ICACHE_FLASH_ATTR
+bool ICACHE_FLASH_ATTR
 	check_pwm_duty_zero()
 {
     int i;
@@ -294,40 +294,37 @@ uint32 ICACHE_FLASH_ATTR
     light_get_cur(uint32 duty , uint8 channel, uint32 period)
 {
     uint32 duty_max_limit = (period*1000/45);
-    uint32 duty_mapped = duty*22727/duty_max_limit;
+    uint32 duty_mapped = duty*22222/duty_max_limit;
     switch(channel){
 
     case LIGHT_RED : 
         if(duty_mapped>=0 && duty_mapped<23000){
             return (duty_mapped*151000/22222);
         }
-    
         break;
 
     case LIGHT_GREEN:
         if(duty_mapped>=0 && duty_mapped<23000){
-            return (duty_mapped*82000/22222);
+            return (duty_mapped*85000/22222);
         }
         break;
     
     case LIGHT_BLUE:
         if(duty_mapped>=0 && duty_mapped<23000){
-            return (duty_mapped*70000/22222);
+            return (duty_mapped*75000/22222);
         }
         break;
     
     case LIGHT_COLD_WHITE:
     case LIGHT_WARM_WHITE:
         if(duty_mapped>=0 && duty_mapped<23000){
-            return (duty_mapped*115000/22222);
+            return (duty_mapped*180000/22222);
         }
         break;
 		
     default:
        os_printf("CHANNEL ERROR IN GET_CUR\r\n");
        break;
-
-
 
     }
 
@@ -344,7 +341,7 @@ light_set_aim(uint32 r,uint32 g,uint32 b,uint32 cw,uint32 ww,uint32 period,u8 ct
     struct pwm_param *tmp = LightEvtMalloc();    
     if(tmp != NULL){
         tmp->period = (period<10000?period:10000);
-	uint32 duty_max_limit = (period*1000/45);
+    	uint32 duty_max_limit = (period*1000/45);
 		
         tmp->duty[LIGHT_RED] = (r<duty_max_limit?r:duty_max_limit);
         tmp->duty[LIGHT_GREEN] = (g<duty_max_limit?g:duty_max_limit);
@@ -364,46 +361,43 @@ light_set_aim(uint32 r,uint32 g,uint32 b,uint32 cw,uint32 ww,uint32 period,u8 ct
         //}
         uint32 cur_cw = light_get_cur( tmp->duty[LIGHT_COLD_WHITE],LIGHT_COLD_WHITE, tmp->period);
         uint32 cur_ww = light_get_cur( tmp->duty[LIGHT_WARM_WHITE],LIGHT_WARM_WHITE, tmp->period);
-	 uint32 cur_remain,cur_mar;
-	        cur_remain = (LIGHT_TOTAL_CURRENT_MAX - cur_rgb -LIGHT_CURRENT_MARGIN);
+	    uint32 cur_remain,cur_mar;
+	    cur_remain = (LIGHT_TOTAL_CURRENT_MAX - cur_rgb -LIGHT_CURRENT_MARGIN);
 		cur_mar = LIGHT_CURRENT_MARGIN;
 
 /*
-	 if((cur_cw < 50000) || (cur_ww < 50000)){
-	        cur_remain = (LIGHT_TOTAL_CURRENT_MAX - cur_rgb -LIGHT_CURRENT_MARGIN);
-		cur_mar = LIGHT_CURRENT_MARGIN;
- 	}else if((cur_cw < 99000) || (cur_ww < 99000)){
-	        cur_remain = (LIGHT_TOTAL_CURRENT_MAX - cur_rgb -LIGHT_CURRENT_MARGIN_L2);
-		cur_mar = LIGHT_CURRENT_MARGIN_L2;
-	}else{
-	        cur_remain = (LIGHT_TOTAL_CURRENT_MAX - cur_rgb -LIGHT_CURRENT_MARGIN_L3);
-		cur_mar = LIGHT_CURRENT_MARGIN_L2;
-	}
+    	 if((cur_cw < 50000) || (cur_ww < 50000)){
+    	        cur_remain = (LIGHT_TOTAL_CURRENT_MAX - cur_rgb -LIGHT_CURRENT_MARGIN);
+    		cur_mar = LIGHT_CURRENT_MARGIN;
+     	}else if((cur_cw < 99000) || (cur_ww < 99000)){
+    	        cur_remain = (LIGHT_TOTAL_CURRENT_MAX - cur_rgb -LIGHT_CURRENT_MARGIN_L2);
+    		cur_mar = LIGHT_CURRENT_MARGIN_L2;
+    	}else{
+    	        cur_remain = (LIGHT_TOTAL_CURRENT_MAX - cur_rgb -LIGHT_CURRENT_MARGIN_L3);
+    		cur_mar = LIGHT_CURRENT_MARGIN_L2;
+    	}
 
 	*/
 	 
 	 /*
-	 if((LIGHT_TOTAL_CURRENT_MAX-cur_rgb)>120){
-	        cur_remain = (LIGHT_TOTAL_CURRENT_MAX - cur_rgb -LIGHT_CURRENT_MARGIN);
-		cur_mar = LIGHT_CURRENT_MARGIN;
- 	}else if((LIGHT_TOTAL_CURRENT_MAX-cur_rgb)>100){
-	        cur_remain = (LIGHT_TOTAL_CURRENT_MAX - cur_rgb -LIGHT_CURRENT_MARGIN_L2);
-		cur_mar = LIGHT_CURRENT_MARGIN_L2;
-	}else{
-	        cur_remain = (LIGHT_TOTAL_CURRENT_MAX - cur_rgb -LIGHT_CURRENT_MARGIN_L3);
-		cur_mar = LIGHT_CURRENT_MARGIN_L2;
-	}
+        if((LIGHT_TOTAL_CURRENT_MAX-cur_rgb)>120){
+            cur_remain = (LIGHT_TOTAL_CURRENT_MAX - cur_rgb -LIGHT_CURRENT_MARGIN);
+            cur_mar = LIGHT_CURRENT_MARGIN;
+        }else if((LIGHT_TOTAL_CURRENT_MAX-cur_rgb)>100){
+            cur_remain = (LIGHT_TOTAL_CURRENT_MAX - cur_rgb -LIGHT_CURRENT_MARGIN_L2);
+            cur_mar = LIGHT_CURRENT_MARGIN_L2;
+        }else{
+            cur_remain = (LIGHT_TOTAL_CURRENT_MAX - cur_rgb -LIGHT_CURRENT_MARGIN_L3);
+            cur_mar = LIGHT_CURRENT_MARGIN_L2;
+        }
 	*/
-
-
-		
-        //os_printf("cur_remain: %d \r\n",cur_remain);
+    //os_printf("cur_remain: %d \r\n",cur_remain);
         while((cur_cw+cur_ww) > cur_remain){
             tmp->duty[LIGHT_COLD_WHITE] =  tmp->duty[LIGHT_COLD_WHITE] * 9 / 10;
             tmp->duty[LIGHT_WARM_WHITE] =  tmp->duty[LIGHT_WARM_WHITE] * 9 / 10;
-
-
-			
+    
+    
+    		
             cur_cw = light_get_cur( tmp->duty[LIGHT_COLD_WHITE],LIGHT_COLD_WHITE, tmp->period);
             cur_ww = light_get_cur( tmp->duty[LIGHT_WARM_WHITE],LIGHT_WARM_WHITE, tmp->period);
         }	    
@@ -415,7 +409,7 @@ light_set_aim(uint32 r,uint32 g,uint32 b,uint32 cw,uint32 ww,uint32 period,u8 ct
 
 
 		
-	os_printf("prd:%u  r : %u  g: %u  b: %u  cw: %u  ww: %u \r\n",period,
+	    os_printf("prd:%u  r : %u  g: %u  b: %u  cw: %u  ww: %u \r\n",period,
 		         tmp->duty[0],tmp->duty[1],tmp->duty[2],tmp->duty[3],tmp->duty[4]);
         cur_ctrl_mode = ctrl_mode;
         light_pwm_smooth_adj_proc();
@@ -428,12 +422,57 @@ light_set_aim(uint32 r,uint32 g,uint32 b,uint32 cw,uint32 ww,uint32 period,u8 ct
 
 void ICACHE_FLASH_ATTR light_adj_init(void)
 {
-        uint8 i;
-        for(i=0;i<PWM_CHANNEL;i++)
-        {
-              duty_now[i] = user_light_get_duty(i);
-              //target_duty[i] = duty_now[i];
-        }
+    uint8 i;
+    for(i=0;i<PWM_CHANNEL;i++)
+    {
+          duty_now[i] = user_light_get_duty(i);
+    }
 }
+
+
+int timer_cnt = 0;//a counter to record timer to shut down the light, 2*timer_cnt minutes in all
+os_timer_t shut_down_t;
+
+void ICACHE_FLASH_ATTR
+	light_TimerCheck()
+{
+	timer_cnt -= 1;
+	if(timer_cnt<=0){
+		light_set_aim(0,0,0,0,0,1000,0);
+		timer_cnt = 0;
+		os_timer_disarm(&shut_down_t);
+	}
+}
+
+#include "user_light_hint.h"
+void ICACHE_FLASH_ATTR
+	light_TimerAdd(uint32* duty)
+{
+	if(timer_cnt==0){
+		if(duty){
+		    light_set_aim(duty[0],duty[1],duty[2],duty[3],duty[4],1000,0);
+		}else{
+		    if(check_pwm_duty_zero()){
+		        light_set_aim(0,0,0,22222,22222,1000,0);
+			}else{
+			    //light_shadeStart(HINT_WHITE,500,1,1,NULL);
+			}
+		}
+		os_timer_disarm(&shut_down_t);
+		os_timer_setfn(&shut_down_t,light_TimerCheck,NULL);
+		os_timer_arm(&shut_down_t,20000,1);
+	}
+	light_shadeStart(HINT_WHITE,500,1,1,NULL);
+	timer_cnt++;
+}
+
+
+void ICACHE_FLASH_ATTR
+	light_TimerStop()
+{
+	os_timer_disarm(&shut_down_t);
+	timer_cnt = 0;
+}
+
 
 #endif

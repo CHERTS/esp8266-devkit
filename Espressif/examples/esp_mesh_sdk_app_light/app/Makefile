@@ -86,6 +86,7 @@ LINKFLAGS_eagle.app.v6 = \
 	-lsmartconfig \
 	-lwps \
 	-lespnow \
+	-lupgrade \
 	-lmesh \
 	-L./libesphttpd \
 	-lesphttpd \

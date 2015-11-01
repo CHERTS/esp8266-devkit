@@ -22,11 +22,21 @@ const char *device_find_request = "Are You Espressif IOT Smart Device?";
 #if PLUG_DEVICE
 const char *device_find_response_ok = "I'm Plug.";
 #elif LIGHT_DEVICE
-    #if ESP_MESH_SUPPORT
-    const char *device_find_response_ok = "I'm Light with mesh.";
-    #else
-    const char *device_find_response_ok = "I'm Light.";
-    #endif
+	#if ESP_DEBUG_MODE
+        char *device_find_mesh_light = "I'm Light with mesh.";
+        char *device_find_light = "I'm Light.";
+        #if ESP_MESH_SUPPORT
+    	    uint8* device_find_response_ok=NULL;
+        #else
+        	uint8* device_find_response_ok = "I'm Light.";
+        #endif
+	#else
+        #if ESP_MESH_SUPPORT
+        	    uint8* device_find_response_ok = "I'm Light with mesh.";
+        #else
+            	uint8* device_find_response_ok = "I'm Light.";
+        #endif
+	#endif
 #elif SENSOR_DEVICE
 #if HUMITURE_SUB_DEVICE
 const char *device_find_response_ok = "I'm Humiture.";
@@ -38,6 +48,27 @@ const char *device_find_response_ok = "I'm Flammable Gas.";
 /*---------------------------------------------------------------------------*/
 LOCAL struct espconn ptrespconn;
 
+
+#if ESP_DEBUG_MODE&&ESP_MESH_SUPPORT
+void ICACHE_FLASH_ATTR
+user_DeviceFindRespSet(bool mesh_if)
+{
+	if(device_find_response_ok) os_free(device_find_response_ok);
+
+	if(mesh_if){
+		device_find_response_ok = (uint8*)os_zalloc(os_strlen(device_find_mesh_light)+1);
+		os_printf("malloc len: %d \r\n",os_strlen(device_find_mesh_light));
+		os_strcpy(device_find_response_ok,device_find_mesh_light);
+		//os_memcpy(device_find_response_ok,device_find_mesh_light,os_strlen(device_find_mesh_light));
+	}else{
+		device_find_response_ok = (uint8*)os_zalloc(os_strlen(device_find_light)+1);
+		os_printf("malloc len: %d \r\n",os_strlen(device_find_mesh_light));
+		os_strcpy(device_find_response_ok,device_find_light);
+		//os_memcpy(device_find_response_ok,device_find_light,os_strlen(device_find_light));
+	}
+
+}
+#endif
 /******************************************************************************
  * FunctionName : user_devicefind_recv
  * Description  : Processing the received data from the host
@@ -79,7 +110,23 @@ user_devicefind_recv(void *arg, char *pusrdata, unsigned short length)
 
         os_printf("%s\n", DeviceBuffer);
         length = os_strlen(DeviceBuffer);
-        espconn_sent(&ptrespconn, DeviceBuffer, length);
+
+
+        //==================================
+        //This is add in sdk lib v1.4.0
+        os_printf("--------DEBUG----------\r\n");
+		remote_info* pcon_info = NULL;
+		os_printf("link num: %d \r\n",ptrespconn.link_cnt);
+		espconn_get_connection_info(&ptrespconn, &pcon_info, 0);
+		os_printf("remote ip: %d.%d.%d.%d \r\n",pcon_info->remote_ip[0],pcon_info->remote_ip[1],
+			                                    pcon_info->remote_ip[2],pcon_info->remote_ip[3]);
+		os_printf("remote port: %d \r\n",pcon_info->remote_port);
+        //=================================
+        ptrespconn.proto.udp->remote_port = pcon_info->remote_port;
+		os_memcpy(ptrespconn.proto.udp->remote_ip,pcon_info->remote_ip,4);
+		
+        //espconn_sent(&ptrespconn, DeviceBuffer, length);
+		espconn_sendto(&ptrespconn, DeviceBuffer, length);
     } else if (length == (os_strlen(device_find_request) + 18)) {
         os_sprintf(Device_mac_buffer, "%s " MACSTR , device_find_request, MAC2STR(hwaddr));
         os_printf("%s", Device_mac_buffer);
@@ -92,7 +139,9 @@ user_devicefind_recv(void *arg, char *pusrdata, unsigned short length)
 
             os_printf("%s\n", DeviceBuffer);
             length = os_strlen(DeviceBuffer);
-            espconn_sent(&ptrespconn, DeviceBuffer, length);
+			
+            //espconn_sent(&ptrespconn, DeviceBuffer, length);
+			espconn_sendto(&ptrespconn, DeviceBuffer, length);
         } else {
             return;
         }
@@ -108,6 +157,11 @@ user_devicefind_recv(void *arg, char *pusrdata, unsigned short length)
 void ICACHE_FLASH_ATTR
 user_devicefind_init(void)
 {
+	#if ESP_DEBUG_MODE && ESP_MESH_SUPPORT
+ 	user_DeviceFindRespSet(true);
+	os_printf("device find string: len: %d ;  %s \r\n",os_strlen(device_find_response_ok),device_find_response_ok);
+	
+	#endif
     ptrespconn.type = ESPCONN_UDP;
     ptrespconn.proto.udp = (esp_udp *)os_zalloc(sizeof(esp_udp));
     ptrespconn.proto.udp->local_port = 1025;

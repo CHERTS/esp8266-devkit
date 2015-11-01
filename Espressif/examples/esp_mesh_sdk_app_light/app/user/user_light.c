@@ -126,14 +126,23 @@ user_light_init(void)
 
     uint32 light_init_target[8]={0};
     os_memcpy(light_init_target,light_param.pwm_duty,sizeof(light_param.pwm_duty));
+#if SAVE_LIGHT_PARAM
 
-    light_set_aim(      
-		         light_init_target[LIGHT_RED],
-    	                light_init_target[LIGHT_GREEN],
-    	                light_init_target[LIGHT_BLUE], 
-    	                light_init_target[LIGHT_COLD_WHITE],
-    	                light_init_target[LIGHT_WARM_WHITE],
-    	                light_param.pwm_period,0);
+    light_set_aim(  light_init_target[LIGHT_RED],
+	                light_init_target[LIGHT_GREEN],
+	                light_init_target[LIGHT_BLUE], 
+	                light_init_target[LIGHT_COLD_WHITE],
+	                light_init_target[LIGHT_WARM_WHITE],
+	                light_param.pwm_period,0);
+#else
+    light_set_aim(  0,
+	                0,
+	                0, 
+	                22222,
+	                22222,
+	                light_param.pwm_period,0);
+
+#endif
     set_pwm_debug_en(0);//disable debug print in pwm driver
     os_printf("PWM version : %08x \r\n",get_pwm_version());
 }

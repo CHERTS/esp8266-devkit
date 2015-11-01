@@ -15,6 +15,7 @@
 
 #include "user_devicefind.h"
 #include "user_webserver.h"
+#include "user_light.h"
 
 #if ESP_PLATFORM
 #include "user_esp_platform.h"
@@ -41,6 +42,8 @@ unsigned int default_private_key_len = 0;
 #include "espfs.h"
 #include "captdns.h"
 #include "webpages-espfs.h"
+
+#include "user_simplepair.h"
 
 #include "user_cgi.h"
 HttpdBuiltInUrl builtInUrls[]={
@@ -94,7 +97,7 @@ void ICACHE_FLASH_ATTR
     /*We have added esp-now feature in the light project */
     /*So that the lights in a certain MAC group can be easily controlled by an ESP-NOW controller*/
     /*The sample code is in APP_CONTROLLER/APP_SWITCH*/
-	light_EspnowMasterMacInit();
+    sp_MacInit();//csc add button Mac add and delet
     light_EspnowInit();
 #endif
 
@@ -124,11 +127,12 @@ void ICACHE_FLASH_ATTR
 	/*MESH INTERFACE IS AT PORT 8000*/
 #if ESP_WEB_SUPPORT
     //Initialize DNS server for captive portal
-    captdnsInit();
+    //captdnsInit();
     //Initialize espfs containing static webpages
     espFsInit((void*)(webpages_espfs_start));
     //Initialize webserver
     httpdInit(builtInUrls, SERVER_PORT);
+	//user_webserver_init(SERVER_PORT);
 
 #else
 #ifdef SERVER_SSL_ENABLE
@@ -141,6 +145,10 @@ void ICACHE_FLASH_ATTR
 #endif
 
 
+////simplepair_test();//debug only
+
+
+
 //In debug mode, if you restart the light within 2 seconds, it will get into softap mode and wait for local upgrading firmware.
 //Restart again, it will clear the system param and set to default status.
 #if ESP_DEBUG_MODE
@@ -149,6 +157,9 @@ void ICACHE_FLASH_ATTR
 		os_printf("==================\r\n");
 		os_printf("RESET FLG==2,STATIONAP_MODE \r\n");
 		os_printf("==================\r\n");
+        #if ESP_MESH_SUPPORT
+		user_DeviceFindRespSet(false);
+        #endif
 		
 	    struct softap_config config_softap;
         char ssid[33]={0};
@@ -169,7 +180,13 @@ void ICACHE_FLASH_ATTR
 		os_timer_disarm(&reset_flg_t);
 		os_timer_setfn(&reset_flg_t,user_esp_platform_set_reset_flg,MODE_NORMAL);
 		os_timer_arm(&reset_flg_t,2000,0);
-		light_ShowDevLevel(4);
+		user_light_set_duty(0, LIGHT_RED);
+		user_light_set_duty(0, LIGHT_GREEN);
+		user_light_set_duty(0, LIGHT_BLUE);
+		user_light_set_duty(22222, LIGHT_WARM_WHITE);
+		user_light_set_duty(22222, LIGHT_COLD_WHITE);
+		os_delay_us(5000);
+		light_ShowDevLevel(5);
 		return;
 	}
 	
@@ -200,9 +217,13 @@ void ICACHE_FLASH_ATTR
 	  1. search for existing mesh.
       2. if failed , try connecting recorded router.
 	*/
-    user_MeshSetInfo();
+    //user_MeshSetInfo();
     user_MeshInit();
+#elif ESP_TOUCH_SUPPORT
+    esptouch_FlowStart();
 #endif
+
+
 
 
 }
@@ -220,8 +241,6 @@ void ICACHE_FLASH_ATTR
 	os_printf("**  ESP_MDNS_SUPPORT:  %d   **\r\n",ESP_MDNS_SUPPORT);
 	os_printf("******************************\r\n\n\n");
 }
-
-
 /******************************************************************************
  * FunctionName : user_init
  * Description  : entry of user application, init user function here
@@ -233,15 +252,17 @@ void user_init(void)
 	UART_WaitTxFifoEmpty(0,50000);
 	uart_init(74880,74880);
 	user_DispAppInfo();
-	//user_ReadMacListFromFlash();
 
 	wifi_set_opmode(STATIONAP_MODE);
-	wifi_station_set_auto_connect(0);
-	wifi_station_disconnect();
-	
+	#if ESP_MESH_SUPPORT
+    	wifi_station_set_auto_connect(0);
+    	wifi_station_disconnect();
+	#else
+    	wifi_station_set_auto_connect(1);
+	#endif
     os_printf("SDK version:%s\n", system_get_sdk_version());
 	wifi_station_ap_number_set(AP_CACHE_NUMBER);
-
+	   
 	system_init_done_cb(light_main_flow);
 
 }

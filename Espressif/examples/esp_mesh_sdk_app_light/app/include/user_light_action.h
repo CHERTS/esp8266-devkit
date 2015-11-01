@@ -4,6 +4,7 @@
 
 #include "user_config.h"
 #include "os_type.h"
+#include "user_simplepair.h"
 
 #define ACT_DEBUG 1
 

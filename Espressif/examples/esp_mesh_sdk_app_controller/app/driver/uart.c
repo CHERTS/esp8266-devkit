@@ -31,8 +31,8 @@ LOCAL struct UartBuffer* pRxBuffer = NULL;
 /*uart demo with a system task, to output what uart receives*/
 /*this is a example to process uart data from task,please change the priority to fit your application task if exists*/
 /*it might conflict with your task, if so,please arrange the priority of different task,  or combine it to a different event in the same task. */
-#define uart_recvTaskPrio        0
-#define uart_recvTaskQueueLen    10
+#define uart_recvTaskPrio        1
+#define uart_recvTaskQueueLen    2
 os_event_t    uart_recvTaskQueue[uart_recvTaskQueueLen];
 
 #define DBG  
@@ -528,6 +528,8 @@ void Uart_rx_buff_enq()
 void ICACHE_FLASH_ATTR
 tx_buff_enq(char* pdata, uint16 data_len )
 {
+    CLEAR_PERI_REG_MASK(UART_INT_ENA(UART0), UART_TXFIFO_EMPTY_INT_ENA);
+
     if(pTxBuffer == NULL){
         DBG1("\n\rnull, create buffer struct\n\r");
         pTxBuffer = Uart_Buf_Init(UART_TX_BUFFER_SIZE);

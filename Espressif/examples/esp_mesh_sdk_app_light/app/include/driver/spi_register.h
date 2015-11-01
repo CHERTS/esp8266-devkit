@@ -21,11 +21,6 @@
 #define SPI_DOUT_MODE (BIT(14))
 #define SPI_FASTRD_MODE (BIT(13))
 
-#define SPI_CTRL1(i)                         (REG_SPI_BASE(i)  + 0xc)
-#define  SPI_CS_HOLD_DELAY  0xf  
-#define  SPI_CS_HOLD_DELAY_S   28
-#define  SPI_CS_HOLD_DELAY_RES  0xfff 
-#define  SPI_CS_HOLD_DELAY_RES_S   16
 
 
 #define SPI_RD_STATUS(i)                         (REG_SPI_BASE(i)  + 0x10)
@@ -180,9 +175,6 @@
 #define SPI_W13(i) 							(REG_SPI_BASE(i) +0x74)
 #define SPI_W14(i) 							(REG_SPI_BASE(i) +0x78)
 #define SPI_W15(i) 							(REG_SPI_BASE(i) +0x7C)
-
-
-#define SPI_EXT2(i)                           (REG_SPI_BASE(i)  + 0xF8)
 
 #define SPI_EXT3(i)                           (REG_SPI_BASE(i)  + 0xFC)
 #define SPI_INT_HOLD_ENA 0x00000003

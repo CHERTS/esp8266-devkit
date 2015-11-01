@@ -21,12 +21,19 @@ LIGHT_RESET
 /*next , we will add a encryption for ESP-NOW.*/
 /* and send broadcast instead on unicast.*/
 #define ESPNOW_ENCRYPT  1
-#define ESPNOW_KEY_HASH 1
+#define ESPNOW_KEY_HASH 0
 
 #define ESPNOW_KEY_LEN 16
 
 
 #define DEV_MAC_LEN 6
+
+#define ESPNOW_PARAM_MAGIC 0x5c5caacc
+#define ESPNOW_PARAM_SEC 0X7D
+#define ESPNOW_DATA_MAGIC 0x5cc5
+
+
+
 
 #if LIGHT_DEVICE
 void light_EspnowInit();
