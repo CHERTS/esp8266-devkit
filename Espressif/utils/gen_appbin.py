@@ -96,7 +96,7 @@ def combine_bin(file_name,dest_file_name,start_offset_addr,need_chk):
 def gen_appbin():
     global chk_sum
     global blocks
-    if len(sys.argv) != 6:
+    if len(sys.argv) != 7:
         print 'Usage: gen_appbin.py eagle.app.out boot_mode flash_mode flash_clk_div flash_size_map'
         sys.exit(0)
 
@@ -106,6 +106,8 @@ def gen_appbin():
     flash_clk_div = sys.argv[4]
     flash_size_map = sys.argv[5]
 
+    user_bin = sys.argv[6]
+    print '!!!user bin  %s  !!!'%(sys.argv[6])
     flash_data_line  = 16
     data_line_bits = 0xf
 
@@ -190,16 +192,21 @@ def gen_appbin():
     byte2=int(flash_mode)&0xff
     byte3=(((int(flash_size_map)<<4)| int(flash_clk_div))&0xff)
 	
+    app=int(user_bin)&0xff
     if boot_mode == '2':
         # write irom bin head
-        data_bin = struct.pack('<BBBBI',BIN_MAGIC_IROM,4,byte2,byte3,long(entry_addr,16))
+        #data_bin = struct.pack('<BBBBI',BIN_MAGIC_IROM,4,byte2,byte3,long(entry_addr,16))
+        data_bin = struct.pack('<BBBBI',BIN_MAGIC_IROM,4,0,app,long(entry_addr,16))
         sum_size = len(data_bin)
         write_file(flash_bin_name,data_bin)
         
         # irom0.text.bin
         combine_bin(irom0text_bin_name,flash_bin_name,0x0,0)
 
-    data_bin = struct.pack('<BBBBI',BIN_MAGIC_FLASH,3,byte2,byte3,long(entry_addr,16))
+    if boot_mode == '1':
+         data_bin = struct.pack('<BBBBI',BIN_MAGIC_FLASH,3,0,app,long(entry_addr,16))
+    else:
+         data_bin = struct.pack('<BBBBI',BIN_MAGIC_FLASH,3,byte2,byte3,long(entry_addr,16))
     sum_size = len(data_bin)
     write_file(flash_bin_name,data_bin)
 

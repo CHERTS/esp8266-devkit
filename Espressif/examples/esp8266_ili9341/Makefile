@@ -231,7 +231,7 @@ $(TARGET_OUT): $(APP_AR)
 	$(vecho) "objcopy done"
 	$(vecho) "Run gen_appbin.exe"
 ifeq ($(app), 0)
-	$(Q) $(SDK_TOOLS)/gen_appbin.exe $@ 0 $(mode) $(freqdiv) $(size)
+	$(Q) $(SDK_TOOLS)/gen_appbin.exe $@ 0 $(mode) $(freqdiv) $(size) $(app)
 	$(Q) mv eagle.app.flash.bin firmware/eagle.flash.bin
 	$(Q) mv eagle.app.v6.irom0text.bin firmware/eagle.irom0text.bin
 	$(Q) rm eagle.app.v6.*
@@ -241,10 +241,10 @@ ifeq ($(app), 0)
 	$(vecho) "eagle.irom0text.bin---->0x40000"
 else
     ifeq ($(boot), new)
-		$(Q) $(SDK_TOOLS)/gen_appbin.exe $@ 2 $(mode) $(freqdiv) $(size)
+		$(Q) $(SDK_TOOLS)/gen_appbin.exe $@ 2 $(mode) $(freqdiv) $(size) $(app)
 		$(vecho) "Support boot_v1.2 and +"
     else
-		$(Q) $(SDK_TOOLS)/gen_appbin.exe $@ 1 $(mode) $(freqdiv) $(size)
+		$(Q) $(SDK_TOOLS)/gen_appbin.exe $@ 1 $(mode) $(freqdiv) $(size) $(app)
 		$(vecho) "Support boot_v1.1 and +"
     endif
 	$(Q) mv eagle.app.flash.bin firmware/upgrade/$(BIN_NAME).bin
