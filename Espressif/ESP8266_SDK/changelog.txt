@@ -1,3 +1,11 @@
+esp_iot_sdk_v1.4.1_15_10_27 Prerelease Note 
+-------------------------------------------
+
+Here is a patch of non-OS SDK without full test, so it is not included in Bug Bounty project.
+It solved 2 issues as below:
+1. Some devices may have problem of connecting to ESP8266 softAP;
+2. Problem of sending UDP data to multiple devices.
+
 esp_iot_sdk_v1.4.0_15_09_18 Release Note 
 ----------------------------------------
 
