@@ -4,6 +4,7 @@ Changelog:
 v2.0.9 (01.11.2015):
 * Update SDK v1.4.1 Pre5 (folder ESP8266_SDK);
 * SDK version 1.3.0 moved to a folder ESP8266_SDK_130;
+* Update Espressif MESH SDK (beta) (folder ESP8266_MESH_SDK);
 * Updated documentation:
   - Delete files:
     2A-ESP8266__IOT_SDK_User_Manual__EN_v1.3.0.pdf
@@ -13,6 +14,9 @@ v2.0.9 (01.11.2015):
     2C-ESP8266__SDK__Programming Guide__EN_v1.4.pdf
 * Updated examples:
   sysinfo;
+  esp_mesh_sdk_app_controller;
+  esp_mesh_sdk_app_light;
+  esp_mesh_sdk_app_switch;
 
 v2.0.8 (01.09.2015):
 + Added Espressif MESH SDK (beta) (folder ESP8266_MESH_SDK);
