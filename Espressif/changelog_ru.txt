@@ -21,6 +21,8 @@ v2.0.9 (02.11.2015):
   esp_mesh_sdk_app_controller;
   esp_mesh_sdk_app_light;
   esp_mesh_sdk_app_switch;
+  esp_rtos_sdk_example;
+  esp_rtos_sdk_example_2;
 
 v2.0.8 (01.09.2015):
 + Добавлена Espressif MESH SDK (beta) (папка ESP8266_MESH_SDK);
