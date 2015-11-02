@@ -1,8 +1,8 @@
-#ifndef __RBOOT_OTA_H__
-#define __RBOOT_OTA_H__
+#ifndef __RBOOT_SMINGOTA_H__
+#define __RBOOT_SMINGOTA_H__
 
 //////////////////////////////////////////////////
-// rBoot OTA sample code for ESP8266.
+// rBoot OTA sample code for ESP8266 Sming API.
 // Copyright 2015 Richard A Burton
 // richardaburton@gmail.com
 // See license.txt for license terms.
@@ -16,9 +16,10 @@ extern "C" {
 #endif
 
 // ota server details
-#define OTA_IP { 192, 168, 0, 42 }
-#define OTA_PORT 8080
+#define OTA_IP { 192, 168, 7, 5 }
+#define OTA_PORT 80
 #define OTA_ROM0 "rom0.bin"
+// OTA_ROM1 is only used for TWO_ROMS mode
 #define OTA_ROM1 "rom1.bin"
 // OTA_FILE is not required, but is part of the example
 // code for writing arbitrary files to flash

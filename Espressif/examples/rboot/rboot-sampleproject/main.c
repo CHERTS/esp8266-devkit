@@ -67,7 +67,6 @@ void ICACHE_FLASH_ATTR ShowIP() {
 		os_sprintf(msg, "network status: %d\r\n", wifi_station_get_connect_status());
 	}
 	uart0_send(msg);
-	uart0_send("...\r\n");
 }
 
 void ICACHE_FLASH_ATTR ShowInfo() {
@@ -90,7 +89,6 @@ void ICACHE_FLASH_ATTR ShowInfo() {
 
     os_sprintf(msg, "SPI Flash Size: %d\r\n", (1 << ((spi_flash_get_id() >> 16) & 0xff)));
     uart0_send(msg);
-    uart0_send("...\r\n");
 }
 
 void ICACHE_FLASH_ATTR Switch() {
@@ -98,7 +96,7 @@ void ICACHE_FLASH_ATTR Switch() {
 	uint8 before, after;
 	before = rboot_get_current_rom();
 	if (before == 0) after = 1; else after = 0;
-	os_sprintf(msg, "\r\nSwapping from rom %d to rom %d.\r\n", before, after);
+	os_sprintf(msg, "Swapping from rom %d to rom %d.\r\n", before, after);
 	uart0_send(msg);
 	rboot_set_current_rom(after);
 	uart0_send("Restarting...\r\n\r\n");
@@ -138,7 +136,6 @@ static void ICACHE_FLASH_ATTR OtaUpdate() {
 
 void ICACHE_FLASH_ATTR ProcessCommand(char* str) {
 	if (!strcmp(str, "help")) {
-		uart0_send("\r\n");
 		uart0_send("available commands\r\n");
 		uart0_send("  help - display this message\r\n");
 		uart0_send("  ip - show current ip address\r\n");
@@ -147,7 +144,7 @@ void ICACHE_FLASH_ATTR ProcessCommand(char* str) {
 		uart0_send("  switch - switch to the other rom and reboot\r\n");
 		uart0_send("  ota - perform ota update, switch rom and reboot\r\n");
 		uart0_send("  info - show esp8266 info\r\n");
-		uart0_send("...\r\n");
+		uart0_send("\r\n");
 	} else if (!strcmp(str, "connect")) {
 		wifi_config_station();
 	} else if (!strcmp(str, "restart")) {
@@ -161,12 +158,6 @@ void ICACHE_FLASH_ATTR ProcessCommand(char* str) {
 		ShowIP();
 	} else if (!strcmp(str, "info")) {
 		ShowInfo();
-	} else if (!strcmp(str, "rom")) {
-		char msg[50];
-		os_sprintf(msg, "\r\nCurrently running rom %d.\r\n", rboot_get_current_rom());
-		uart0_send(msg);
-	} else if (!strcmp(str, "version")) {
-		uart0_send("\r\nVersion 0.0.2\r\n\r\n");
 	}
 }
 

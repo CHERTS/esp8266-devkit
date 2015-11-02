@@ -24,6 +24,8 @@ v2.0.9 (02.11.2015):
   esp_rtos_sdk_example;
   esp_rtos_sdk_example_2;
   nodemcu-firmware;
++ Добавлены примеры:
+  rboot;
 
 v2.0.8 (01.09.2015):
 + Добавлена Espressif MESH SDK (beta) (папка ESP8266_MESH_SDK);
