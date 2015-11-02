@@ -9,18 +9,15 @@
 */
 
 
+#include "c_stdlib.h"
+#include "c_string.h"
+#include "c_fcntl.h"
+#include "flash_fs.h"
+
 #define loadlib_c
 #define LUA_LIB
-#define LUAC_CROSS_FILE
 
 #include "lua.h"
-#include C_HEADER_STDLIB
-#include C_HEADER_STRING
-#include C_HEADER_FCNTL
-
-#ifndef LUA_CROSS_COMPILER
-#include "flash_fs.h"
-#endif
 
 #include "lauxlib.h"
 #include "lualib.h"
@@ -331,7 +328,7 @@ static int ll_loadlib (lua_State *L) {
 ** 'require' function
 ** =======================================================
 */
-#ifdef LUA_CROSS_COMPILER
+#if 0
 static int readable (const char *filename) {
   FILE *f = c_fopen(filename, "r");  /* try to open file */
   if (f == NULL) return 0;  /* open failed */
@@ -392,7 +389,7 @@ static int loader_Lua (lua_State *L) {
   const char *name = luaL_checkstring(L, 1);
   filename = findfile(L, name, "path");
   if (filename == NULL) return 1;  /* library not found in this path */
-#ifdef LUA_CROSS_COMPILER
+#if 0
   if (luaL_loadfile(L, filename) != 0)
 #else
   if (luaL_loadfsfile(L, filename) != 0)

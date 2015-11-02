@@ -9,13 +9,10 @@
 #define lauxlib_h
 
 
-#include "lua.h"
-
-#ifdef LUA_CROSS_COMPILER
-#include <stdio.h>
-#else
+//#include "c_stddef.h"
 #include "c_stdio.h"
-#endif
+
+#include "lua.h"
 
 
 #if defined(LUA_COMPAT_GETN)
@@ -82,7 +79,7 @@ LUALIB_API int (luaL_checkoption) (lua_State *L, int narg, const char *def,
 LUALIB_API int (luaL_ref) (lua_State *L, int t);
 LUALIB_API void (luaL_unref) (lua_State *L, int t, int ref);
 
-#ifdef LUA_CROSS_COMPILER
+#if 0
 LUALIB_API int (luaL_loadfile) (lua_State *L, const char *filename);
 #else
 LUALIB_API int (luaL_loadfsfile) (lua_State *L, const char *filename);

@@ -7,7 +7,6 @@
 
 #define linit_c
 #define LUA_LIB
-#define LUAC_CROSS_FILE
 
 #include "lua.h"
 
@@ -48,7 +47,7 @@ static const luaL_Reg lualibs[] = {
   {LUA_TABLIBNAME, luaopen_table},  
   #endif
 
-  #if defined(LUA_USE_BUILTIN_DEBUG) || defined(LUA_USE_BUILTIN_DEBUG_MINIMAL)
+  #if defined(LUA_USE_BUILTIN_DEBUG)
   {LUA_DBLIBNAME, luaopen_debug},
   #endif 
 #endif
@@ -72,7 +71,7 @@ extern const luaR_entry syslib[];
 extern const luaR_entry tab_funcs[];
 #endif
 
-#if defined(LUA_USE_BUILTIN_DEBUG) || defined(LUA_USE_BUILTIN_DEBUG_MINIMAL)
+#if defined(LUA_USE_BUILTIN_DEBUG)
 extern const luaR_entry dblib[];
 #endif
 
@@ -100,7 +99,7 @@ const luaR_table lua_rotable[] =
   {LUA_TABLIBNAME, tab_funcs},
   #endif
 
-  #if defined(LUA_USE_BUILTIN_DEBUG) || defined(LUA_USE_BUILTIN_DEBUG_MINIMAL)
+  #if defined(LUA_USE_BUILTIN_DEBUG)
   {LUA_DBLIBNAME, dblib},
   #endif
 

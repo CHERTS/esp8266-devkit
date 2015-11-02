@@ -8,13 +8,8 @@
 #ifndef lconfig_h
 #define lconfig_h
 
-#ifdef LUA_CROSS_COMPILER
-#include <limits.h>
-#include <stddef.h>
-#else
 #include "c_limits.h"
 #include "c_stddef.h"
-#endif
 #include "user_config.h"
 
 /*
@@ -257,12 +252,7 @@
 #define lua_stdin_is_tty()	isatty(0)
 #elif defined(LUA_WIN)
 #include <io.h>
-#ifdef LUA_CROSS_COMPILER
-#include <stdio.h>
-else
 #include "c_stdio.h"
-#endif
-
 #define lua_stdin_is_tty()	_isatty(_fileno(stdin))
 #else
 #define lua_stdin_is_tty()	1  /* assume stdin is a tty */
@@ -304,8 +294,8 @@ else
 ** GNU readline and history facilities).
 */
 #if defined(LUA_USE_STDIO)
-#if defined(LUA_CROSS_COMPILER) && defined(LUA_USE_READLINE)
-#include <stdio.h>
+#if defined(LUA_USE_READLINE)
+#include "c_stdio.h"
 #include <readline/readline.h>
 #include <readline/history.h>
 #define lua_readline(L,b,p)	((void)L, ((b)=readline(p)) != NULL)
@@ -313,7 +303,7 @@ else
 	if (lua_strlen(L,idx) > 0)  /* non-empty line? */ \
 	  add_history(lua_tostring(L, idx));  /* add it to history */
 #define lua_freeline(L,b)	((void)L, c_free(b))
-#else // #if defined(LUA_CROSS_COMPILER) && defined(LUA_USE_READLINE)
+#else // #if defined(LUA_USE_READLINE)
 #define lua_readline(L,b,p)	\
 	((void)L, c_fputs(p, c_stdout), c_fflush(c_stdout),  /* show prompt */ \
 	c_fgets(b, LUA_MAXINPUT, c_stdin) != NULL)  /* get line */
@@ -633,11 +623,7 @@ extern int readline4lua(const char *prompt, char *buffer, int length);
 @@ The luai_num* macros define the primitive operations over numbers.
 */
 #if defined(LUA_CORE)
-#ifdef LUA_CROSS_COMPILER
-#include <math.h>
-#else
 #include "c_math.h"
-#endif
 #define luai_numadd(a,b)	((a)+(b))
 #define luai_numsub(a,b)	((a)-(b))
 #define luai_nummul(a,b)	((a)*(b))
@@ -880,10 +866,7 @@ union luai_Cast { double l_d; long l_l; };
 
 #define LUA_INTFRMLEN		"l"
 #define LUA_INTFRM_T		long
-#ifndef LUA_CROSS_COMPILER
-typedef short int16_t;
-typedef long int32_t;
-#endif
+
 #endif
 
 

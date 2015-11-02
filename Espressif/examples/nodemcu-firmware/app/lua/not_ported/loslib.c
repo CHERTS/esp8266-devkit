@@ -4,14 +4,12 @@
 ** See Copyright Notice in lua.h
 */
 
-#define LUAC_CROSS_FILE
 
-#include "luac_cross.h"
-#include C_HEADER_ERRNO
-#include C_HEADER_LOCALE
-#include C_HEADER_STDLIB
-#include C_HEADER_STRING
-#include C_HEADER_TIME
+#include <errno.h>
+#include <locale.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
 #define loslib_c
 #define LUA_LIB
