@@ -1,0 +1,22 @@
+ESP8266_RTOS_SDK_V1.3.0_15_11_02 Release Note 
+---------------------------------------------
+- Add libssc.a, simple serial console lib.
+- Add libspiffs.a, SPI file system.
+- Add libwps.a to support WPS.
+- Add libespconn.a, Espressif connection lib.
+- Add libespnow.a to support Espressif ESP-NOW.
+- Add libmesh.a, Espressif mesh.
+- Add libnopoll.a, websocket.
+- Add make_lib.sh in "third_party" folder.
+- Add modem-sleep & light-sleep supported.
+- Update libcirom.a to support float IO.
+- Update gen_misc.sh & gen_misc.bat.
+- Update header files, add comments in doxygen style.
+- Update libsmartconfig.a to version 2.5.2.
+- Update libssl.a.
+- Updates driver (PWM/UART/GPIO/SPI/Hardware timer).
+- Update open source codes of third_party.
+- Modify "ld" files, "dram0 len" should be 0x18000 in RTOS SDK.
+- Remove header files in extra_include, which are already in compile folder.
+- Other APIs sync from non-OS SDK, more details in documentation"20B-ESP8266__RTOS_SDK_API Reference".
+- Other optimization to make the software more stable.
