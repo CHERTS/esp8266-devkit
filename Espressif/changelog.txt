@@ -28,6 +28,7 @@ v2.0.9 (10.11.2015):
 + Added examples:
   rboot;
   SPI_slave;
+  I2S_Demo;
 
 v2.0.8 (01.09.2015):
 + Added Espressif MESH SDK (beta) (folder ESP8266_MESH_SDK);
