@@ -32,6 +32,7 @@ v2.0.9 (10.11.2015):
   rboot;
   SPI_slave;
   I2S_Demo;
+  PWM_Demo;
 
 v2.0.8 (01.09.2015):
 + Добавлена Espressif MESH SDK (beta) (папка ESP8266_MESH_SDK);
