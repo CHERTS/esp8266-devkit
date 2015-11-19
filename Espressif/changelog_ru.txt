@@ -25,7 +25,7 @@ v2.0.9 (10.11.2015):
   esp_rtos_sdk_example_2;
   nodemcu-firmware;
   at;
-  dht22_thingspeak;
+  lwip_open_demo_app;
 + Добавлены примеры:
   rboot;
   SPI_slave;
