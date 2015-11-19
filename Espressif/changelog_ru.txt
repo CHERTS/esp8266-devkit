@@ -26,6 +26,7 @@ v2.0.9 (10.11.2015):
   nodemcu-firmware;
   at;
   lwip_open_demo_app;
+  dht22_thingspeak;
 + Добавлены примеры:
   rboot;
   SPI_slave;
