@@ -1,7 +1,7 @@
 Changelog:
 ----------
 
-v2.0.9 (10.11.2015):
+v2.0.9 (20.11.2015):
 * Update SDK v1.4.1 Pre5 (folder ESP8266_SDK);
 * Update RTOS SDK v1.3.0 (folder ESP8266_RTOS_SDK);
 * Update Espressif MESH SDK (beta) (folder ESP8266_MESH_SDK);
@@ -33,6 +33,7 @@ v2.0.9 (10.11.2015):
   SPI_slave;
   I2S_Demo;
   PWM_Demo;
+  UART_TCP_Passthrough_Demo;
 
 v2.0.8 (01.09.2015):
 + Added Espressif MESH SDK (beta) (folder ESP8266_MESH_SDK);
