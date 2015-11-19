@@ -2,13 +2,9 @@
 #define UART_APP_H
 
 #include "uart_register.h"
-#include "eagle_soc.h"
-#include "c_types.h"
 
-#define RX_BUFF_SIZE    256
+#define RX_BUFF_SIZE    0x100
 #define TX_BUFF_SIZE    100
-#define UART0   0
-#define UART1   1
 
 typedef enum {
     FIVE_BITS = 0x0,
@@ -95,7 +91,6 @@ typedef struct {
 } UartDevice;
 
 void uart_init(UartBautRate uart0_br, UartBautRate uart1_br);
-void uart0_sendStr(const char *str);
 
 #endif
 
