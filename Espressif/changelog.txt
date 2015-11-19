@@ -14,6 +14,7 @@ v2.0.9 (10.11.2015):
   + Added files:
     2A-ESP8266__IOT_SDK_User_Manual__EN_v1.4.pdf
     2C-ESP8266__SDK__Programming Guide__EN_v1.4.pdf
+    3A_ESP8266_Flash_tool_user_manual_EN_v1.0.pdf
     20A-ESP8266__RTOS_SDK__Programming Guide__EN_v1.3.0.pdf
     20B-ESP8266__RTOS_SDK_API Reference__v1.3.0.pdf
 * Updated examples:
