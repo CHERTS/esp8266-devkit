@@ -14,7 +14,9 @@
 #include "user_interface.h"
 #include "espconn.h"
 #include "mem.h"
+#include "limits.h"
 #include "httpclient.h"
+
 
 // Debug output.
 #ifdef HTTP_DEBUG
@@ -37,7 +39,7 @@ typedef struct {
 	http_callback user_callback;
 } request_args;
 
-static char * esp_strdup(const char * str)
+static char * ICACHE_FLASH_ATTR esp_strdup(const char * str)
 {
 	if (str == NULL) {
 		return NULL;
@@ -49,6 +51,157 @@ static char * esp_strdup(const char * str)
 	}
 	os_strcpy(new_str, str);
 	return new_str;
+}
+
+static int ICACHE_FLASH_ATTR
+esp_isupper(char c)
+{
+    return (c >= 'A' && c <= 'Z');
+}
+
+static int ICACHE_FLASH_ATTR
+esp_isalpha(char c)
+{
+    return ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'));
+}
+
+
+static int ICACHE_FLASH_ATTR
+esp_isspace(char c)
+{
+    return (c == ' ' || c == '\t' || c == '\n' || c == '\12');
+}
+
+static int ICACHE_FLASH_ATTR
+esp_isdigit(char c)
+{
+    return (c >= '0' && c <= '9');
+}
+
+/*
+ * Convert a string to a long integer.
+ *
+ * Ignores `locale' stuff.  Assumes that the upper and lower case
+ * alphabets and digits are each contiguous.
+ */
+long ICACHE_FLASH_ATTR
+esp_strtol(nptr, endptr, base)
+	const char *nptr;
+	char **endptr;
+	int base;
+{
+	const char *s = nptr;
+	unsigned long acc;
+	int c;
+	unsigned long cutoff;
+	int neg = 0, any, cutlim;
+
+	/*
+	 * Skip white space and pick up leading +/- sign if any.
+	 * If base is 0, allow 0x for hex and 0 for octal, else
+	 * assume decimal; if base is already 16, allow 0x.
+	 */
+	do {
+		c = *s++;
+	} while (esp_isspace(c));
+	if (c == '-') {
+		neg = 1;
+		c = *s++;
+	} else if (c == '+')
+		c = *s++;
+	if ((base == 0 || base == 16) &&
+	    c == '0' && (*s == 'x' || *s == 'X')) {
+		c = s[1];
+		s += 2;
+		base = 16;
+	} else if ((base == 0 || base == 2) &&
+	    c == '0' && (*s == 'b' || *s == 'B')) {
+		c = s[1];
+		s += 2;
+		base = 2;
+	}
+	if (base == 0)
+		base = c == '0' ? 8 : 10;
+
+	/*
+	 * Compute the cutoff value between legal numbers and illegal
+	 * numbers.  That is the largest legal value, divided by the
+	 * base.  An input number that is greater than this value, if
+	 * followed by a legal input character, is too big.  One that
+	 * is equal to this value may be valid or not; the limit
+	 * between valid and invalid numbers is then based on the last
+	 * digit.  For instance, if the range for longs is
+	 * [-2147483648..2147483647] and the input base is 10,
+	 * cutoff will be set to 214748364 and cutlim to either
+	 * 7 (neg==0) or 8 (neg==1), meaning that if we have accumulated
+	 * a value > 214748364, or equal but the next digit is > 7 (or 8),
+	 * the number is too big, and we will return a range error.
+	 *
+	 * Set any if any `digits' consumed; make it negative to indicate
+	 * overflow.
+	 */
+	cutoff = neg ? -(unsigned long)LONG_MIN : LONG_MAX;
+	cutlim = cutoff % (unsigned long)base;
+	cutoff /= (unsigned long)base;
+	for (acc = 0, any = 0;; c = *s++) {
+		if (esp_isdigit(c))
+			c -= '0';
+		else if (esp_isalpha(c))
+			c -= esp_isupper(c) ? 'A' - 10 : 'a' - 10;
+		else
+			break;
+		if (c >= base)
+			break;
+		if (any < 0 || acc > cutoff || acc == cutoff && c > cutlim)
+			any = -1;
+		else {
+			any = 1;
+			acc *= base;
+			acc += c;
+		}
+	}
+	if (any < 0) {
+		acc = neg ? LONG_MIN : LONG_MAX;
+//		errno = ERANGE;
+	} else if (neg)
+		acc = -acc;
+	if (endptr != 0)
+		*endptr = (char *)(any ? s - 1 : nptr);
+	return (acc);
+}
+
+static int ICACHE_FLASH_ATTR chunked_decode(const char * chunked, char * decode)
+{
+	int i = 0, j = 0;
+	int decode_size = 0;
+	char *str = (char *)chunked;
+	do
+	{
+		char * endstr = NULL;
+		//[chunk-size]
+		i = esp_strtol(str + j, endstr, 16);
+		HTTP_DEBUG("Chunk Size:%d\r\n", i);
+		if (i <= 0) 
+			break;
+		//[chunk-size-end-ptr]
+		endstr = (char *)os_strstr(str + j, "\r\n");
+		//[chunk-ext]
+		j += endstr - (str + j);
+		//[CRLF]
+		j += 2;
+		//[chunk-data]
+		decode_size += i;
+		os_memcpy((char *)&decode[decode_size - i], (char *)str + j, i);
+		j += i;
+		//[CRLF]
+		j += 2;
+	} while(true);
+
+	//
+	//footer CRLF
+	//
+
+	return j;
 }
 
 static void ICACHE_FLASH_ATTR receive_callback(void * arg, char * buf, unsigned short len)
@@ -149,9 +302,6 @@ static void ICACHE_FLASH_ATTR disconnect_callback(void * arg)
 		return;
 	}
 
-	if(conn->proto.tcp != NULL) {
-		os_free(conn->proto.tcp);
-	}
 	if(conn->reverse != NULL) {
 		request_args * req = (request_args *)conn->reverse;
 		int http_status = -1;
@@ -169,6 +319,15 @@ static void ICACHE_FLASH_ATTR disconnect_callback(void * arg)
 			else {
 				http_status = atoi(req->buffer + strlen(version));
 				body = (char *)os_strstr(req->buffer, "\r\n\r\n") + 4;
+				if(os_strstr(req->buffer, "Transfer-Encoding: chunked"))
+				{
+					int body_size = req->buffer_size - (body - req->buffer);
+					char chunked_decode_buffer[body_size];
+					os_memset(chunked_decode_buffer, 0, body_size);
+					// Chunked data
+					chunked_decode(body, chunked_decode_buffer);
+					os_memcpy(body, chunked_decode_buffer, body_size);
+				}
 			}
 		}
 
@@ -180,6 +339,10 @@ static void ICACHE_FLASH_ATTR disconnect_callback(void * arg)
 		os_free(req->hostname);
 		os_free(req->path);
 		os_free(req);
+	}
+	espconn_delete(conn);
+	if(conn->proto.tcp != NULL) {
+		os_free(conn->proto.tcp);
 	}
 	os_free(conn);
 }
