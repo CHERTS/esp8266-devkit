@@ -6,6 +6,7 @@ v2.0.9 (20.11.2015):
 * Update RTOS SDK v1.3.0 (folder ESP8266_RTOS_SDK);
 * Update Espressif MESH SDK (beta) (folder ESP8266_MESH_SDK);
 * SDK version 1.3.0 moved to a folder ESP8266_SDK_130;
+* Update a utility "utils\esptool-ck.exe" to version 0.4.6-2:
 * Updated documentation:
   - Delete files:
     2A-ESP8266__IOT_SDK_User_Manual__EN_v1.3.0.pdf
