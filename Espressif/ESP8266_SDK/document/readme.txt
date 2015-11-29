@@ -6,6 +6,6 @@ All documentations @ http://bbs.espressif.com/viewforum.php?f=51
 
 中文文档：
 
-SDK 编程手册 @ http://bbs.espressif.com/viewtopic.php?f=51&t=1024
-AT 指令集 @ http://bbs.espressif.com/viewtopic.php?f=51&t=1022
+SDK 编程手册 @ http://bbs.espressif.com/viewtopic.php?f=51&t=1023
+AT 指令集 @ http://bbs.espressif.com/viewtopic.php?f=51&t=732
 全部开发文档 @ http://bbs.espressif.com/viewforum.php?f=51

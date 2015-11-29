@@ -1317,7 +1317,7 @@ user_esp_platform_init(void)
 		}
 	}
     os_memset(&dhcp_info,0,sizeof(struct dhcp_client_info));
-    system_rtc_mem_write(64,&dhcp_info,sizeof(struct dhcp_client_info));
+    system_rtc_mem_write(64,&dhcp_info,sizeof(struct rst_info));
 
 
 #if AP_CACHE
