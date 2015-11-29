@@ -1,6 +1,6 @@
 ﻿;InnoSetupVersion=5.5.0
 #define DevKitVersion "2.0.9"
-#define DevKitSDKVersion "1.4.1"
+#define DevKitSDKVersion "1.5.0"
 #define DevKitAppName "Unofficial Development Kit for Espressif ESP8266"
 #define DevKitAppURL "http://www.programs74.ru"
 #define DevKitAppPublisher "Mikhail Grigorev"
@@ -49,6 +49,7 @@ Source: "Espressif\ESP8266_SDK_101\*"; DestDir: "{app}\ESP8266_SDK_101"; Flags: 
 Source: "Espressif\ESP8266_SDK_110\*"; DestDir: "{app}\ESP8266_SDK_110"; Flags: ignoreversion createallsubdirs recursesubdirs; Components: sdk
 Source: "Espressif\ESP8266_SDK_120\*"; DestDir: "{app}\ESP8266_SDK_120"; Flags: ignoreversion createallsubdirs recursesubdirs; Components: sdk
 Source: "Espressif\ESP8266_SDK_130\*"; DestDir: "{app}\ESP8266_SDK_130"; Flags: ignoreversion createallsubdirs recursesubdirs; Components: sdk
+Source: "Espressif\ESP8266_SDK_141\*"; DestDir: "{app}\ESP8266_SDK_141"; Flags: ignoreversion createallsubdirs recursesubdirs; Components: sdk
 Source: "Espressif\Espressif web site.url"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Espressif\DevKit web site.url"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Espressif\Command line Unofficial Development Kit for Espressif ESP8266.lnk"; DestDir: "{app}"; Flags: ignoreversion; Languages: english turkish; Components: utils
@@ -77,6 +78,7 @@ Name: "{app}\ESP8266_SDK_101"; Components: sdk
 Name: "{app}\ESP8266_SDK_110"; Components: sdk
 Name: "{app}\ESP8266_SDK_120"; Components: sdk
 Name: "{app}\ESP8266_SDK_130"; Components: sdk
+Name: "{app}\ESP8266_SDK_141"; Components: sdk
 
 [Registry]
 Root: "HKCU"; Subkey: "Software\Terminal\TmacroForm"; ValueType: string; ValueName: "macro1E_Text"; ValueData: "%SCRS""C:\Espressif\utils\esp-reboot.tsc"""
@@ -119,6 +121,7 @@ Type: filesandordirs; Name: "{app}\ESP8266_SDK_101\*"; Components: sdk
 Type: filesandordirs; Name: "{app}\ESP8266_SDK_110\*"; Components: sdk
 Type: filesandordirs; Name: "{app}\ESP8266_SDK_120\*"; Components: sdk
 Type: filesandordirs; Name: "{app}\ESP8266_SDK_130\*"; Components: sdk
+Type: filesandordirs; Name: "{app}\ESP8266_SDK_141\*"; Components: sdk
 Type: files; Name: "{app}\Command line Unofficial Development Kit for Espressif ESP8266.lnk"; Languages: english turkish; Components: utils
 Type: files; Name: "{app}\Командная строка Unofficial Development Kit for Espressif ESP8266.lnk"; Languages: russian; Components: utils
 Type: files; Name: "{app}\DevKit web site.url"
