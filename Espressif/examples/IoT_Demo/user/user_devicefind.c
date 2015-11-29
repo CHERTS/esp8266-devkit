@@ -48,7 +48,7 @@ user_devicefind_recv(void *arg, char *pusrdata, unsigned short length)
     char DeviceBuffer[40] = {0};
     char Device_mac_buffer[60] = {0};
     char hwaddr[6];
-
+    remot_info *premot = NULL;
     struct ip_info ipconfig;
 
     if (wifi_get_opmode() != STATION_MODE) {
@@ -75,6 +75,10 @@ user_devicefind_recv(void *arg, char *pusrdata, unsigned short length)
 
         os_printf("%s\n", DeviceBuffer);
         length = os_strlen(DeviceBuffer);
+        if (espconn_get_connection_info(&ptrespconn, &premot, 0) != ESPCONN_OK)
+        	return;
+        os_memcpy(ptrespconn.proto.udp->remote_ip, premot->remote_ip, 4);
+        ptrespconn.proto.udp->remote_port = premot->remote_port;
         espconn_sent(&ptrespconn, DeviceBuffer, length);
     } else if (length == (os_strlen(device_find_request) + 18)) {
         os_sprintf(Device_mac_buffer, "%s " MACSTR , device_find_request, MAC2STR(hwaddr));
@@ -88,6 +92,10 @@ user_devicefind_recv(void *arg, char *pusrdata, unsigned short length)
 
             os_printf("%s\n", DeviceBuffer);
             length = os_strlen(DeviceBuffer);
+			if (espconn_get_connection_info(&ptrespconn, &premot, 0) != ESPCONN_OK)
+				return;
+			os_memcpy(ptrespconn.proto.udp->remote_ip, premot->remote_ip, 4);
+			ptrespconn.proto.udp->remote_port = premot->remote_port;
             espconn_sent(&ptrespconn, DeviceBuffer, length);
         } else {
             return;
