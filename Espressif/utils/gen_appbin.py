@@ -107,7 +107,6 @@ def gen_appbin():
     flash_size_map = sys.argv[5]
 
     user_bin = sys.argv[6]
-    print '!!!user bin  %s  !!!'%(sys.argv[6])
     flash_data_line  = 16
     data_line_bits = 0xf
 
