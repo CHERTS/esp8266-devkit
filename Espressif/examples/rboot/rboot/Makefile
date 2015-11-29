@@ -4,7 +4,7 @@
 #
 
 ESPTOOL2 ?= ../esptool2/esptool2
-SDK_BASE ?= /opt/esp-open-sdk/sdk
+SDK_BASE ?= c:/Espressif/ESP8266_SDK
 
 RBOOT_BUILD_BASE ?= build
 RBOOT_FW_BASE    ?= firmware

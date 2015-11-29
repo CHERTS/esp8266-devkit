@@ -7,7 +7,7 @@
 WIFI_SSID ?= ""
 WIFI_PWD  ?= ""
 
-SDK_BASE   ?= /opt/esp-open-sdk/sdk
+SDK_BASE   ?= c:/Espressif/ESP8266_SDK
 SDK_LIBDIR  = lib
 SDK_INCDIR  = include
 
@@ -29,7 +29,7 @@ FIRMW_DIR = firmware
 SDK_LIBDIR := $(addprefix $(SDK_BASE)/,$(SDK_LIBDIR))
 SDK_INCDIR := $(addprefix -I$(SDK_BASE)/,$(SDK_INCDIR))
 
-LIBS    = c gcc hal phy net80211 lwip wpa main pp
+LIBS    = c gcc hal phy net80211 lwip wpa main pp crypto
 CFLAGS  = -Os -g -O2 -Wpointer-arith -Wundef -Werror -Wno-implicit -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls  -mtext-section-literals  -D__ets__ -DICACHE_FLASH
 LDFLAGS = -nostdlib -Wl,--no-check-sections -u call_user_start -Wl,-static
 
