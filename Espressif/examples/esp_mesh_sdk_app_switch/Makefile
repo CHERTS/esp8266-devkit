@@ -207,16 +207,21 @@ $(BINODIR)/%.bin: $(IMAGEODIR)/%.out
 	$(vecho) "Section info:"
 	$(Q) $(OBJDUMP) -h -j .data -j .rodata -j .bss -j .text -j .irom0.text $<
 	$(vecho) "------------------------------------------------------------------------------"
-	$(Q) $(ESPTOOL) elf2image $< -o../$(FW_BASE)/ $(flashimageoptions)
+	$(Q) $(ESPTOOL) elf2image $< -o$(FW_BASE)/ $(flashimageoptions)
 	$(vecho) "------------------------------------------------------------------------------"
 	$(vecho) "Generate 0x00000.bin and 0x40000.bin successully in folder $(FW_BASE)."
 	$(vecho) "0x00000.bin-------->0x00000"
 	$(vecho) "0x40000.bin-------->0x40000"
 	$(vecho) "Done"
 
-.PHONY: .subdirs all clean clobber progr flash flashinit rebuild
+.PHONY: .subdirs all clean clobber progr flash flashinit rebuild checkdirs
 
-all: .subdirs $(OBJS) $(OLIBS) $(OIMAGES) $(OBINS) $(SPECIAL_MKTARGETS)
+all: .subdirs checkdirs $(OBJS) $(OLIBS) $(OIMAGES) $(OBINS) $(SPECIAL_MKTARGETS)
+
+checkdirs: $(FW_BASE)
+
+$(FW_BASE):
+	$(Q) mkdir -p $@
 
 rebuild: clean clobber all
 

@@ -50,9 +50,11 @@ endif
 dummy: all
 
 libesphttpd/libesphttpd.a: libesphttpd/Makefile
+	make -C libesphttpd checkdirs
 	make -C libesphttpd libesphttpd.a
 
 libesphttpd/libwebpages-espfs.a: libesphttpd/Makefile
+	make -C libesphttpd checkdirs
 	make -C libesphttpd libwebpages-espfs.a
 
 LD_FILE = $(LDDIR)/eagle.app.v6.ld

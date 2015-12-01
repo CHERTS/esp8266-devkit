@@ -214,9 +214,14 @@ $(BINODIR)/%.bin: $(IMAGEODIR)/%.out
 	$(vecho) "0x40000.bin-------->0x40000"
 	$(vecho) "Done"
 
-.PHONY: .subdirs all clean clobber progr flash flashinit rebuild
+.PHONY: .subdirs all clean clobber progr flash flashinit rebuild checkdirs
 
-all: .subdirs $(OBJS) $(OLIBS) $(OIMAGES) $(OBINS) $(SPECIAL_MKTARGETS)
+all: .subdirs checkdirs $(OBJS) $(OLIBS) $(OIMAGES) $(OBINS) $(SPECIAL_MKTARGETS)
+
+checkdirs: $(FW_BASE)
+
+$(FW_BASE):
+	$(Q) mkdir -p $@
 
 rebuild: clean clobber all
 

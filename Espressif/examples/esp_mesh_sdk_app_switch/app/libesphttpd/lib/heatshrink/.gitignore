@@ -1,6 +1,0 @@
-heatshrink
-test_heatshrink_dynamic
-test_heatshrink_static
-*.o
-*.core
-*.dSYM
