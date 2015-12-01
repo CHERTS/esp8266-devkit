@@ -33,18 +33,30 @@ void ets_update_cpu_frequency(int freqmhz);
 int os_printf(const char *format, ...)  __attribute__ ((format (printf, 1, 2)));
 int os_snprintf(char *str, size_t size, const char *format, ...) __attribute__ ((format (printf, 3, 4)));
 int os_printf_plus(const char *format, ...)  __attribute__ ((format (printf, 1, 2)));
-void pvPortFree(void *ptr);
-void *pvPortMalloc(size_t xWantedSize);
-void *pvPortZalloc(size_t);
 void uart_div_modify(int no, unsigned int freq);
-void vPortFree(void *ptr);
-void *vPortMalloc(size_t xWantedSize);
 uint8 wifi_get_opmode(void);
 uint32 system_get_time();
 int rand(void);
 void ets_bzero(void *s, size_t n);
 void ets_delay_us(int ms);
 
+
+//Hack: this is defined in SDK 1.4.0 and undefined in 1.3.0. It's only used for this, the symbol itself
+//has no meaning here.
+#ifndef RC_LIMIT_P2P_11N
+//Defs for SDK <1.4.0
+void *pvPortMalloc(size_t xWantedSize);
+void *pvPortZalloc(size_t);
+void vPortFree(void *ptr);
+void *vPortMalloc(size_t xWantedSize);
+void pvPortFree(void *ptr);
+#else
+void *pvPortMalloc(size_t xWantedSize, const char *file, int line);
+void *pvPortZalloc(size_t, const char *file, int line);
+void vPortFree(void *ptr, const char *file, int line);
+void *vPortMalloc(size_t xWantedSize, const char *file, int line);
+void pvPortFree(void *ptr, const char *file, int line);
+#endif
 
 //Standard PIN_FUNC_SELECT gives a warning. Replace by a non-warning one.
 #ifdef PIN_FUNC_SELECT

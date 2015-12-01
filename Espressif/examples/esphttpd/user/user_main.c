@@ -25,6 +25,7 @@ some pictures of cats.
 #include "espfs.h"
 #include "captdns.h"
 #include "webpages-espfs.h"
+#include "cgiwebsocket.h"
 
 //The example can print out the heap use every 3 seconds. You can use this to catch memory leaks.
 //#define SHOW_HEAP_USE
@@ -45,6 +46,34 @@ int myPassFn(HttpdConnData *connData, int no, char *user, int userLen, char *pas
 	}
 	return 0;
 }
+
+static ETSTimer websockTimer;
+
+//Broadcast the uptime in seconds every second over connected websockets
+static void ICACHE_FLASH_ATTR websockTimerCb(void *arg) {
+	static int ctr=0;
+	char buff[128];
+	ctr++;
+	os_sprintf(buff, "Up for %d minutes %d seconds!\n", ctr/60, ctr%60);
+	cgiWebsockBroadcast("/websocket/ws.cgi", buff, os_strlen(buff), WEBSOCK_FLAG_NONE);
+}
+
+//On reception of a message, send "You sent: " plus whatever the other side sent
+void myWebsocketRecv(Websock *ws, char *data, int len, int flags) {
+	int i;
+	char buff[128];
+	os_sprintf(buff, "You sent: ");
+	for (i=0; i<len; i++) buff[i+10]=data[i];
+	buff[i+10]=0;
+	cgiWebsocketSend(ws, buff, os_strlen(buff), WEBSOCK_FLAG_NONE);
+}
+
+//Websocket connected. Install reception handler and send welcome message.
+void myWebsocketConnect(Websock *ws) {
+	ws->recvCb=myWebsocketRecv;
+	cgiWebsocketSend(ws, "Hi, Websocket!", 14, WEBSOCK_FLAG_NONE);
+}
+
 
 #ifdef ESPFS_POS
 CgiUploadFlashDef uploadParams={
@@ -102,6 +131,8 @@ HttpdBuiltInUrl builtInUrls[]={
 	{"/wifi/connstatus.cgi", cgiWiFiConnStatus, NULL},
 	{"/wifi/setmode.cgi", cgiWiFiSetMode, NULL},
 
+	{"/websocket/ws.cgi", cgiWebsocket, myWebsocketConnect},
+
 	{"*", cgiEspFsHook, NULL}, //Catch-all cgi function for the filesystem
 	{NULL, NULL, NULL}
 };
@@ -134,6 +165,9 @@ void user_init(void) {
 	os_timer_setfn(&prHeapTimer, prHeapTimerCb, NULL);
 	os_timer_arm(&prHeapTimer, 3000, 1);
 #endif
+	os_timer_disarm(&websockTimer);
+	os_timer_setfn(&websockTimer, websockTimerCb, NULL);
+	os_timer_arm(&websockTimer, 1000, 1);
 	os_printf("\nReady\n");
 }
 
