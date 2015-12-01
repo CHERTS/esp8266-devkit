@@ -66,22 +66,20 @@ int ICACHE_FLASH_ATTR base64_decode(size_t in_len, const char *in, size_t out_le
 	return io;
 }
 
-//Only need decode functions for now.
-#if 0
-
 static const uint8_t base64enc_tab[64]= "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
+#if 0
 void base64encode(const unsigned char in[3], unsigned char out[4], int count) {
 	out[0]=base64enc_tab[(in[0]>>2)];
 	out[1]=base64enc_tab[((in[0]&3)<<4)|(in[1]>>4)];
 	out[2]=count<2 ? '=' : base64enc_tab[((in[1]&15)<<2)|(in[2]>>6)];
 	out[3]=count<3 ? '=' : base64enc_tab[(in[2]&63)];
 }
+#endif
 
-
-int base64_encode(size_t in_len, const unsigned char *in, size_t out_len, char *out) {
+int ICACHE_FLASH_ATTR base64_encode(size_t in_len, const unsigned char *in, size_t out_len, char *out) {
 	unsigned ii, io;
-	uint_least32_t v;
+	uint32_t v;
 	unsigned rem;
 
 	for(io=0,ii=0,v=0,rem=0;ii<in_len;ii++) {
@@ -109,4 +107,3 @@ int base64_encode(size_t in_len, const unsigned char *in, size_t out_len, char *
 	return io;
 }
 
-#endif
