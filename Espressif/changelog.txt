@@ -1,7 +1,7 @@
 Changelog:
 ----------
 
-v2.0.9 (29.11.2015):
+v2.0.9 (02.12.2015):
 * Update SDK v1.5.0 (folder ESP8266_SDK);
 * Update RTOS SDK v1.3.0 (folder ESP8266_RTOS_SDK);
 * Update Espressif MESH SDK (beta) (folder ESP8266_MESH_SDK);
@@ -11,11 +11,13 @@ v2.0.9 (29.11.2015):
 * Updated documentation:
   - Delete files:
     2A-ESP8266__IOT_SDK_User_Manual__EN_v1.3.0.pdf
+    2B-ESP8266__SDK__IOT_Demo__EN_v0.6.pdf
     2C-ESP8266__SDK__Programming Guide__EN_v1.3.0.pdf
     20A-ESP8266__RTOS_SDK__Programming Guide__EN_v1.0.5.pdf
   + Added files:
     2A-ESP8266__IOT_SDK_User_Manual__EN_v1.4.pdf
-    2C-ESP8266__SDK__Programming Guide__EN_v1.4.pdf
+    2B-ESP8266__SDK__IOT_Demo__EN_v1.3.pdf
+    2C-ESP8266__SDK__Programming Guide__EN_v1.5.pdf
     3A_ESP8266_Flash_tool_user_manual_EN_v1.0.pdf
     20A-ESP8266__RTOS_SDK__Programming Guide__EN_v1.3.0.pdf
     20B-ESP8266__RTOS_SDK_API Reference__v1.3.0.pdf
