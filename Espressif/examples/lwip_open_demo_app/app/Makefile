@@ -83,6 +83,7 @@ LINKFLAGS_eagle.app.v6 = \
 	-lssl	\
 	-lpwm	\
 	-lsmartconfig \
+	-lcrypto \
 	$(DEP_LIBS_eagle.app.v6)					\
 	-Wl,--end-group
 
