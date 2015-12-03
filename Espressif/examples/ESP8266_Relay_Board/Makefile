@@ -13,12 +13,12 @@ FW_BASE		= firmware
 XTENSA_TOOLS_ROOT ?= c:/Espressif/xtensa-lx106-elf/bin
 
 # base directory of the ESP8266 SDK package, absolute
-SDK_BASE	?= c:/Espressif/ESP8266_SDK
+SDK_BASE	?= c:/Espressif/ESP8266_SDK_130
 SDK_TOOLS	?= c:/Espressif/utils
 
 #Extra Tensilica includes from the ESS VM
-SDK_EXTRA_INCLUDES ?= c:/Espressif/ESP8266_SDK/include
-SDK_EXTRA_LIBS ?= c:/Espressif/ESP8266_SDK/lib
+SDK_EXTRA_INCLUDES ?= c:/Espressif/ESP8266_SDK_130/include
+SDK_EXTRA_LIBS ?= c:/Espressif/ESP8266_SDK_130/lib
 
 # esptool path and port
 ESPTOOL ?= $(SDK_TOOLS)/esptool.exe
