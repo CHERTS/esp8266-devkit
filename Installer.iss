@@ -108,9 +108,9 @@ Name: "{group}\{cm:UninstallProgram,{#DevKitAppName}}"; Filename: "{uninstallexe
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\xtensa-lx106-elf\*"; Components: compiler
-Type: filesandordirs; Name: "{app}\docs\*"; Components: docs
+Type: filesandordirs; Name: "{app}\docs\ESP8266\*"; Components: docs
 Type: filesandordirs; Name: "{app}\utils\*"; Components: utils
-Type: filesandordirs; Name: "{app}\examples\*"; Components: examples
+Type: filesandordirs; Name: "{app}\examples\ESP8266\*"; Components: examples
 Type: filesandordirs; Name: "{app}\extra\*"; Components: sdk
 Type: filesandordirs; Name: "{app}\ESP8266_MESH_SDK\*"; Components: sdk
 Type: filesandordirs; Name: "{app}\ESP8266_RTOS_SDK\*"; Components: sdk

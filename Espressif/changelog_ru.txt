@@ -3,6 +3,8 @@
 
 v2.0.10 (02.01.2016):
 + Добавлен патч для liblwip (espconn_abort issue on ESP8266_NONOS_SDK_V1.5.0);
+* Документация перенесена в подпапку docs\ESP8266;
+* Примеры перенесены в подпапку examples\ESP8266;
 * Обновлены примеры:
   lwip_open_demo_app;
   ESP8266_Relay_Board;
