@@ -22,7 +22,7 @@ SDK_BASE      ?= c:/Espressif/ESP8266_SDK
 XTENSA_BINDIR ?= c:/Espressif/xtensa-lx106-elf/bin
 
 # esptool path and port
-SDK_TOOLS	?= c:/Espressif/utils
+SDK_TOOLS	?= c:/Espressif/utils/ESP8266
 ESPTOOL		?= $(SDK_TOOLS)/esptool.exe
 ESPPORT		?= COM3
 ESPBAUD		?= 115200

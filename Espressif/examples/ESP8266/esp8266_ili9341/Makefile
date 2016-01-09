@@ -19,7 +19,7 @@ SDK_BASE	?= c:/Espressif/ESP8266_SDK_095
 EXTRA_BASE	?= c:/Espressif/extra
 
 # esptool path and port
-SDK_TOOLS	?= c:/Espressif/utils
+SDK_TOOLS	?= c:/Espressif/utils/ESP8266
 ESPTOOL		?= $(SDK_TOOLS)/esptool.exe
 ESPPORT		?= COM2
 

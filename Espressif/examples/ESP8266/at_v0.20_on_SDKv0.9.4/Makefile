@@ -16,7 +16,7 @@ XTENSA_TOOLS_ROOT ?= c:/Espressif/xtensa-lx106-elf/bin
 
 # base directory of the ESP8266 SDK package, absolute
 SDK_BASE	?= c:/Espressif/ESP8266_SDK_094
-SDK_TOOLS	?= c:/Espressif/utils
+SDK_TOOLS	?= c:/Espressif/utils/ESP8266
 
 # esptool path and port
 ESPTOOL ?= $(SDK_TOOLS)/esptool.exe

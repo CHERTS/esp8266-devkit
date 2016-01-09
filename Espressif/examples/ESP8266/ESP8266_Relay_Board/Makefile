@@ -14,7 +14,7 @@ XTENSA_TOOLS_ROOT ?= c:/Espressif/xtensa-lx106-elf/bin
 
 # base directory of the ESP8266 SDK package, absolute
 SDK_BASE	?= c:/Espressif/ESP8266_SDK_130
-SDK_TOOLS	?= c:/Espressif/utils
+SDK_TOOLS	?= c:/Espressif/utils/ESP8266
 
 #Extra Tensilica includes from the ESS VM
 SDK_EXTRA_INCLUDES ?= c:/Espressif/ESP8266_SDK_130/include
