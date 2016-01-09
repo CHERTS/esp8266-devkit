@@ -11,6 +11,11 @@ v2.1.0 (11.01.2016):
 * Updated examples:
   lwip_open_demo_app;
   ESP8266_Relay_Board;
+  at;
+  smart_config;
+  IoT_Demo;
++ Added examples:
+  wps;
 
 v2.0.9 (02.12.2015):
 * Update SDK v1.5.0 (folder ESP8266_SDK);
