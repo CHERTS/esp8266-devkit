@@ -1,3 +1,29 @@
+esp_iot_sdk_v1.5.1_16_01_08 Release Note
+----------------------------------------
+
+Resolved Issues (Bugs listed below apply to Bug Bounty Program):
+1. espconn_abort may cause system crash. 
+
+Optimization: 
+1. Optimize the data receiving process under TCP connection. 
+2. Optimize low MAC and increase stability of the software. 
+3. Optimize watchdog feeding process. 
+4. Optimize softAP working mode so that some stations can be easily connected. 
+5. Optimize station working mode, enabling connection even when the SSID of the AP has changed.  
+6. Optimize station working mode, and increase router's compatibility during the connection process. 
+7. Optimize SSL shakehand. 
+8. Optimize espconn internal timer. 
+9. Optimize UDP transmission. 
+10. Improve the flash writing process. 
+11. Strenthen WPA2 security protocols. 
+12. Improve data sending ability. 
+13. Straighten the control capability of GPIO16 under light sleep mode. 
+14. boot.bin is upgrade to version 1.5, resolving boot failure when firmware is upgraded over the air (OTA).
+
+AT release note:
+1. Optimize the process of establishing TCP server via AT command. 
+2. Optimize UART-WiFi transparent transmission mode via AT command. 
+
 esp_iot_sdk_v1.5.0_15_11_27 Release Note
 ----------------------------------------
 
