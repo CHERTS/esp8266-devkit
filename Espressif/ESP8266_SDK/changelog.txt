@@ -1,3 +1,39 @@
+ESP8266_NONOS_SDK_V1.5.2_16_01_29 Release Note 
+----------------------------------------------
+
+Resolved Issues (Bugs listed below apply to Bug Bounty Program):
+1. Strange os_timer_arm behavior.
+
+Optimization:
+1. Added SDIO slave driver. Developers are now able to implement AT commands based on SDIO interface by themselves. 
+2. Optimized SSL shakehand. 
+3. Upgraded second-level boot, enabled HSPI flash.
+4. Added AirKiss library, 
+5. Updated sample code smart_config (esp_iot_sdk\examples\smart_config).
+6. The 114th byte of esp_init_data_default.bin is modified to be 1. Please use the latest esp_init_data_default.bin. 
+7. Added sample code at_espconn (esp_iot_sdk\examples\at_espconn), showing how to transmit AT commands via the internet. 
+
+Newly added APIs:
+1. SDIO slave APIs 
+   sdio_slave_init: initialize SDIO slave 
+   sdio_load_data: upload data to SDIO buffer. 
+   sdio_register_recv_cb: register Callbacks of data received by SDIO.
+2. AirKiss APIs 
+   airkiss_version: get version information of AirKiss.
+   airkiss_lan_recv: used to detect and analyze AirKiss data packets. 
+   airkiss_lan_pack: used to analyze AirKiss data packets, and to organize response packets waiting to be responded.
+3. AT UART simulation APIs
+   at_fake_uart_enable : enable AT UART simulation.
+   at_fake_uart_rx : AT UART RX for simulation.
+
+Release notes of AT_v0.60:
+1. Added command AT+CWLAPOPT, which is used to config the attribute of the returned value of the command AT+CWLAP.
+2. Added command AT+WPS, WPS supported. 
+3. Added command AT+MDNS, MDSN supported. 
+4. Added command AT+CWSTARTDISCOVER/AT+CWSTOPDISCOVER. AirKiss intranet detecting function is supported. 
+5. Optimized command AT+CIPSTART. The device can function as SSL client, and one SSL connection can be created at most. 
+6. Optimized AT+UART and related command.  
+
 esp_iot_sdk_v1.5.1_16_01_08 Release Note
 ----------------------------------------
 
