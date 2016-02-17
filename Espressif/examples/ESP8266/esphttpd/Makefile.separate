@@ -1,0 +1,37 @@
+#Makefile with the options specific to the build of a non-upgradable firmware with
+#the espfs included in the firmware binary.
+
+# linker script used for the linker step
+LD_SCRIPT	= eagle.app.v6.ld
+# Extra script to tell the linker the correct irom0 memory available
+EXTRA_LD_SCRIPTS = ldscript_memspecific.ld
+
+TARGET_OUT	:= $(addprefix $(BUILD_BASE)/,$(TARGET).out)
+
+.PHONY: ldscript_memspecific.ld
+
+BLANKPOS="$$(printf "0x%X" $$(($(ESP_SPI_FLASH_SIZE_K)*1024-0x2000)))"
+INITDATAPOS="$$(printf "0x%X" $$(($(ESP_SPI_FLASH_SIZE_K)*1024-0x4000)))"
+
+ldscript_memspecific.ld:
+	$(vecho) "GEN $@"
+	$(Q) echo "MEMORY { irom0_0_seg : org = 0x40240000, len = "$$(printf "0x%X" $$(($(ESP_SPI_FLASH_SIZE)-0x4000)))" }"> ldscript_memspecific.ld
+
+$(TARGET_OUT): $(APP_AR) $(EXTRA_LD_SCRIPTS)
+	$(vecho) "LD $@"
+	$(Q) $(LD) -Llibesphttpd -L$(SDK_LIBDIR) $(LD_SCRIPT) $(EXTRA_LD_SCRIPTS) $(LDFLAGS) -Wl,--start-group $(LIBS) $(APP_AR) -Wl,--end-group -o $@ 
+
+$(FW_BASE): $(TARGET_OUT)
+	$(vecho) "FW $@"
+	$(Q) mkdir -p $@
+	$(Q) $(ESPTOOL) elf2image $(TARGET_OUT) --output $@/
+
+flash: $(TARGET_OUT) $(FW_BASE)
+	$(Q) $(ESPTOOL) $(ESPTOOL_OPTS) write_flash  $(ESPTOOL_FLASHDEF) 0x00000 $(FW_BASE)/0x00000.bin 0x40000 $(FW_BASE)/0x40000.bin
+
+blankflash:
+	$(Q) $(ESPTOOL) $(ESPTOOL_OPTS) write_flash  $(ESPTOOL_FLASHDEF) $(BLANKPOS) $(SDK_BASE)/bin/blank.bin $(INITDATAPOS) $(SDK_BASE)/bin/esp_init_data_default.bin
+
+htmlflash: libesphttpd
+	$(Q) if [ $$(stat -c '%s' libesphttpd/webpages.espfs) -gt $$(( $(ESPFS_SIZE) )) ]; then echo "webpages.espfs too big!"; false; fi
+	$(Q) $(ESPTOOL) $(ESPTOOL_OPTS) write_flash  $(ESPTOOL_FLASHDEF) $(ESPFS_POS) libesphttpd/webpages.espfs

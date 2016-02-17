@@ -74,6 +74,18 @@ void myWebsocketConnect(Websock *ws) {
 	cgiWebsocketSend(ws, "Hi, Websocket!", 14, WEBSOCK_FLAG_NONE);
 }
 
+//On reception of a message, echo it back verbatim
+void myEchoWebsocketRecv(Websock *ws, char *data, int len, int flags) {
+	os_printf("EchoWs: echo, len=%d\n", len);
+	cgiWebsocketSend(ws, data, len, flags);
+}
+
+//Echo websocket connected. Install reception handler.
+void myEchoWebsocketConnect(Websock *ws) {
+	os_printf("EchoWs: connect\n");
+	ws->recvCb=myEchoWebsocketRecv;
+}
+
 
 #ifdef ESPFS_POS
 CgiUploadFlashDef uploadParams={
@@ -90,6 +102,7 @@ CgiUploadFlashDef uploadParams={
 	.fw1Pos=0x1000,
 	.fw2Pos=((OTA_FLASH_SIZE_K*1024)/2)+0x1000,
 	.fwSize=((OTA_FLASH_SIZE_K*1024)/2)-0x1000,
+	.tagName=OTA_TAGNAME
 };
 #define INCLUDE_FLASH_FNS
 #endif
@@ -132,6 +145,7 @@ HttpdBuiltInUrl builtInUrls[]={
 	{"/wifi/setmode.cgi", cgiWiFiSetMode, NULL},
 
 	{"/websocket/ws.cgi", cgiWebsocket, myWebsocketConnect},
+	{"/websocket/echo.cgi", cgiWebsocket, myEchoWebsocketConnect},
 
 	{"*", cgiEspFsHook, NULL}, //Catch-all cgi function for the filesystem
 	{NULL, NULL, NULL}

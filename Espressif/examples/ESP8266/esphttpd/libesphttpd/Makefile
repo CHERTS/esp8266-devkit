@@ -11,7 +11,12 @@ GZIP_COMPRESSION ?= no
 COMPRESS_W_YUI ?= no
 YUI-COMPRESSOR ?= /usr/bin/yui-compressor
 USE_HEATSHRINK ?= yes
-
+HTTPD_WEBSOCKETS ?= yes
+USE_OPENSDK ?= no
+FREERTOS ?= no
+HTTPD_MAX_CONNECTIONS ?= 8
+#For FreeRTOS
+HTTPD_STACKSIZE ?= 204
 
 
 # Output directors to store intermediate compiled files
@@ -20,10 +25,14 @@ BUILD_BASE	= build
 
 # Base directory for the compiler. Needs a / at the end; if not set it'll use the tools that are in
 # the PATH.
-XTENSA_TOOLS_ROOT ?= c:/Espressif/xtensa-lx106-elf/bin
+XTENSA_TOOLS_ROOT ?= c:/Espressif/xtensa-lx106-elf/bin/
 
-# base directory of the ESP8266 SDK package, absolute
+# Only used for the non-FreeRTOS build
 SDK_BASE	?= c:/Espressif/ESP8266_SDK
+
+# Base directory of the ESP8266 FreeRTOS SDK package, absolute
+# Only used for the FreeRTOS build
+SDK_PATH	?= c:/Espressif/ESP8266_RTOS_SDK
 
 # name for the target project
 LIB		= libesphttpd.a
@@ -37,28 +46,41 @@ EXTRA_INCDIR	= ./include \
 
 # compiler flags using during compilation of source files
 CFLAGS		= -Os -ggdb -std=c99 -Werror -Wpointer-arith -Wundef -Wall -Wl,-EL -fno-inline-functions \
-		-nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH -D_STDINT_H \
-		-Wno-address
+		-nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH \
+		-Wno-address -DHTTPD_MAX_CONNECTIONS=$(HTTPD_MAX_CONNECTIONS) -DHTTPD_STACKSIZE=$(HTTPD_STACKSIZE) \
 
 # various paths from the SDK used in this project
 SDK_LIBDIR	= lib
 SDK_LDDIR	= ld
+
+ifeq ("$(FREERTOS)","yes")
+CFLAGS		+= -DFREERTOS -DLWIP_OPEN_SRC -ffunction-sections -fdata-sections 
+SDK_INCDIR	= include \
+			include/freertos \
+			include/espressif/esp8266 \
+			include/espressif \
+			extra_include \
+			include/lwip \
+			include/lwip/lwip \
+			include/lwip/ipv4 \
+			include/lwip/ipv6
+SDK_INCDIR	:= $(addprefix -I$(SDK_PATH)/,$(SDK_INCDIR))
+else
 SDK_INCDIR	= include
+SDK_INCDIR	:= $(addprefix -I$(SDK_BASE)/,$(SDK_INCDIR))
+endif
 
 # select which tools to use as compiler, librarian and linker
-CC		:= $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-gcc
-AR		:= $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-ar
-LD		:= $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-gcc
-OBJCOPY := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-objcopy
-OBJDUMP := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-objdump
+CC		:= $(XTENSA_TOOLS_ROOT)xtensa-lx106-elf-gcc
+AR		:= $(XTENSA_TOOLS_ROOT)xtensa-lx106-elf-ar
+LD		:= $(XTENSA_TOOLS_ROOT)xtensa-lx106-elf-gcc
+OBJCOPY	:= $(XTENSA_TOOLS_ROOT)xtensa-lx106-elf-objcopy
 
 ####
 #### no user configurable options below here
 ####
 SRC_DIR		:= $(MODULES)
 BUILD_DIR	:= $(addprefix $(BUILD_BASE)/,$(MODULES))
-
-SDK_INCDIR	:= $(addprefix -I$(SDK_BASE)/,$(SDK_INCDIR))
 
 SRC		:= $(foreach sdir,$(SRC_DIR),$(wildcard $(sdir)/*.c))
 OBJ		:= $(patsubst %.c,$(BUILD_BASE)/%.o,$(SRC))
@@ -76,12 +98,24 @@ Q := @
 vecho := @echo
 endif
 
+ifneq ("$(FREERTOS)","yes")
+ifeq ("$(USE_OPENSDK)","yes")
+CFLAGS		+= -DUSE_OPENSDK
+else
+CFLAGS		+= -D_STDINT_H
+endif
+endif
+
 ifeq ("$(GZIP_COMPRESSION)","yes")
 CFLAGS		+= -DGZIP_COMPRESSION
 endif
 
 ifeq ("$(USE_HEATSHRINK)","yes")
 CFLAGS		+= -DESPFS_HEATSHRINK
+endif
+
+ifeq ("$(HTTPD_WEBSOCKETS)","yes")
+CFLAGS		+= -DHTTPD_WEBSOCKETS
 endif
 
 vpath %.c $(SRC_DIR)
@@ -103,7 +137,7 @@ lib/heatshrink/Makefile:
 	$(Q) git submodule update
 
 
-$(LIB): submodules $(OBJ)
+$(LIB): $(BUILD_DIR) submodules $(OBJ)
 	$(vecho) "AR $@"
 	$(Q) $(AR) cru $@ $(OBJ)
 
@@ -121,20 +155,19 @@ ifeq ("$(COMPRESS_W_YUI)","yes")
 	$(Q) for file in `find html_compressed -type f -name "*.js"`; do $(YUI-COMPRESSOR) --type js $$file -o $$file; done
 	$(Q) for file in `find html_compressed -type f -name "*.css"`; do $(YUI-COMPRESSOR) --type css $$file -o $$file; done
 	$(Q) awk "BEGIN {printf \"YUI compression ratio was: %.2f%%\\n\", (`du -b -s html_compressed/ | sed 's/\([0-9]*\).*/\1/'`/`du -b -s ../html/ | sed 's/\([0-9]*\).*/\1/'`)*100}"
-# mkespfsimage will compress html, css and js files with gzip by default if enabled
+# mkespfsimage will compress html, css, svg and js files with gzip by default if enabled
 # override with -g cmdline parameter
-	$(Q) cd html_compressed; find  | $(THISDIR)/espfs/mkespfsimage/mkespfsimage > $(THISDIR)/webpages.espfs; cd ..;
+	$(Q) cd html_compressed; find . | $(THISDIR)/espfs/mkespfsimage/mkespfsimage > $(THISDIR)/webpages.espfs; cd ..;
 else
-	$(Q) cd ../html; find | $(THISDIR)/espfs/mkespfsimage/mkespfsimage > $(THISDIR)/webpages.espfs; cd ..
+	$(Q) cd ../html; find . | $(THISDIR)/espfs/mkespfsimage/mkespfsimage > $(THISDIR)/webpages.espfs; cd ..
 endif
 
 libwebpages-espfs.a: webpages.espfs
 	$(Q) $(OBJCOPY) -I binary -O elf32-xtensa-le -B xtensa --rename-section .data=.irom0.literal \
-		--redefine-sym _binary_webpages_espfs_start=webpages_espfs_start \
-		--redefine-sym _binary_webpages_espfs_end=webpages_espfs_end \
-		--redefine-sym _binary_webpages_espfs_size=webpages_espfs_size \
-		webpages.espfs build/webpages.espfs.o
+		webpages.espfs build/webpages.espfs.o.tmp
+	$(Q) $(LD) -nostdlib -Wl,-r build/webpages.espfs.o.tmp -o build/webpages.espfs.o -Wl,-T webpages.espfs.ld
 	$(Q) $(AR) cru $@ build/webpages.espfs.o
+
 
 espfs/mkespfsimage/mkespfsimage: espfs/mkespfsimage/
 	$(Q) $(MAKE) -C espfs/mkespfsimage USE_HEATSHRINK="$(USE_HEATSHRINK)" GZIP_COMPRESSION="$(GZIP_COMPRESSION)"

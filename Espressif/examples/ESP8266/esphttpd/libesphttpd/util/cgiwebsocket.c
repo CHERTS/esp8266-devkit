@@ -1,3 +1,17 @@
+/*
+Websocket support for esphttpd. Inspired by https://github.com/dangrie158/ESP-8266-WebSocket
+*/
+
+/*
+ * ----------------------------------------------------------------------------
+ * "THE BEER-WARE LICENSE" (Revision 42):
+ * Jeroen Domburg <jeroen@spritesmods.com> wrote this file. As long as you retain 
+ * this notice you can do whatever you want with this stuff. If we meet some day, 
+ * and you think this stuff is worth it, you can buy me a beer in return. 
+ * ----------------------------------------------------------------------------
+ */
+
+
 #include <esp8266.h>
 #include "httpd.h"
 #include "sha1.h"
@@ -65,7 +79,7 @@ struct WebsockPriv {
 	struct WebsockFrame fr;
 	uint8_t maskCtr;
 	uint8 frameCont;
-	uint8 mustClose;
+	uint8 closedHere;
 	int wsStatus;
 	Websock *next; //in linked list
 };
@@ -90,46 +104,76 @@ static int ICACHE_FLASH_ATTR sendFrameHead(Websock *ws, int opcode, int len) {
 	} else {
 		buf[i++]=len;
 	}
+	httpd_printf("WS: Sent frame head for payload of %d bytes.\n", len);
 	return httpdSend(ws->conn, buf, i);
 }
 
 int ICACHE_FLASH_ATTR cgiWebsocketSend(Websock *ws, char *data, int len, int flags) {
-	int r;
+	int r=0;
 	int fl=0;
 	if (flags&WEBSOCK_FLAG_BIN) fl=OPCODE_BINARY; else fl=OPCODE_TEXT;
 	if (!(flags&WEBSOCK_FLAG_CONT)) fl|=FLAG_FIN;
 	sendFrameHead(ws, fl, len);
-	r=httpdSend(ws->conn, data, len);
+	if (len!=0) r=httpdSend(ws->conn, data, len);
 	httpdFlushSendBuffer(ws->conn);
 	return r;
 }
 
 //Broadcast data to all websockets at a specific url. Returns the amount of connections sent to.
 int ICACHE_FLASH_ATTR cgiWebsockBroadcast(char *resource, char *data, int len, int flags) {
+//This is majorly broken (and actually, always, it just tended to work because the circumstances
+//were juuuust right). Because the socket is used outside of the httpd send/receive context, it 
+//will not have an associated send buffer. This means httpdSend will write to a dangling pointer!
+//Disabled for now. If you really need this, open an issue on github or otherwise poke me and I'll
+//see what I can do.
+/*
 	Websock *lw=llStart;
 	int ret=0;
 	while (lw!=NULL) {
-		if (os_strcmp(lw->conn->url, resource)==0) {
+		if (strcmp(lw->conn->url, resource)==0) {
 			cgiWebsocketSend(lw, data, len, flags);
 			ret++;
 		}
 		lw=lw->priv->next;
 	}
 	return ret;
+*/
+	return 0;
 }
 
 
-void ICACHE_FLASH_ATTR cgiWebsocketClose(Websock *ws) {
-	sendFrameHead(ws, FLAG_FIN|OPCODE_CLOSE, 0);
+void ICACHE_FLASH_ATTR cgiWebsocketClose(Websock *ws, int reason) {
+	char rs[2]={reason>>8, reason&0xff};
+	sendFrameHead(ws, FLAG_FIN|OPCODE_CLOSE, 2);
+	httpdSend(ws->conn, rs, 2);
+	ws->priv->closedHere=1;
 	httpdFlushSendBuffer(ws->conn);
 }
 
 
+static void ICACHE_FLASH_ATTR websockFree(Websock *ws) {
+	httpd_printf("Ws: Free\n");
+	if (ws->closeCb) ws->closeCb(ws);
+	//Clean up linked list
+	if (llStart==ws) {
+		llStart=ws->priv->next;
+	} else if (llStart) {
+		Websock *lws=llStart;
+		//Find ws that links to this one.
+		while (lws!=NULL && lws->priv->next!=ws) lws=lws->priv->next;
+		if (lws!=NULL) lws->priv->next=ws->priv->next;
+	}
+	if (ws->priv) free(ws->priv);
+}
+
 int ICACHE_FLASH_ATTR cgiWebSocketRecv(HttpdConnData *connData, char *data, int len) {
 	int i, j, sl;
-	Websock *ws=(Websock*)connData->cgiPrivData;
+	int r=HTTPD_CGI_MORE;
+	int wasHeaderByte;
+	Websock *ws=(Websock*)connData->cgiData;
 	for (i=0; i<len; i++) {
-//		os_printf("Ws: State %d byte 0x%02X\n", ws->priv->wsStatus, data[i]);
+//		httpd_printf("Ws: State %d byte 0x%02X\n", ws->priv->wsStatus, data[i]);
+		wasHeaderByte=1;
 		if (ws->priv->wsStatus==ST_FLAGS) {
 			ws->priv->maskCtr=0;
 			ws->priv->frameCont=0;
@@ -147,31 +191,57 @@ int ICACHE_FLASH_ATTR cgiWebSocketRecv(HttpdConnData *connData, char *data, int 
 		} else if (ws->priv->wsStatus<=ST_LEN8) {
 			ws->priv->fr.len=(ws->priv->fr.len<<8)|data[i];
 			if (((ws->priv->fr.len8&127)==126 && ws->priv->wsStatus==ST_LEN2) || ws->priv->wsStatus==ST_LEN8) {
-				 if (ws->priv->fr.len8&IS_MASKED) ws->priv->wsStatus=ST_MASK1; else ws->priv->wsStatus=ST_PAYLOAD;
+				ws->priv->wsStatus=(ws->priv->fr.len8&IS_MASKED)?ST_MASK1:ST_PAYLOAD;
 			} else {
 				ws->priv->wsStatus++;
 			}
 		} else if (ws->priv->wsStatus<=ST_MASK4) {
 			ws->priv->fr.mask[ws->priv->wsStatus-ST_MASK1]=data[i];
 			ws->priv->wsStatus++;
-		} else if (ws->priv->wsStatus==ST_PAYLOAD) {
+		} else {
+			//Was a payload byte.
+			wasHeaderByte=0;
+		}
+		
+		if (ws->priv->wsStatus==ST_PAYLOAD && wasHeaderByte) {
+			//We finished parsing the header, but i still is on the last header byte. Move one forward so
+			//the payload code works as usual.
+			i++;
+		}
+		//Also finish parsing frame if we haven't received any payload bytes yet, but the length of the frame
+		//is zero.
+		if (ws->priv->wsStatus==ST_PAYLOAD) {
 			//Okay, header is in; this is a data byte. We're going to process all the data bytes we have 
 			//received here at the same time; no more byte iterations till the end of this frame.
 			//First, unmask the data
 			sl=len-i;
+			httpd_printf("Ws: Frame payload. wasHeaderByte %d fr.len %d sl %d cmd 0x%x\n", wasHeaderByte, (int)ws->priv->fr.len, (int)sl, ws->priv->fr.flags);
+			if (sl > ws->priv->fr.len) sl=ws->priv->fr.len;
 			for (j=0; j<sl; j++) data[i+j]^=(ws->priv->fr.mask[(ws->priv->maskCtr++)&3]);
+
+//			httpd_printf("Unmasked: ");
+//			for (j=0; j<sl; j++) httpd_printf("%02X ", data[i+j]&0xff);
+//			httpd_printf("\n");
 
 			//Inspect the header to see what we need to do.
 			if ((ws->priv->fr.flags&OPCODE_MASK)==OPCODE_PING) {
-				if (!ws->priv->frameCont) sendFrameHead(ws, OPCODE_PONG, 0);
-				if (ws->priv->fr.len>0) httpdSend(ws->conn, data+i, sl);
+				if (ws->priv->fr.len>125) {
+					if (!ws->priv->frameCont) cgiWebsocketClose(ws, 1002);
+					r=HTTPD_CGI_DONE;
+					break;
+				} else {
+					if (!ws->priv->frameCont) sendFrameHead(ws, OPCODE_PONG|FLAG_FIN, ws->priv->fr.len);
+					if (sl>0) httpdSend(ws->conn, data+i, sl);
+				}
 			} else if ((ws->priv->fr.flags&OPCODE_MASK)==OPCODE_TEXT || 
 						(ws->priv->fr.flags&OPCODE_MASK)==OPCODE_BINARY ||
 						(ws->priv->fr.flags&OPCODE_MASK)==OPCODE_CONTINUE) {
 				if (sl>ws->priv->fr.len) sl=ws->priv->fr.len;
 				if (!(ws->priv->fr.len8&IS_MASKED)) {
 					//We're a server; client should send us masked packets.
-					cgiWebsocketClose(ws);
+					cgiWebsocketClose(ws, 1002);
+					r=HTTPD_CGI_DONE;
+					break;
 				} else {
 					int flags=0;
 					if ((ws->priv->fr.flags&OPCODE_MASK)==OPCODE_BINARY) flags|=WEBSOCK_FLAG_BIN;
@@ -179,16 +249,33 @@ int ICACHE_FLASH_ATTR cgiWebSocketRecv(HttpdConnData *connData, char *data, int 
 					if (ws->recvCb) ws->recvCb(ws, data+i, sl, flags);
 				}
 			} else if ((ws->priv->fr.flags&OPCODE_MASK)==OPCODE_CLOSE) {
-				ws->priv->mustClose=1;
+				httpd_printf("WS: Got close frame\n");
+				if (!ws->priv->closedHere) {
+					httpd_printf("WS: Sending response close frame\n");
+					cgiWebsocketClose(ws, ((data[i]<<8)&0xff00)+(data[i+1]&0xff));
+				}
+				r=HTTPD_CGI_DONE;
+				break;
+			} else {
+				if (!ws->priv->frameCont) httpd_printf("WS: Unknown opcode 0x%X\n", ws->priv->fr.flags&OPCODE_MASK);
 			}
-			ws->priv->frameCont=1; //next payload is continuation of this one.
-			i+=sl; //skip remaining bytes of framepayload, we have handled this
+			i+=sl-1;
 			ws->priv->fr.len-=sl;
-			if (ws->priv->fr.len==0) ws->priv->wsStatus=ST_FLAGS;
+			if (ws->priv->fr.len==0) {
+				ws->priv->wsStatus=ST_FLAGS; //go receive next frame
+			} else {
+				ws->priv->frameCont=1; //next payload is continuation of this frame.
+			}
 		}
 	}
-	httpdFlushSendBuffer(ws->conn);
-	return 0;
+	if (r==HTTPD_CGI_DONE) {
+		//We're going to tell the main webserver we're done. The webserver expects us to clean up by ourselves
+		//we're chosing to be done. Do so.
+		websockFree(ws);
+		free(connData->cgiData);
+		connData->cgiData=NULL;
+	}
+	return r;
 }
 
 //Websocket 'cgi' implementation
@@ -198,47 +285,38 @@ int ICACHE_FLASH_ATTR cgiWebsocket(HttpdConnData *connData) {
 	sha1nfo s;
 	if (connData->conn==NULL) {
 		//Connection aborted. Clean up.
-//		os_printf("WS: Cleanup\n");
-		if (connData->cgiPrivData) {
-			Websock *ws=(Websock*)connData->cgiPrivData;
-			if (ws->closeCb) ws->closeCb(ws);
-			//Clean up linked list
-			if (llStart==ws) {
-				llStart=ws->priv->next;
-			} else if (llStart) {
-				Websock *lws=llStart;
-				//Find ws that links to this one.
-				while (lws!=NULL && lws->priv->next!=ws) lws=lws->priv->next;
-				if (lws!=NULL) lws->priv->next=ws->priv->next;
-			}
-			if (ws->priv) os_free(ws->priv);
-			os_free(connData->cgiPrivData);
-			connData->cgiPrivData=NULL;
+		httpd_printf("WS: Cleanup\n");
+		if (connData->cgiData) {
+			Websock *ws=(Websock*)connData->cgiData;
+			websockFree(ws);
+			free(connData->cgiData);
+			connData->cgiData=NULL;
 		}
 		return HTTPD_CGI_DONE;
 	}
 	
-	if (connData->cgiPrivData==NULL) {
-//		os_printf("WS: First call\n");
+	if (connData->cgiData==NULL) {
+//		httpd_printf("WS: First call\n");
 		//First call here. Check if client headers are OK, send server header.
 		i=httpdGetHeader(connData, "Upgrade", buff, sizeof(buff)-1);
-//		os_printf("WS: Upgrade: %s\n", buff);
-		if (i && os_strcmp(buff, "websocket")==0) {
+		httpd_printf("WS: Upgrade: %s\n", buff);
+		if (i && strcasecmp(buff, "websocket")==0) {
 			i=httpdGetHeader(connData, "Sec-WebSocket-Key", buff, sizeof(buff)-1);
 			if (i) {
-//				os_printf("WS: Key: %s\n", buff);
+//				httpd_printf("WS: Key: %s\n", buff);
 				//Seems like a WebSocket connection.
 				// Alloc structs
-				connData->cgiPrivData=os_malloc(sizeof(Websock));
-				os_memset(connData->cgiPrivData, 0, sizeof(Websock));
-				Websock *ws=(Websock*)connData->cgiPrivData;
-				ws->priv=os_malloc(sizeof(WebsockPriv));
-				os_memset(ws->priv, 0, sizeof(WebsockPriv));
+				connData->cgiData=malloc(sizeof(Websock));
+				memset(connData->cgiData, 0, sizeof(Websock));
+				Websock *ws=(Websock*)connData->cgiData;
+				ws->priv=malloc(sizeof(WebsockPriv));
+				memset(ws->priv, 0, sizeof(WebsockPriv));
 				ws->conn=connData;
 				//Reply with the right headers.
-				os_strcat(buff, WS_GUID);
+				strcat(buff, WS_GUID);
 				sha1_init(&s);
-				sha1_write(&s, buff, os_strlen(buff));
+				sha1_write(&s, buff, strlen(buff));
+				httpdDisableTransferEncoding(connData);
 				httpdStartResponse(connData, 101);
 				httpdHeader(connData, "Upgrade", "websocket");
 				httpdHeader(connData, "Connection", "upgrade");
@@ -268,11 +346,9 @@ int ICACHE_FLASH_ATTR cgiWebsocket(HttpdConnData *connData) {
 	}
 	
 	//Sending is done. Call the sent callback if we have one.
-	Websock *ws=(Websock*)connData->cgiPrivData;
+	Websock *ws=(Websock*)connData->cgiData;
 	if (ws && ws->sentCb) ws->sentCb(ws);
-	
-	if (ws && ws->priv->mustClose) return HTTPD_CGI_DONE;
-	
+
 	return HTTPD_CGI_MORE;
 }
 

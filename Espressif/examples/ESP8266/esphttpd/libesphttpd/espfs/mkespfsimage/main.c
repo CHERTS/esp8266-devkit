@@ -191,11 +191,9 @@ int handleFile(int f, char *name, int compression, int level, char **compName) {
 	int nameLen;
 	int8_t flags = 0;
 	size=lseek(f, 0, SEEK_END);
-	fdat=mmap(NULL, size, PROT_READ, MAP_SHARED, f, 0);
-	if (fdat==MAP_FAILED) {
-		perror("mmap");
-		return 0;
-	}
+	fdat=malloc(size);
+	lseek(f, 0, SEEK_SET);
+	read(f, fdat, size);
 
 #ifdef ESPFS_GZIP
 	if (shouldCompressGzip(name)) {
@@ -251,7 +249,7 @@ int handleFile(int f, char *name, int compression, int level, char **compName) {
 		write(1, "\000", 1);
 		csize++;
 	}
-	munmap(fdat, size);
+	free(fdat);
 
 	if (compName != NULL) {
 		if (h.compression==COMPRESS_HEATSHRINK) {
@@ -318,7 +316,7 @@ int main(int argc, char **argv) {
 
 #ifdef ESPFS_GZIP
 	if (gzipExtensions == NULL) {
-		parseGzipExtensions(strdup("html,css,js"));
+		parseGzipExtensions(strdup("html,css,js,svg"));
 	}
 #endif
 

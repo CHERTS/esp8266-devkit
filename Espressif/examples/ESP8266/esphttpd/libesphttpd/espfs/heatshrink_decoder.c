@@ -8,8 +8,6 @@
 
 #include <esp8266.h>
 
-#define memset(x,y,z) os_memset(x,y,z)
-#define memcpy(x,y,z) os_memcpy(x,y,z)
 #endif
 
 #include "heatshrink_config_custom.h"

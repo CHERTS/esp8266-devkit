@@ -46,6 +46,6 @@ void ioInit() {
 	gpio_output_set(0, 0, (1<<LEDGPIO), (1<<BTNGPIO));
 	os_timer_disarm(&resetBtntimer);
 	os_timer_setfn(&resetBtntimer, resetBtnTimerCb, NULL);
-//	os_timer_arm(&resetBtntimer, 500, 1);
+	os_timer_arm(&resetBtntimer, 500, 1);
 }
 

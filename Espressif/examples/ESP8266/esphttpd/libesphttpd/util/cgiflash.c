@@ -15,31 +15,30 @@ Some flash handling cgi routines. Used for reading the existing flash and updati
 #include <esp8266.h>
 #include "cgiflash.h"
 #include "espfs.h"
-#include <osapi.h>
 #include "cgiflash.h"
 #include "espfs.h"
 
-#include <osapi.h>
+//#include <osapi.h>
 #include "cgiflash.h"
 #include "espfs.h"
 
-#define ESPFS_SIZE 0
-#define FIRMWARE_SIZE 0
-
+#ifndef UPGRADE_FLAG_FINISH
+#define UPGRADE_FLAG_FINISH     0x02
+#endif
 
 // Check that the header of the firmware blob looks like actual firmware...
-static char* ICACHE_FLASH_ATTR checkBinHeader(void *buf) {
+static int ICACHE_FLASH_ATTR checkBinHeader(void *buf) {
 	uint8_t *cd = (uint8_t *)buf;
-	if (cd[0] != 0xEA) return "IROM magic missing";
-	if (cd[1] != 4 || cd[2] > 3 || cd[3] > 0x40) return "bad flash header";
-	if (((uint16_t *)buf)[3] != 0x4010) return "Invalid entry addr";
-	if (((uint32_t *)buf)[2] != 0) return "Invalid start offset";
-	return NULL;
+	if (cd[0] != 0xEA) return 0;
+	if (cd[1] != 4 || cd[2] > 3 || cd[3] > 0x40) return 0;
+	if (((uint16_t *)buf)[3] != 0x4010) return 0;
+	if (((uint32_t *)buf)[2] != 0) return 0;
+	return 1;
 }
 
-static char* ICACHE_FLASH_ATTR checkEspfsHeader(void *buf) {
-	if (os_memcmp(buf, "ESfs", 4)!=0) return "Bad ESPfs header";
-	return NULL;
+static int ICACHE_FLASH_ATTR checkEspfsHeader(void *buf) {
+	if (memcmp(buf, "ESfs", 4)!=0) return 0;
+	return 1;
 }
 
 
@@ -56,7 +55,7 @@ int ICACHE_FLASH_ATTR cgiGetFirmwareNext(HttpdConnData *connData) {
 	httpdEndHeaders(connData);
 	char *next = id == 1 ? "user1.bin" : "user2.bin";
 	httpdSend(connData, next, -1);
-	os_printf("Next firmware: %s (got %d)\n", next, id);
+	httpd_printf("Next firmware: %s (got %d)\n", next, id);
 	return HTTPD_CGI_DONE;
 }
 
@@ -71,7 +70,7 @@ int ICACHE_FLASH_ATTR cgiReadFlash(HttpdConnData *connData) {
 	}
 
 	if (*pos==0) {
-		os_printf("Start flash download.\n");
+		httpd_printf("Start flash download.\n");
 		httpdStartResponse(connData, 200);
 		httpdHeader(connData, "Content-Type", "application/bin");
 		httpdEndHeaders(connData);
@@ -79,89 +78,226 @@ int ICACHE_FLASH_ATTR cgiReadFlash(HttpdConnData *connData) {
 		return HTTPD_CGI_MORE;
 	}
 	//Send 1K of flash per call. We will get called again if we haven't sent 512K yet.
-	espconn_sent(connData->conn, (uint8 *)(*pos), 1024);
+	httpdSend(connData, (char*)(*pos), 1024);
 	*pos+=1024;
 	if (*pos>=0x40200000+(512*1024)) return HTTPD_CGI_DONE; else return HTTPD_CGI_MORE;
 }
 
 
-//Cgi that allows the firmware to be replaced via http POST
+//Cgi that allows the firmware to be replaced via http POST This takes
+//a direct POST from e.g. Curl or a Javascript AJAX call with either the
+//firmware given by cgiGetFirmwareNext or an OTA upgrade image.
+
+//Because we don't have the buffer to allocate an entire sector but will 
+//have to buffer some data because the post buffer may be misaligned, we 
+//write SPI data in pages. The page size is a software thing, not
+//a hardware one.
+#define PAGELEN 64
+
+#define FLST_START 0
+#define FLST_WRITE 1
+#define FLST_SKIP 2
+#define FLST_DONE 3
+#define FLST_ERROR 4
+
+#define FILETYPE_ESPFS 0
+#define FILETYPE_FLASH 1
+#define FILETYPE_OTA 2
+typedef struct {
+	int state;
+	int filetype;
+	int flashPos;
+	char pageData[PAGELEN];
+	int pagePos;
+	int address;
+	int len;
+	int skip;
+	char *err;
+} UploadState;
+
+typedef struct __attribute__((packed)) {
+	char magic[4];
+	char tag[28];
+	int32_t len1;
+	int32_t len2;
+} OtaHeader;
+
+
 int ICACHE_FLASH_ATTR cgiUploadFirmware(HttpdConnData *connData) {
 	CgiUploadFlashDef *def=(CgiUploadFlashDef*)connData->cgiArg;
-	uint32_t address;
+	UploadState *state=(UploadState *)connData->cgiData;
+	int len;
+	char buff[128];
+
 	if (connData->conn==NULL) {
 		//Connection aborted. Clean up.
+		if (state!=NULL) free(state);
 		return HTTPD_CGI_DONE;
 	}
 
-	int offset = connData->post->received - connData->post->buffLen;
-	if (offset == 0) {
-		connData->cgiPrivData = NULL;
-	} else if (connData->cgiPrivData != NULL) {
-		// we have an error condition, do nothing
-		return HTTPD_CGI_DONE;
+	if (state==NULL) {
+		//First call. Allocate and initialize state variable.
+		httpd_printf("Firmware upload cgi start.\n");
+		state=malloc(sizeof(UploadState));
+		if (state==NULL) {
+			httpd_printf("Can't allocate firmware upload struct!\n");
+			return HTTPD_CGI_DONE;
+		}
+		memset(state, 0, sizeof(UploadState));
+		state->state=FLST_START;
+		connData->cgiData=state;
+		state->err="Premature end";
 	}
-
-	// assume no error yet...
-	char *err = NULL;
-	int code = 400;
-
-	if (connData->post==NULL) err="No POST request.";
-	if (def==NULL) err="Flash def = NULL ?";
-
-	// check overall size
-	os_printf("Max img sz 0x%X, post len 0x%X\n", def->fwSize, connData->post->len);
-	if (err==NULL && connData->post->len > def->fwSize) err = "Firmware image too large";
-
-	// check that data starts with an appropriate header
-	if (err == NULL && offset == 0 && def->type==CGIFLASH_TYPE_FW) err = checkBinHeader(connData->post->buff);
-	if (err == NULL && offset == 0 && def->type==CGIFLASH_TYPE_ESPFS) err = checkEspfsHeader(connData->post->buff);
-
-	// make sure we're buffering in 1024 byte chunks
-	if (err == NULL && offset % 1024 != 0) {
-		err = "Buffering problem";
-		code = 500;
+	
+	char *data=connData->post->buff;
+	int dataLen=connData->post->buffLen;
+	
+	while (dataLen!=0) {
+		if (state->state==FLST_START) {
+			//First call. Assume the header of whatever we're uploading already is in the POST buffer.
+			if (def->type==CGIFLASH_TYPE_FW && memcmp(data, "EHUG", 4)==0) {
+				//Type is combined flash1/flash2 file
+				OtaHeader *h=(OtaHeader*)data;
+				strncpy(buff, h->tag, 27);
+				buff[27]=0;
+				if (strcmp(buff, def->tagName)!=0) {
+					httpd_printf("OTA tag mismatch! Current=`%s` uploaded=`%s`.\n",
+										def->tagName, buff);
+					len=httpdFindArg(connData->getArgs, "force", buff, sizeof(buff));
+					if (len!=-1 && atoi(buff)) {
+						httpd_printf("Forcing firmware flash.\n");
+					} else {
+						state->err="Firmware not intended for this device!\n";
+						state->state=FLST_ERROR;
+					}
+				}
+				if (state->state!=FLST_ERROR && connData->post->len > def->fwSize*2+sizeof(OtaHeader)) {
+					state->err="Firmware image too large";
+					state->state=FLST_ERROR;
+				}
+				if (state->state!=FLST_ERROR) {
+					//Flash header seems okay.
+					dataLen-=sizeof(OtaHeader); //skip header when parsing data
+					data+=sizeof(OtaHeader);
+					if (system_upgrade_userbin_check()==1) {
+						httpd_printf("Flashing user1.bin from ota image\n");
+						state->len=h->len1;
+						state->skip=h->len2;
+						state->state=FLST_WRITE;
+						state->address=def->fw1Pos;
+					} else {
+						httpd_printf("Flashing user2.bin from ota image\n");
+						state->len=h->len2;
+						state->skip=h->len1;
+						state->state=FLST_SKIP;
+						state->address=def->fw2Pos;
+					}
+				}
+			} else if (def->type==CGIFLASH_TYPE_FW && checkBinHeader(connData->post->buff)) {
+				if (connData->post->len > def->fwSize) {
+					state->err="Firmware image too large";
+					state->state=FLST_ERROR;
+				} else {
+					state->len=connData->post->len;
+					state->address=def->fw1Pos;
+					state->state=FLST_WRITE;
+				}
+			} else if (def->type==CGIFLASH_TYPE_ESPFS && checkEspfsHeader(connData->post->buff)) {
+				if (connData->post->len > def->fwSize) {
+					state->err="Firmware image too large";
+					state->state=FLST_ERROR;
+				} else {
+					state->len=connData->post->len;
+					state->address=def->fw1Pos;
+					state->state=FLST_WRITE;
+				}
+			} else {
+				state->err="Invalid flash image type!";
+				state->state=FLST_ERROR;
+				httpd_printf("Did not recognize flash image type!\n");
+			}
+		} else if (state->state==FLST_SKIP) {
+			//Skip bytes without doing anything with them
+			if (state->skip>dataLen) {
+				//Skip entire buffer
+				state->skip-=dataLen;
+				dataLen=0;
+			} else {
+				//Only skip part of buffer
+				dataLen-=state->skip;
+				data+=state->skip;
+				state->skip=0;
+				if (state->len) state->state=FLST_WRITE; else state->state=FLST_DONE;
+			}
+		} else if (state->state==FLST_WRITE) {
+			//Copy bytes to page buffer, and if page buffer is full, flash the data.
+			//First, calculate the amount of bytes we need to finish the page buffer.
+			int lenLeft=PAGELEN-state->pagePos;
+			if (state->len<lenLeft) lenLeft=state->len; //last buffer can be a cut-off one
+			//See if we need to write the page.
+			if (dataLen<lenLeft) {
+				//Page isn't done yet. Copy data to buffer and exit.
+				memcpy(&state->pageData[state->pagePos], data, dataLen);
+				state->pagePos+=dataLen;
+				state->len-=dataLen;
+				dataLen=0;
+			} else {
+				//Finish page; take data we need from post buffer
+				memcpy(&state->pageData[state->pagePos], data, lenLeft);
+				data+=lenLeft;
+				dataLen-=lenLeft;
+				state->pagePos+=lenLeft;
+				state->len-=lenLeft;
+				//Erase sector, if needed
+				if ((state->address&(SPI_FLASH_SEC_SIZE-1))==0) {
+					spi_flash_erase_sector(state->address/SPI_FLASH_SEC_SIZE);
+				}
+				//Write page
+				//httpd_printf("Writing %d bytes of data to SPI pos 0x%x...\n", state->pagePos, state->address);
+				spi_flash_write(state->address, (uint32 *)state->pageData, state->pagePos);
+				state->address+=PAGELEN;
+				state->pagePos=0;
+				if (state->len==0) {
+					//Done.
+					if (state->skip) state->state=FLST_SKIP; else state->state=FLST_DONE;
+				}
+			}
+		} else if (state->state==FLST_DONE) {
+			httpd_printf("Huh? %d bogus bytes received after data received.\n", dataLen);
+			//Ignore those bytes.
+			dataLen=0;
+		} else if (state->state==FLST_ERROR) {
+			//Just eat up any bytes we receive.
+			dataLen=0;
+		}
 	}
-
-	// return an error if there is one
-	if (err != NULL) {
-		os_printf("Error %d: %s\n", code, err);
-		httpdStartResponse(connData, code);
+	
+	if (connData->post->len==connData->post->received) {
+		//We're done! Format a response.
+		httpd_printf("Upload done. Sending response.\n");
+		httpdStartResponse(connData, state->state==FLST_ERROR?400:200);
 		httpdHeader(connData, "Content-Type", "text/plain");
 		httpdEndHeaders(connData);
-		httpdSend(connData, "Firmware image error:\r\n", -1);
-		httpdSend(connData, err, -1);
-		httpdSend(connData, "\r\n", -1);
-		connData->cgiPrivData = (void *)1;
+		if (state->state!=FLST_DONE) {
+			httpdSend(connData, "Firmware image error:", -1);
+			httpdSend(connData, state->err, -1);
+			httpdSend(connData, "\n", -1);
+		}
+		free(state);
 		return HTTPD_CGI_DONE;
 	}
 
-	// let's see which partition we need to flash and what flash address that puts us at
-	int id=system_upgrade_userbin_check();
-	if (id==1) address=def->fw1Pos; else address=def->fw2Pos;
-	address += offset;
-	// erase next flash block if necessary
-	if (address % SPI_FLASH_SEC_SIZE == 0){
-		// We need to erase this block
-		os_printf("Erasing flash at 0x%05x (id=%d)\n", (unsigned int)address, 2-id);
-		spi_flash_erase_sector(address/SPI_FLASH_SEC_SIZE);
-	}
-
-	// Write the data
-	os_printf("Writing %d bytes at 0x%05x (%d of %d)\n", connData->post->buffSize, (unsigned int)address,
-			connData->post->received, connData->post->len);
-	spi_flash_write(address, (uint32 *)connData->post->buff, connData->post->buffLen);
-
-	if (connData->post->received == connData->post->len){
-		httpdStartResponse(connData, 200);
-		httpdEndHeaders(connData);
-		return HTTPD_CGI_DONE;
-	} else {
-		return HTTPD_CGI_MORE;
-	}
+	return HTTPD_CGI_MORE;
 }
 
-//static ETSTimer flash_reboot_timer;
+
+
+static os_timer_t resetTimer;
+
+static void ICACHE_FLASH_ATTR resetTimerCb(void *arg) {
+	system_upgrade_flag_set(UPGRADE_FLAG_FINISH);
+	system_upgrade_reboot();
+}
 
 // Handle request to reboot into the new firmware
 int ICACHE_FLASH_ATTR cgiRebootFirmware(HttpdConnData *connData) {
@@ -173,12 +309,15 @@ int ICACHE_FLASH_ATTR cgiRebootFirmware(HttpdConnData *connData) {
 	// TODO: sanity-check that the 'next' partition actually contains something that looks like
 	// valid firmware
 
-	// This should probably be forked into a separate task that waits a second to let the
-	// current HTTP request finish...
-	system_upgrade_flag_set(UPGRADE_FLAG_FINISH);
-	system_upgrade_reboot();
+	//Do reboot in a timer callback so we still have time to send the response.
+	os_timer_disarm(&resetTimer);
+	os_timer_setfn(&resetTimer, resetTimerCb, NULL);
+	os_timer_arm(&resetTimer, 200, 0);
+
 	httpdStartResponse(connData, 200);
+	httpdHeader(connData, "Content-Type", "text/plain");
 	httpdEndHeaders(connData);
+	httpdSend(connData, "Rebooting...", -1);
 	return HTTPD_CGI_DONE;
 }
 

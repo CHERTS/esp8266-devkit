@@ -1,7 +1,7 @@
 #ifndef HTTPD_H
 #define HTTPD_H
 
-#define HTTPDVER "0.3"
+#define HTTPDVER "0.4"
 
 #define HTTPD_CGI_MORE 0
 #define HTTPD_CGI_DONE 1
@@ -20,30 +20,31 @@ typedef int (* cgiRecvHandler)(HttpdConnData *connData, char *data, int len);
 
 //A struct describing a http connection. This gets passed to cgi functions.
 struct HttpdConnData {
-	struct espconn *conn;
-	char requestType;
-	char *url;
-	char *getArgs;
-	const void *cgiArg;
-	void *cgiData;
-	void *cgiPrivData; // Used for streaming handlers storing state between requests
-	char *hostName;
-	HttpdPriv *priv;
-	cgiSendCallback cgi;
-	cgiRecvHandler recvHdl;
-	HttpdPostData *post;
-	int remote_port;
-	uint8 remote_ip[4];
+	ConnTypePtr conn;		// The TCP connection. Exact type depends on the platform.
+	char requestType;		// One of the HTTPD_METHOD_* values
+	char *url;				// The URL requested, without hostname or GET arguments
+	char *getArgs;			// The GET arguments for this request, if any.
+	const void *cgiArg;		// Argument to the CGI function, as stated as the 3rd argument of
+							// the builtInUrls entry that referred to the CGI function.
+	void *cgiData;			// Opaque data pointer for the CGI function
+	char *hostName;			// Host name field of request
+	HttpdPriv *priv;		// Opaque pointer to data for internal httpd housekeeping
+	cgiSendCallback cgi;	// CGI function pointer
+	cgiRecvHandler recvHdl;	// Handler for data received after headers, if any
+	HttpdPostData *post;	// POST data structure
+	int remote_port;		// Remote TCP port
+	uint8 remote_ip[4];		// IP address of client
+	uint8 slot;				// Slot ID
 };
 
 //A struct describing the POST data sent inside the http connection.  This is used by the CGI functions
 struct HttpdPostData {
-	int len; // POST Content-Length
-	int buffSize; // The maximum length of the post buffer
-	int buffLen; // The amount of bytes in the current post buffer
-	int received; // The total amount of bytes received so far
-	char *buff; // Actual POST data buffer
-	char *multipartBoundary;
+	int len;				// POST Content-Length
+	int buffSize;			// The maximum length of the post buffer
+	int buffLen;			// The amount of bytes in the current post buffer
+	int received;			// The total amount of bytes received so far
+	char *buff;				// Actual POST data buffer
+	char *multipartBoundary; //Text of the multipart boundary, if any
 };
 
 //A struct describing an url. This is the main struct that's used to send different URL requests to
@@ -54,19 +55,27 @@ typedef struct {
 	const void *cgiArg;
 } HttpdBuiltInUrl;
 
-int ICACHE_FLASH_ATTR cgiRedirect(HttpdConnData *connData);
-int ICACHE_FLASH_ATTR cgiRedirectToHostname(HttpdConnData *connData);
-int ICACHE_FLASH_ATTR cgiRedirectApClientToHostname(HttpdConnData *connData);
-void ICACHE_FLASH_ATTR httpdRedirect(HttpdConnData *conn, char *newUrl);
+int cgiRedirect(HttpdConnData *connData);
+int cgiRedirectToHostname(HttpdConnData *connData);
+int cgiRedirectApClientToHostname(HttpdConnData *connData);
+void httpdRedirect(HttpdConnData *conn, char *newUrl);
 int httpdUrlDecode(char *val, int valLen, char *ret, int retLen);
-int ICACHE_FLASH_ATTR httpdFindArg(char *line, char *arg, char *buff, int buffLen);
-void ICACHE_FLASH_ATTR httpdInit(HttpdBuiltInUrl *fixedUrls, int port);
+int httpdFindArg(char *line, char *arg, char *buff, int buffLen);
+void httpdInit(HttpdBuiltInUrl *fixedUrls, int port);
 const char *httpdGetMimetype(char *url);
-void ICACHE_FLASH_ATTR httpdStartResponse(HttpdConnData *conn, int code);
-void ICACHE_FLASH_ATTR httpdHeader(HttpdConnData *conn, const char *field, const char *val);
-void ICACHE_FLASH_ATTR httpdEndHeaders(HttpdConnData *conn);
-int ICACHE_FLASH_ATTR httpdGetHeader(HttpdConnData *conn, char *header, char *ret, int retLen);
-int ICACHE_FLASH_ATTR httpdSend(HttpdConnData *conn, const char *data, int len);
-void ICACHE_FLASH_ATTR httpdFlushSendBuffer(HttpdConnData *conn);
+void httpdDisableTransferEncoding(HttpdConnData *conn);
+void httpdStartResponse(HttpdConnData *conn, int code);
+void httpdHeader(HttpdConnData *conn, const char *field, const char *val);
+void httpdEndHeaders(HttpdConnData *conn);
+int httpdGetHeader(HttpdConnData *conn, char *header, char *ret, int retLen);
+int httpdSend(HttpdConnData *conn, const char *data, int len);
+void httpdFlushSendBuffer(HttpdConnData *conn);
+
+//Platform dependent code should call these.
+void httpdSentCb(ConnTypePtr conn, char *remIp, int remPort);
+void httpdRecvCb(ConnTypePtr conn, char *remIp, int remPort, char *data, unsigned short len);
+void httpdDisconCb(ConnTypePtr conn, char *remIp, int remPort);
+int httpdConnectCb(ConnTypePtr conn, char *remIp, int remPort);
+
 
 #endif
