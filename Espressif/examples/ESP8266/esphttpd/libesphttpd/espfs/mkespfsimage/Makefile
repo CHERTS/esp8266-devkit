@@ -17,7 +17,8 @@ ifeq ("$(USE_HEATSHRINK)","yes")
 CFLAGS += -DESPFS_HEATSHRINK
 endif
 
-OBJECTS = main.o heatshrink_encoder.o
+SOURCES=main.c heatshrink_encoder.c
+OBJECTS=$(SOURCES:.c=.o)
 
 all: libmman $(TARGET)
 
