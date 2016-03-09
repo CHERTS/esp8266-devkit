@@ -235,6 +235,7 @@ $$(IMAGEODIR)/$(1).out: $$(OBJS) $$(DEP_OBJS_$(1)) $$(DEP_LIBS_$(1)) $$(DEPENDS_
 endef
 
 $(BINODIR)/%.bin: $(IMAGEODIR)/%.out
+	@mkdir -p $(BIN_PATH)
 	@mkdir -p $(BINODIR)
 	
 ifeq ($(APP), 0)
@@ -267,7 +268,7 @@ ifeq ($(app), 0)
 	@echo "No boot needed."
 	@echo "Generate eagle.flash.bin and eagle.irom0text.bin successully in BIN_PATH"
 	@echo "eagle.flash.bin-------->0x00000"
-	@echo "eagle.irom0text.bin---->0x40000"
+	@echo "eagle.irom0text.bin---->0x20000"
 else
 	@echo "BIN_PATH: $(BIN_PATH)/upgrade"
 	@echo ""
@@ -396,6 +397,11 @@ $(foreach image,$(GEN_IMAGES),$(eval $(call MakeImage,$(basename $(image)))))
 #
 
 INCLUDES := $(INCLUDES) -I $(SDK_PATH)/include -I $(SDK_PATH)/extra_include
-INCLUDES += -I $(SDK_PATH)/include/lwip -I $(SDK_PATH)/include/lwip/ipv4 -I $(SDK_PATH)/include/lwip/ipv6
 INCLUDES += -I $(SDK_PATH)/include/espressif
+INCLUDES += -I $(SDK_PATH)/include/lwip
+INCLUDES += -I $(SDK_PATH)/include/lwip/ipv4
+INCLUDES += -I $(SDK_PATH)/include/lwip/ipv6
+INCLUDES += -I $(SDK_PATH)/include/nopoll
 INCLUDES += -I $(SDK_PATH)/include/spiffs
+INCLUDES += -I $(SDK_PATH)/include/ssl
+INCLUDES += -I $(SDK_PATH)/include/json
