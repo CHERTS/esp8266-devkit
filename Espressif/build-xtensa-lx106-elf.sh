@@ -1,9 +1,6 @@
 #!/bin/bash
-# Author: Fabien Poussin
-# Last edit: 20/11/2014
-#
-# Modified: Mikhail Grigorev
-# Last edit: 08/04/2015
+# Author: Mikhail Grigorev
+# Last edit: 08/03/2016
 #
 # You will need the following mingw32/64 or equivalent linux packages to build it:
 # msys gcc msys-coreutils msys-wget msys-autoconf msys-automake msys-mktemp
@@ -18,6 +15,7 @@ TARGET=xtensa-lx106-elf
 XTTC=$PWD/$TARGET
 XTBP=$PWD/build
 XTDLP=$PWD/dl
+XTPTH=$PWD/patches
 
 MINGW_PATH=c:/mingw
 PATH=$XTTC/bin:$PATH
@@ -25,18 +23,26 @@ PATH=$XTTC/bin:$PATH
 GMP="gmp-6.0.0a"
 MPFR="mpfr-3.1.2"
 MPC="mpc-1.0.2"
+BINUTILS="binutils-2.25.1"
+BINUTILS_VER="2.25.1"
+NEWLIB="newlib-2.0.0"
+NEWLIB_VER="2.0.0"
+GCC="gcc-5.2.0"
+GCC_VER="5.2.0"
 
 DOWNLOAD=1
-REPOCHECK=1
-RECONF=1
-REBUILD=1
-REINSTALL=1
-BASELIBS=1
+EXTRACT=1
+BASELIBS=0
+REPATCH=0
+RECONF=0
+REBUILD=0
+REINSTALL=0
 
 while true ; do
     case "$1" in
         --nodownloads) DOWNLOAD=0 ; echo "Not downloading anything" ; shift ;;
-        --norepocheck) REPOCHECK=0 ; echo "Never check for updates in the repository gcc-xtensa, esp-newlib and esp-binutils" ; shift ;;
+        --noextract) EXTRACT=0 ; echo "Never extract anything" ; shift ;;
+        --nopatch) REPATCH=0 ; echo "Never patching anything" ; shift ;;
         --noreconf) RECONF=0 ; echo "Not reconfiguring anything" ; shift ;;
         --norebuild) REBUILD=0 ; echo "Not rebuilding anything" ; shift ;;
         --noreinstall) REINSTALL=0 ; echo "Not reinstalling anything" ; shift ;;
@@ -61,56 +67,86 @@ fi
 mkdir -p $XTTC $XTDLP $XTBP
 
 if [ $DOWNLOAD -gt 0 ]; then
-
-  echo "Downloading..."
-
-  echo "GMP"
-  wget -c http://ftp.gnu.org/gnu/gmp/$GMP.tar.bz2  -P $XTDLP
-  echo "MPFR"
-  wget -c http://ftp.gnu.org/gnu/mpfr/$MPFR.tar.bz2  -P $XTDLP
-  echo "MPC"
-  wget -c http://ftp.gnu.org/gnu/mpc/$MPC.tar.gz  -P $XTDLP
-
-  echo "Extracting..."
-
-  tar xf $XTDLP/$GMP.tar.bz2 -C $XTDLP/
-  tar xf $XTDLP/$MPFR.tar.bz2 -C $XTDLP/
-  tar xf $XTDLP/$MPC.tar.gz -C $XTDLP/
-
-  echo "Extract path fixes..."
-
-  # Fixes in case archive name != folder name
-  find $XTDLP -maxdepth 1 -type d -name gmp-* | xargs -i mv -v {} $XTDLP/$GMP
-  find $XTDLP -maxdepth 1 -type d -name mpfr-* | xargs -i mv -v {} $XTDLP/$MPFR
-  find $XTDLP -maxdepth 1 -type d -name mpc-* | xargs -i mv -v {} $XTDLP/$MPC
-
+  if [ ! -f $XTDLP/$GMP.tar.bz2 ]; then
+    echo "==> Downloading GMP..."
+    wget -c http://ftp.gnu.org/gnu/gmp/$GMP.tar.bz2 -P $XTDLP
+  fi
+  if [ ! -f $XTDLP/$MPFR.tar.bz2 ]; then
+    echo "==> Downloading MPFR..."
+    wget -c http://ftp.gnu.org/gnu/mpfr/$MPFR.tar.bz2 -P $XTDLP
+  fi
+  if [ ! -f $XTDLP/$MPC.tar.gz ]; then
+    echo "==> Downloading MPC..."
+    wget -c http://ftp.gnu.org/gnu/mpc/$MPC.tar.gz -P $XTDLP
+  fi
+  if [ ! -f $XTDLP/$BINUTILS.tar.bz2 ]; then
+    echo "==> Downloading Binutils..."
+    wget -c http://ftp.gnu.org/gnu/binutils/$BINUTILS.tar.bz2 -P $XTDLP
+  fi
+  if [ ! -f $XTDLP/$NEWLIB.tar.gz ]; then
+    echo "==> Downloading Newlib..."
+    wget -c ftp://sourceware.org/pub/newlib/$NEWLIB.tar.gz -P $XTDLP
+  fi
+  if [ ! -f $XTDLP/$GCC.tar.bz2 ]; then
+    echo "==> Downloading GCC..."
+    wget -c http://ftp.gnu.org/gnu/gcc/$GCC/$GCC.tar.bz2 -P $XTDLP
+  fi
 fi
 
-if [ $REPOCHECK -gt 0 ]; then
-
-  echo "Cloning/pulling repos..."
-  
-  # Makeinfo will fail if it encounters CRLF endings.
-  git config --global core.autocrlf false
-
-  echo "GCC v5.1"
-  if cd $XTDLP/gcc-xtensa; then git pull; else git clone -b lx106-5.1 https://github.com/jcmvbkbc/gcc-xtensa.git $XTDLP/gcc-xtensa; fi
-  echo "Newlib"
-  if cd $XTDLP/esp-newlib; then git pull; else git clone -b xtensa https://github.com/jcmvbkbc/newlib-xtensa.git $XTDLP/esp-newlib; fi
-  echo "Binutils"
-  if cd $XTDLP/esp-binutils; then git pull; else git clone https://github.com/fpoussin/esp-binutils.git $XTDLP/esp-binutils; fi
-
+if [ $EXTRACT -gt 0 ]; then
+  if [ ! -d $XTDLP/$GMP ]; then
+    echo "==> Extracting GMP..."
+    tar xf $XTDLP/$GMP.tar.bz2 -C $XTDLP/
+    # Fixes in case archive name != folder name
+    find $XTDLP -maxdepth 1 -type d -name gmp-* | xargs -i mv -v {} $XTDLP/$GMP
+  fi
+  if [ ! -d $XTDLP/$MPFR ]; then
+    echo "==> Extracting MPFR..."
+    tar xf $XTDLP/$MPFR.tar.bz2 -C $XTDLP/
+    # Fixes in case archive name != folder name
+    #find $XTDLP -maxdepth 1 -type d -name mpfr-* | xargs -i mv -v {} $XTDLP/$MPFR
+  fi
+  if [ ! -d $XTDLP/$MPC ]; then
+    echo "==> Extracting MPC..."
+    tar xf $XTDLP/$MPC.tar.gz -C $XTDLP/
+    # Fixes in case archive name != folder name
+    #find $XTDLP -maxdepth 1 -type d -name mpc-* | xargs -i mv -v {} $XTDLP/$MPC
+  fi
+  if [ ! -d $XTDLP/$BINUTILS ]; then
+    echo "==> Extracting Binutils..."
+    tar xf $XTDLP/$BINUTILS.tar.bz2 -C $XTDLP/
+  fi
+  if [ ! -d $XTDLP/$NEWLIB ]; then
+    echo "==> Extracting Newlib..."
+    tar xf $XTDLP/$NEWLIB.tar.gz -C $XTDLP/
+  fi
+  if [ ! -d $XTDLP/$GCC ]; then
+    echo "==> Extracting GCC..."
+    tar xf $XTDLP/$GCC.tar.bz2 -C $XTDLP/
+  fi
 fi
 
 mkdir -p $XTDLP/$GMP/build $XTDLP/$MPC/build $XTDLP/$MPFR/build 
-mkdir -p $XTDLP/gcc-xtensa/{build-1,build-2} 
-mkdir -p $XTDLP/esp-newlib/build $XTDLP/esp-binutils/build
+mkdir -p $XTDLP/$BINUTILS/build $XTDLP/$NEWLIB/build
+mkdir -p $XTDLP/$GCC/{build-1,build-2} 
 
 set -e
 
+if [ -f $XTPTH/overlays/xtensa_lx106.tar ]; then
+  if [ ! -d $XTDLP/overlays ]; then
+    mkdir $XTDLP/overlays
+  fi  
+  if [ ! -f $XTDLP/overlays/.extract ]; then
+    rm -f $XTDLP/overlays/.extract
+    echo "==> Extracting overlays xtensa_lx106.tar..."
+    tar xf $XTPTH/overlays/xtensa_lx106.tar -C $XTDLP/overlays
+    touch $XTDLP/overlays/.extract
+  fi
+fi
+
 cd $XTDLP/$GMP/build
 if [ $BASELIBS -gt 0 -o ! -f .built ]; then
-  echo "Buidling GMP"
+  echo "==> Buidling GMP..."
   if [ $RECONF -gt 0 -o ! -f .configured ]; then
     rm -f .configured
     ../configure --prefix=$XTBP/gmp --disable-shared --enable-static
@@ -130,7 +166,7 @@ fi
 
 cd $XTDLP/$MPFR/build
 if [ $BASELIBS -gt 0 -o ! -f .built ]; then
-  echo "Buidling MPFR"
+  echo "==> Buidling MPFR..."
   if [ $RECONF -gt 0 -o ! -f .configured ]; then
     rm -rf .configured
     ../configure --prefix=$XTBP/mpfr --with-gmp=$XTBP/gmp --disable-shared --enable-static
@@ -150,7 +186,7 @@ fi
 
 cd $XTDLP/$MPC/build
 if [ $BASELIBS -gt 0 -o ! -f .built ]; then
-  echo "Buidling MPC"
+  echo "==> Buidling MPC..."
   if [ $RECONF -gt 0 -o ! -f .configured ]; then
     rm -f .configured
     ../configure --prefix=$XTBP/mpc --with-mpfr=$XTBP/mpfr --with-gmp=$XTBP/gmp --disable-shared --enable-static
@@ -168,8 +204,25 @@ if [ $BASELIBS -gt 0 -o ! -f .built ]; then
   fi
 fi
 
-echo "Buidling Binutils"
-cd $XTDLP/esp-binutils/build
+cd $XTDLP/../
+if [ -d "$XTDLP/../patches/binutils/$BINUTILS_VER" ]; then
+  if [ $REPATCH -gt 0 -o ! -f $XTDLP/$BINUTILS/build/.patched ]; then
+    echo "==> Patching Binutils..."
+    patch_list=`ls -L1 $XTDLP/../patches/binutils/$BINUTILS_VER`
+    cd $XTDLP/$BINUTILS
+    rm -f build/.patched
+    for i in ${patch_list[@]}; do
+      patch -p1 < $XTDLP/../patches/binutils/$BINUTILS_VER/$i
+    done
+    touch build/.patched
+  fi
+fi
+if [ -f $XTDLP/overlays/.extract ]; then
+  echo "==> Overlays Binutils..."
+  cp -R $XTDLP/overlays/binutils/* $XTDLP/$BINUTILS/
+fi
+echo "==> Buidling Binutils..."
+cd $XTDLP/$BINUTILS/build
 if [ $RECONF -gt 0 -o ! -f .configured ]; then
   rm -f .configured
   ../configure --prefix=$XTTC --target=$TARGET --enable-werror=no  --enable-multilib --disable-nls --disable-shared --disable-threads --with-gcc --with-gnu-as --with-gnu-ld
@@ -186,11 +239,28 @@ if [ $REINSTALL -gt 0 -o ! -f .installed ]; then
   touch .installed
 fi
 
-echo "Building first stage GCC v5.1"
-cd $XTDLP/gcc-xtensa/build-1
+cd $XTDLP/../
+if [ -d "$XTDLP/../patches/gcc/$GCC_VER" ]; then
+  if [ $REPATCH -gt 0 -o ! -f $XTDLP/$GCC/build-1/.patched ]; then
+    echo "==> Patching GCC..."
+    patch_list=`ls -L1 $XTDLP/../patches/gcc/$GCC_VER`
+    cd $XTDLP/$GCC
+    rm -f build-1/.patched
+    for i in ${patch_list[@]}; do
+      patch -p1 < $XTDLP/../patches/gcc/$GCC_VER/$i
+    done
+    touch build-1/.patched
+  fi
+fi
+if [ -f $XTDLP/overlays/.extract ]; then
+  echo "==> Overlays GCC..."
+  cp -R $XTDLP/overlays/gcc/* $XTDLP/$GCC/
+fi
+echo "==> Building first stage GCC..."
+cd $XTDLP/$GCC/build-1
 if [ $RECONF -gt 0 -o ! -f .configured ]; then
   rm -f .configured
-  ../configure --prefix=$XTTC --target=$TARGET --enable-multilib --enable-languages=c --with-newlib --disable-nls --disable-shared --disable-threads --with-gnu-as --with-gnu-ld --with-gmp=$XTBP/gmp --with-mpfr=$XTBP/mpfr --with-mpc=$XTBP/mpc  --disable-libssp --without-headers --disable-__cxa_atexit
+  ../configure --prefix=$XTTC --target=$TARGET --enable-multilib --enable-languages=c --with-newlib --disable-nls --disable-shared --disable-threads --with-gnu-as --with-gnu-ld --with-gmp=$XTBP/gmp --with-mpfr=$XTBP/mpfr --with-mpc=$XTBP/mpc  --disable-libssp --without-headers --disable-__cxa_atexit --enable-decimal-float=yes --enable-cxx-flags="-mlongcalls -mtext-section-literals"
   touch .configured
 fi
 if [ $REBUILD -gt 0 -o ! -f .built ]; then
@@ -204,8 +274,25 @@ if [ $REINSTALL -gt 0 -o ! -f .installed ]; then
   touch .installed
 fi
 
-echo "Buidling Newlib"
-cd $XTDLP/esp-newlib/build
+cd $XTDLP/../
+if [ -d "$XTDLP/../patches/newlib/$NEWLIB_VER" ]; then
+  if [ $REPATCH -gt 0 -o ! -f $XTDLP/$NEWLIB/build/.patched ]; then
+    echo "==> Patching Newlib..."
+    patch_list=`ls -L1 $XTDLP/../patches/newlib/$NEWLIB_VER`
+    cd $XTDLP/$NEWLIB
+    rm -f build/.patched
+    for i in ${patch_list[@]}; do
+      patch -p1 < $XTDLP/../patches/newlib/$NEWLIB_VER/$i
+    done
+    touch build/.patched
+  fi
+fi
+if [ -f $XTDLP/overlays/.extract ]; then
+  echo "==> Overlays Newlib..."
+  cp -R $XTDLP/overlays/newlib/* $XTDLP/$NEWLIB/
+fi
+echo "==> Buidling Newlib..."
+cd $XTDLP/$NEWLIB/build
 if [ $RECONF -gt 0 -o ! -f .configured ]; then
   rm -f .configured
   ../configure  --prefix=$XTTC --target=$TARGET --enable-multilib --with-gnu-as --with-gnu-ld --disable-nls --disable-newlib-io-c99-formats --disable-newlib-io-long-long --disable-newlib-io-float --disable-newlib-io-long-double --disable-newlib-supplied-syscalls --enable-target-optspace
@@ -222,11 +309,11 @@ if [ $REINSTALL -gt 0 -o ! -f .installed ]; then
   touch .installed
 fi
 
-echo "Building final GCC v5.1"
-cd $XTDLP/gcc-xtensa/build-2
+echo "==> Building final GCC..."
+cd $XTDLP/$GCC/build-2
 if [ $RECONF -gt 0 -o ! -f .configured ]; then
   rm -f .configured
-  ../configure --prefix=$XTTC --target=$TARGET --enable-multilib --disable-nls --disable-shared --disable-threads --with-gnu-as --with-gnu-ld --with-gmp=$XTBP/gmp --with-mpfr=$XTBP/mpfr --with-mpc=$XTBP/mpc --enable-languages=c,c++ --with-newlib --disable-libssp --disable-__cxa_atexit
+  ../configure --prefix=$XTTC --target=$TARGET --enable-multilib --disable-nls --disable-shared --disable-threads --with-gnu-as --with-gnu-ld --with-gmp=$XTBP/gmp --with-mpfr=$XTBP/mpfr --with-mpc=$XTBP/mpc --enable-languages=c,c++ --with-newlib --disable-libssp --disable-__cxa_atexit --enable-decimal-float=yes --enable-cxx-flags="-mlongcalls -mtext-section-literals"
   touch .configured
 fi
 if [ $REBUILD -gt 0 -o ! -f .built ]; then
@@ -240,5 +327,78 @@ if [ $REINSTALL -gt 0 -o ! -f .installed ]; then
   touch .installed
 fi
 
-echo "Done!"
-echo "Compiler is located at $XTTC"
+if [ -d "$XTTC/$TARGET/bin/" ]; then
+  if [ -f "$XTTC/bin/$TARGET-g++.exe" ]; then
+    cp "$XTTC/bin/$TARGET-g++.exe" "$XTTC/$TARGET/bin/g++.exe"
+  fi
+  if [ -f "$XTTC/bin/$TARGET-gcc.exe" ]; then
+    cp "$XTTC/bin/$TARGET-gcc.exe" "$XTTC/$TARGET/bin/gcc.exe"
+  fi
+  if [ -f "$XTTC/bin/$TARGET-c++.exe" ]; then
+    cp "$XTTC/bin/$TARGET-c++.exe" "$XTTC/$TARGET/bin/c++.exe"
+  fi
+fi
+
+if [ -d "$MINGW_PATH/bin/" ]; then
+  if [ -d "$XTTC/bin/" ]; then
+    if [ -f "$MINGW_PATH/bin/libgcc_s_dw2-1.dll" ]; then
+      cp "$MINGW_PATH/bin/libgcc_s_dw2-1.dll" "$XTTC/bin/"
+    fi
+    if [ -f "$MINGW_PATH/bin/zlib1.dll" ]; then
+      cp "$MINGW_PATH/bin/zlib1.dll" "$XTTC/bin/"
+    fi
+  fi
+  if [ -d "$XTTC/$TARGET/bin/" ]; then
+    if [ -f "$MINGW_PATH/bin/libgcc_s_dw2-1.dll" ]; then
+      cp "$MINGW_PATH/bin/libgcc_s_dw2-1.dll" "$XTTC/$TARGET/bin/"
+    fi
+    if [ -f "$MINGW_PATH/bin/zlib1.dll" ]; then
+      cp "$MINGW_PATH/bin/zlib1.dll" "$XTTC/$TARGET/bin/"
+    fi
+  fi
+fi
+
+echo "==> Cloning/pulling lx106-hal repos..."
+# Makeinfo will fail if it encounters CRLF endings.
+git config --global core.autocrlf false
+if cd $XTDLP/lx106-hal; then git pull; else git clone https://github.com/tommie/lx106-hal.git $XTDLP/lx106-hal; fi
+if [ ! -d $XTDLP/lx106-hal/build ]; then
+  mkdir $XTDLP/lx106-hal/build
+fi
+cd $XTDLP/../
+if [ -d "$XTDLP/../patches/lx106-hal" ]; then
+  if [ $REPATCH -gt 0 -o ! -f $XTDLP/lx106-hal/build/.patched ]; then
+    echo "==> Patching lx106-hal..."
+    patch_list=`ls -L1 $XTDLP/../patches/lx106-hal`
+    cd $XTDLP/lx106-hal
+    rm -f build/.patched
+    for i in ${patch_list[@]}; do
+      patch -p1 < $XTDLP/../patches/lx106-hal/$i
+    done
+    touch build/.patched
+  fi
+fi
+echo "==> Build lx106-hal..."
+cd $XTDLP/lx106-hal
+if [ $RECONF -gt 0 -o ! -f build/.configured ]; then
+  rm -f build/.configured
+  autoreconf -i
+  cd build
+  ../configure --host=$TARGET
+  touch .configured
+fi
+cd $XTDLP/lx106-hal/build
+if [ $REBUILD -gt 0 -o ! -f .built ]; then
+  rm -f .built
+  nice make $JOBS
+  touch .built
+fi
+cd $XTDLP/lx106-hal/build
+if [ $REINSTALL -gt 0 -o ! -f .installed ]; then
+  rm -rf .installed
+  cp src/libhal.a "$XTTC/$TARGET/lib/"
+  touch .installed
+fi
+
+echo "==> Done!"
+echo "==> Compiler is located at $XTTC"
