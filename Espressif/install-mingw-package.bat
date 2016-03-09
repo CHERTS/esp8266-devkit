@@ -38,6 +38,7 @@ if exist "C:\MinGW" (
     mingw-get install gcc-c++
     mingw-get install libz
     mingw-get install bzip2
+    mingw-get install gettext
     mingw-get install msys-base
     mingw-get install msys-coreutils-ext
     mingw-get install msys-gcc-bin
@@ -50,6 +51,8 @@ if exist "C:\MinGW" (
     mingw-get install msys-automake
     mingw-get install msys-mktemp
     mingw-get install msys-libtool
+    mingw-get install msys-help2man
+    mingw-get install msys-gettext
     echo.
     echo Installing additional packages for MinGW complete.
     echo.
