@@ -3,6 +3,7 @@
 
 v2.1.0 (09.03.2016):
 * Обновлен компилятор xtensa-lx106-gcc и xtensa-lx106-g++ до версии 5.2 (В компилятор добавлены последние патчи от jcmvbkbc);
+* Обновлена RTOS SDK до версии 1.4.0 (папка ESP8266_RTOS_SDK);
 * Обновлена SDK до версии 1.5.2 (папка ESP8266_SDK);
 * SDK версии 1.5.1 перенесена в папку ESP8266_SDK_151;
 * SDK версии 1.5.0 перенесена в папку ESP8266_SDK_150;
@@ -14,11 +15,13 @@ v2.1.0 (09.03.2016):
   - Удалены файлы:
     2C-ESP8266__SDK__Programming Guide__EN_v1.5.pdf
     30A_ESP8266__Mesh_User Guide__EN_v1.0.pdf
+    20B-ESP8266__RTOS_SDK_API Reference__v1.3.0.pdf
   + Добавлены файлы:
     2C-ESP8266__SDK__API Guide__EN_v1.5.2.pdf
     2A_ESP8266_SDK Getting_Started_Guide_EN_v1.5_20151118.pdf
     30A-ESP8266_NONOS_MESH_API_Reference_V1.0.0_20160203.pdf
     30A-ESP8266__Mesh_User_Guide__EN_V1.2_20160203.pdf
+    20B-ESP8266__RTOS_SDK_API Reference.pdf
 * Обновлены примеры:
   lwip_open_demo_app;
   ESP8266_Relay_Board;
