@@ -1,3 +1,23 @@
+ESP8266_RTOS_SDK_v1.4.0_16_02_28 Release Note
+---------------------------------------------
+- update boot.bin to v1.5;
+- add wifi_station_set/get_hostname api;
+- optimize net80211;
+- optimize SSL;
+- optimize OTA;
+- optimize DHCP client;
+- update SmartConfig to version 2.5.3;
+- support GPIO wakeup;
+- enable IGMP in LWIP;
+- add espconn_init in espconn.h;
+- update cjson/freertos/ssl;
+- add lwip/nopoll source code;
+- add libairkiss.a/airkiss.h, update smart_config;
+- update esp_init_data_default.bin;
+- IROM start address changed to 0x20000;
+- improved system stability;
+- many other optimizations…
+
 ESP8266_RTOS_SDK_V1.3.0_15_11_02 Release Note 
 ---------------------------------------------
 - Add libssc.a, simple serial console lib.
