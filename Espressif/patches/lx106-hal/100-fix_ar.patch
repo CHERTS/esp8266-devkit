@@ -1,0 +1,11 @@
+diff -burN lx106-hal.orig/configure.ac lx106-hal/configure.ac
+--- lx106-hal.orig/configure.ac	2016-03-09 00:32:21.647365500 +0500
++++ lx106-hal/configure.ac	2016-03-09 00:32:43.191519700 +0500
+@@ -17,7 +17,6 @@
+ LDFLAGS="${LDFLAGS:+$LDFLAGS }-nostdlib"
+ 
+ AM_PROG_AS
+-AM_PROG_AR
+ AC_PROG_CC
+ AC_PROG_RANLIB
+ 

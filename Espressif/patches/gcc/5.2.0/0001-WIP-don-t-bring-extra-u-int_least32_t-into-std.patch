@@ -1,0 +1,26 @@
+From 81a36c012d0e6835f69e1b263f410696c3323229 Mon Sep 17 00:00:00 2001
+From: Max Filippov <jcmvbkbc@gmail.com>
+Date: Sun, 7 Jun 2015 00:35:00 +0300
+Subject: [PATCH] WIP: don't bring extra [u]int_least32_t into std::
+
+Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+---
+ libstdc++-v3/include/std/type_traits | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/libstdc++-v3/include/std/type_traits b/libstdc++-v3/include/std/type_traits
+index 03e198a..e0eb9d6 100644
+--- a/libstdc++-v3/include/std/type_traits
++++ b/libstdc++-v3/include/std/type_traits
+@@ -38,7 +38,7 @@
+ #include <bits/c++config.h>
+ 
+ #ifdef _GLIBCXX_USE_C99_STDINT_TR1
+-# if defined (__UINT_LEAST16_TYPE__) && defined(__UINT_LEAST32_TYPE__)
++# if defined (__UINT_LEAST16_TYPE__) && defined(__UINT_LEAST32_TYPE__) && 0
+ namespace std
+ {
+   typedef __UINT_LEAST16_TYPE__ uint_least16_t;
+-- 
+1.8.1.4
+

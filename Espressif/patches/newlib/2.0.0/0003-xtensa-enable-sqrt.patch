@@ -1,0 +1,39 @@
+From b06f1b57cdf0c6dbe20caaca2da0f78004d71ec4 Mon Sep 17 00:00:00 2001
+From: Max Filippov <jcmvbkbc@gmail.com>
+Date: Wed, 8 Apr 2015 15:04:45 +0300
+Subject: [PATCH 3/3] xtensa: enable sqrt
+
+There's no sqrt in xtensa libgcc, so enable it in libm.
+
+Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
+---
+ newlib/libm/math/e_sqrt.c | 6 ------
+ 1 file changed, 6 deletions(-)
+
+diff --git a/newlib/libm/math/e_sqrt.c b/newlib/libm/math/e_sqrt.c
+index cd65b62..e21c301 100644
+--- a/newlib/libm/math/e_sqrt.c
++++ b/newlib/libm/math/e_sqrt.c
+@@ -92,10 +92,6 @@ static	const double	one	= 1.0, tiny=1.0e-300;
+ static	double	one	= 1.0, tiny=1.0e-300;
+ #endif
+ 
+-/* TENSILICA: always using a function in libgcc instead of this one */
+-
+-#if 0
+-
+ #ifdef __STDC__
+ 	double __ieee754_sqrt(double x)
+ #else
+@@ -197,8 +193,6 @@ static	double	one	= 1.0, tiny=1.0e-300;
+ 	return z;
+ }
+  
+-#endif /* 0 */
+- 
+ #endif /* defined(_DOUBLE_IS_32BITS) */
+ 
+ /*
+-- 
+1.8.1.4
+
