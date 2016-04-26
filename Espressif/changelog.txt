@@ -1,10 +1,11 @@
 Changelog:
 ----------
 
-v2.1.0 (11.02.2016):
+v2.1.0 Beta (26.04.2016):
 * Updated compiler xtensa-lx106-gcc and xtensa-lx106-g++ up to version 5.2 (added latest patches from jcmvbkbc);
 * Update RTOS SDK v1.4.0 (folder ESP8266_RTOS_SDK);
-* Update SDK v1.5.2 + Patch01 (folder ESP8266_SDK);
+* Update SDK v1.5.3 (folder ESP8266_SDK);
+* SDK version 1.5.2 moved to a folder ESP8266_SDK_152;
 * SDK version 1.5.1 moved to a folder ESP8266_SDK_151;
 * SDK version 1.5.0 moved to a folder ESP8266_SDK_150;
 + Added patch liblwip for SDK 1.5.0 (espconn_abort issue on ESP8266_NONOS_SDK_V1.5.0);

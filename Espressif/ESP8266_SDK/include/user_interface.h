@@ -255,6 +255,8 @@ int wifi_station_set_cert_key(uint8 *client_cert, int client_cert_len,
     uint8 *private_key, int private_key_len,
     uint8 *private_key_passwd, int private_key_passwd_len);
 void wifi_station_clear_cert_key(void);
+int wifi_station_set_username(uint8 *username, int len);
+void wifi_station_clear_username(void);
 
 struct softap_config {
     uint8 ssid[32];
@@ -354,9 +356,14 @@ enum sleep_type wifi_get_sleep_type(void);
 void wifi_fpm_open(void);
 void wifi_fpm_close(void);
 void wifi_fpm_do_wakeup(void);
+typedef void (*fpm_wakeup_cb)(void);
+void wifi_fpm_set_wakeup_cb(fpm_wakeup_cb cb);
+
 sint8 wifi_fpm_do_sleep(uint32 sleep_time_in_us);
 void wifi_fpm_set_sleep_type(enum sleep_type type);
 enum sleep_type wifi_fpm_get_sleep_type(void);
+
+
 
 enum {
     EVENT_STAMODE_CONNECTED = 0,
