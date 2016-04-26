@@ -954,7 +954,7 @@ espconn_disconnect(struct espconn *espconn)
 
     if (value){
     	/*protect for redisconnection*/
-    	if (espconn->state == ESPCONN_CLOSE)
+    	if (pnode->preverse == NULL && espconn->state == ESPCONN_CLOSE)
     		return ESPCONN_INPROGRESS;
     	espconn_tcp_disconnect(pnode,0);	//1 force, 0 normal
     	return ESPCONN_OK;

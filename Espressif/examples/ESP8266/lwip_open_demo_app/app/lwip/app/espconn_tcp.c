@@ -220,6 +220,30 @@ struct tcp_pcb *ICACHE_FLASH_ATTR espconn_find_current_pcb(espconn_msg *pcurrent
 }
 
 /******************************************************************************
+ * FunctionName : espconn_tcp_memp_free
+ * Description  : frees the connection memory in the server mode
+ * Parameters   : arg -- Additional argument to pass to the function
+ * Returns      : none
+*******************************************************************************/
+void ICACHE_FLASH_ATTR espconn_tcp_memp_free(espconn_msg *pmemp)
+{
+	struct espconn *espconn = NULL;
+	if (pmemp == NULL)
+		return;
+
+	if (pmemp->espconn_mode == ESPCONN_TCPSERVER_MODE){
+		if (pmemp->pespconn != NULL && pmemp->pespconn->proto.tcp != NULL)
+			os_free(pmemp->pespconn->proto.tcp);
+		pmemp->pespconn->proto.tcp = NULL;
+
+		os_free(pmemp->pespconn);
+		pmemp->pespconn = NULL;
+	}
+	os_free(pmemp);
+	pmemp = NULL;
+}
+
+/******************************************************************************
  * FunctionName : espconn_tcp_reconnect
  * Description  : reconnect with host
  * Parameters   : arg -- Additional argument to pass to the callback function
@@ -235,24 +259,15 @@ espconn_tcp_reconnect(void *arg)
 	espconn_kill_oldest_pcb();
 	if (precon_cb != NULL) {
 		struct espconn *espconn = precon_cb->preverse;
+
 		re_err = precon_cb->pcommon.err;
 		if (precon_cb->pespconn != NULL){
 			if (espconn != NULL){/*Process the server's message block*/
 				if (precon_cb->pespconn->proto.tcp != NULL){
 					espconn_copy_partial(espconn, precon_cb->pespconn);
-					espconn_printf("server: %d.%d.%d.%d : %d reconnection\n", espconn->proto.tcp->remote_ip[0],
-							espconn->proto.tcp->remote_ip[1],espconn->proto.tcp->remote_ip[2],
-							espconn->proto.tcp->remote_ip[3],espconn->proto.tcp->remote_port);
-					os_free(precon_cb->pespconn->proto.tcp);
-					precon_cb->pespconn->proto.tcp = NULL;
 				}
-				os_free(precon_cb->pespconn);
-				precon_cb->pespconn = NULL;
 			} else {/*Process the client's message block*/
 				espconn = precon_cb->pespconn;
-				espconn_printf("client: %d.%d.%d.%d : %d reconnection\n", espconn->proto.tcp->local_ip[0],
-										espconn->proto.tcp->local_ip[1],espconn->proto.tcp->local_ip[2],
-										espconn->proto.tcp->local_ip[3],espconn->proto.tcp->local_port);
 			}
 		}
 
@@ -267,11 +282,13 @@ espconn_tcp_reconnect(void *arg)
 		}
 		os_bzero(&pktinfo[1], sizeof(struct espconn_packet));
 		os_memcpy(&pktinfo[1], (void*)&precon_cb->pcommon.packet_info, sizeof(struct espconn_packet));
-		os_free(precon_cb);
-		precon_cb = NULL;
+
 		if (espconn && espconn->proto.tcp && espconn->proto.tcp->reconnect_callback != NULL) {
 			espconn->proto.tcp->reconnect_callback(espconn, re_err);
 		}
+
+		/*frees the connection memory*/
+		espconn_tcp_memp_free(precon_cb);
 	} else {
 		espconn_printf("espconn_tcp_reconnect err\n");
 	}
@@ -300,20 +317,11 @@ espconn_tcp_disconnect_successful(void *arg)
 			if (espconn != NULL){/*Process the server's message block*/
 				if (pdiscon_cb->pespconn->proto.tcp != NULL && espconn->proto.tcp){
 					espconn_copy_partial(espconn, pdiscon_cb->pespconn);
-					espconn_printf("server: %d.%d.%d.%d : %d disconnect\n", espconn->proto.tcp->remote_ip[0],
-							espconn->proto.tcp->remote_ip[1],espconn->proto.tcp->remote_ip[2],
-							espconn->proto.tcp->remote_ip[3],espconn->proto.tcp->remote_port);
-					os_free(pdiscon_cb->pespconn->proto.tcp);
-					pdiscon_cb->pespconn->proto.tcp = NULL;
 				}
-				os_free(pdiscon_cb->pespconn);
-				pdiscon_cb->pespconn = NULL;
 			} else {/*Process the client's message block*/
 				espconn = pdiscon_cb->pespconn;
-				espconn_printf("client: %d.%d.%d.%d : %d disconnect\n", espconn->proto.tcp->local_ip[0],
-						espconn->proto.tcp->local_ip[1],espconn->proto.tcp->local_ip[2],
-						espconn->proto.tcp->local_ip[3],espconn->proto.tcp->local_port);
 			}
+
 			/*process the current TCP block*/
 			pcb = espconn_find_current_pcb(pdiscon_cb);
 			if (pcb != NULL){
@@ -368,11 +376,13 @@ espconn_tcp_disconnect_successful(void *arg)
 		}
 		os_bzero(&pktinfo[0], sizeof(struct espconn_packet));
 		os_memcpy(&pktinfo[0], (void*)&pdiscon_cb->pcommon.packet_info, sizeof(struct espconn_packet));
-		os_free(pdiscon_cb);
-		pdiscon_cb = NULL;
+
 		if (espconn->proto.tcp && espconn->proto.tcp->disconnect_callback != NULL) {
 			espconn->proto.tcp->disconnect_callback(espconn);
 		}
+
+		/*frees the connection memory*/
+		espconn_tcp_memp_free(pdiscon_cb);
 	} else {
 		espconn_printf("espconn_tcp_disconnect err\n");
 	}
@@ -528,16 +538,22 @@ espconn_client_close(void *arg, struct tcp_pcb *pcb, u8 type)
 
 	if(type == 0)
 		err = tcp_close(pcb);
-	else
-		{tcp_abort(pcb); err = ERR_OK;}
+	else {
+		tcp_sent(pcb, NULL);
+		tcp_err(pcb, NULL);
+		tcp_abort(pcb);
+		err = ERR_OK;
+	}
 
 	if (err != ERR_OK) {
 		/* closing failed, try again later */
 		tcp_recv(pcb, espconn_client_recv);
 	} else {
 		/* closing succeeded */
-		tcp_sent(pcb, NULL);
-		tcp_err(pcb, NULL);
+		if (type == 0) {
+			tcp_sent(pcb, NULL);
+			tcp_err(pcb, NULL);
+		}
 		/*switch the state of espconn for application process*/
 		pclose->pespconn->state = ESPCONN_CLOSE;
 		ets_post(espconn_TaskPrio, SIG_ESPCONN_CLOSE, (uint32_t)pclose);
@@ -924,6 +940,7 @@ espconn_tcp_client(struct espconn *espconn)
     	}
 #endif
         /*Establish the connection*/
+    	pclient->espconn_mode = ESPCONN_TCPCLIENT_MODE;
         pclient->pcommon.err = tcp_connect(pcb, &ipaddr,
         		pclient->pespconn->proto.tcp->remote_port, espconn_client_connect);
         if (pclient->pcommon.err == ERR_RTE){
@@ -958,17 +975,24 @@ espconn_server_close(void *arg, struct tcp_pcb *pcb,u8 type)
 
 	if(type ==0)
 		err = tcp_close(pcb);
-	else
-		{tcp_abort(pcb); err = ERR_OK;}
+	else {
+		tcp_poll(pcb, NULL, 0);
+	    tcp_sent(pcb, NULL);
+		tcp_err(pcb, NULL);
+		tcp_abort(pcb);
+		err = ERR_OK;
+	}
 
     if (err != ERR_OK) {
         /* closing failed, try again later */
         tcp_recv(pcb, espconn_server_recv);
     } else {
         /* closing succeeded */
-        tcp_poll(pcb, NULL, 0);
-        tcp_sent(pcb, NULL);
-        tcp_err(pcb, NULL);
+    	if (type == 0) {
+			tcp_poll(pcb, NULL, 0);
+			tcp_sent(pcb, NULL);
+			tcp_err(pcb, NULL);
+    	}
         /*switch the state of espconn for application process*/
         psclose->pespconn->state = ESPCONN_CLOSE;
         ets_post(espconn_TaskPrio, SIG_ESPCONN_CLOSE, (uint32_t)psclose);
@@ -1225,6 +1249,7 @@ espconn_tcp_accept(void *arg, struct tcp_pcb *pcb, err_t err)
 	espconn_list_creat(&plink_active, paccept);
 
     paccept->preverse = espconn;
+    paccept->espconn_mode = ESPCONN_TCPSERVER_MODE;
 	paccept->pespconn = (struct espconn *)os_zalloc(sizeof(struct espconn));
 	if (paccept->pespconn == NULL)
 		return ERR_MEM;
@@ -1253,7 +1278,7 @@ espconn_tcp_accept(void *arg, struct tcp_pcb *pcb, err_t err)
 	 * or periodically from active connection*/
 	tcp_sent(pcb, espconn_server_sent);
 	tcp_recv(pcb, espconn_server_recv);
-	tcp_poll(pcb, espconn_server_poll, 8); /* every 1 seconds */
+	tcp_poll(pcb, espconn_server_poll, 4); /* every 1 seconds */
 	/*Disable Nagle algorithm default*/
 	tcp_nagle_disable(pcb);
 	/*Default set the total number of espconn_buf on the unsent lists for one*/

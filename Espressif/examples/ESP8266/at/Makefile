@@ -27,11 +27,11 @@ BAUD ?= 256000
 # BOOT = none
 # BOOT = old - boot_v1.1
 # BOOT = new - boot_v1.2+
-BOOT?=none
+BOOT?=new
 # APP = 0 - eagle.flash.bin + eagle.irom0text.bin
 # APP = 1 - user1.bin
 # APP = 2 - user2.bin
-APP?=0
+APP?=1
 # SPI_SPEED = 40, 26, 20, 80
 SPI_SPEED ?= 40
 # SPI_MODE: QIO, QOUT, DIO, DOUT
@@ -44,7 +44,7 @@ SPI_MODE ?= QIO
 # 4 : 4096 KB (512 KB + 512 KB)
 # 5 : 2048 KB (1024 KB + 1024 KB)
 # 6 : 4096 KB (1024 KB + 1024 KB)
-SPI_SIZE_MAP ?= 0
+SPI_SIZE_MAP ?= 2
 
 ifeq ($(BOOT), new)
     boot = new
@@ -170,7 +170,7 @@ MODULES	= driver user
 EXTRA_INCDIR = include $(SDK_BASE)/../extra/include
 
 # libraries used in this project, mainly provided by the SDK
-LIBS = c gcc hal phy pp net80211 lwip wpa main json upgrade smartconfig at
+LIBS = c gcc hal phy pp net80211 lwip wpa crypto main json upgrade ssl wps smartconfig airkiss at
 
 # compiler flags using during compilation of source files
 CFLAGS = -Os -g -O2 -std=gnu90 -Wpointer-arith -Wundef -Werror -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals -mno-serialize-volatile -D__ets__ -DICACHE_FLASH
@@ -207,6 +207,7 @@ ifneq ($(app),0)
 	  endif
 	endif
 	BIN_NAME = user$(app).$(flash).$(boot).$(size_map)
+	CFLAGS += -DAT_UPGRADE_SUPPORT
 endif
 else
     app = 0
