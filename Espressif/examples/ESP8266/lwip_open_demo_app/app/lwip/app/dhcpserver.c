@@ -270,7 +270,10 @@ static void ICACHE_FLASH_ATTR create_msg(struct dhcps_msg *m)
         os_memset((char *) m->file, 0, sizeof(m->file));
 
         os_memset((char *) m->options, 0, sizeof(m->options));
-        os_memcpy((char *) m->options, &magic_cookie, sizeof(magic_cookie));
+
+//For xiaomi crash bug
+		uint32 magic_cookie1 = magic_cookie;
+        os_memcpy((char *) m->options, &magic_cookie1, sizeof(magic_cookie1));
 }
 ///////////////////////////////////////////////////////////////////////////////////
 /*
@@ -1078,10 +1081,10 @@ uint32 ICACHE_FLASH_ATTR wifi_softap_dhcps_client_update(u8 *bssid, struct ip_ad
                 return IPADDR_ANY;
             }
         } else {
-            if (start_ip == end_ip) {
+            if (start_ip > end_ip) {
                 return IPADDR_ANY;
             }
-            start_ip = htonl((ntohl(start_ip) + 1));
+            //start_ip = htonl((ntohl(start_ip) + 1));
             flag = TRUE;
         }
     }
@@ -1142,6 +1145,10 @@ uint32 ICACHE_FLASH_ATTR wifi_softap_dhcps_client_update(u8 *bssid, struct ip_ad
             } else if (flag == TRUE) {
                 pdhcps_pool->ip.addr = start_ip;
             } else {    // no ip to distribute
+                os_free(pdhcps_pool);
+                return IPADDR_ANY;
+            }
+            if (pdhcps_pool->ip.addr > end_ip) {
                 os_free(pdhcps_pool);
                 return IPADDR_ANY;
             }
