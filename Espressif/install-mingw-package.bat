@@ -4,7 +4,7 @@ cls
 echo.
 echo Installing additional packages for MinGW
 echo.
-at > nul
+net session >nul 2>&1
 if not %ERRORLEVEL% EQU 0 (
       echo Error: To install packages need admin rights.
       echo.

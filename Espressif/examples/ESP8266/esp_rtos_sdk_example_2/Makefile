@@ -202,9 +202,9 @@ $(TARGET_OUT): $(APP_AR)
 	$(vecho) "------------------------------------------------------------------------------"
 	$(Q) $(ESPTOOL) elf2image $(TARGET_OUT) -o$(FW_BASE)/ $(flashimageoptions)
 	$(vecho) "------------------------------------------------------------------------------"
-	$(vecho) "Generate 0x00000.bin and 0x40000.bin successully in folder $(FW_BASE)."
+	$(vecho) "Generate 0x00000.bin and 0x20000.bin successully in folder $(FW_BASE)."
 	$(vecho) "0x00000.bin-------->0x00000"
-	$(vecho) "0x40000.bin-------->0x40000"
+	$(vecho) "0x20000.bin-------->0x20000"
 	$(vecho) "Done"
 
 $(APP_AR): $(OBJ)
@@ -220,14 +220,14 @@ $(FW_BASE):
 	$(Q) mkdir -p $@
 
 flashonefile: all
-	$(SDK_TOOLS)/gen_flashbin.exe $(FW_BASE)/0x00000.bin $(FW_BASE)/0x40000.bin 0x40000
+	$(SDK_TOOLS)/gen_flashbin.exe $(FW_BASE)/0x00000.bin $(FW_BASE)/0x20000.bin 0x20000
 	$(Q) mv eagle.app.flash.bin $(FW_BASE)/
 	$(vecho) "Generate eagle.app.flash.bin successully in folder $(FW_BASE)."
 	$(vecho) "eagle.app.flash.bin-------->0x00000"
 	$(ESPTOOL) -p $(ESPPORT) -b $(BAUD) write_flash $(flashimageoptions) 0x00000 $(FW_BASE)/eagle.app.flash.bin
 
 flash: all
-	$(ESPTOOL) -p $(ESPPORT) -b $(BAUD) write_flash $(flashimageoptions) 0x00000 $(FW_BASE)/0x00000.bin 0x40000 $(FW_BASE)/0x40000.bin
+	$(ESPTOOL) -p $(ESPPORT) -b $(BAUD) write_flash $(flashimageoptions) 0x00000 $(FW_BASE)/0x00000.bin 0x20000 $(FW_BASE)/0x20000.bin
 
 # ===============================================================
 # From http://bbs.espressif.com/viewtopic.php?f=10&t=305
