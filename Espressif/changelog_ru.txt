@@ -4,7 +4,8 @@
 v2.1.0 Beta (26.04.2016):
 * Обновлен компилятор xtensa-lx106-gcc и xtensa-lx106-g++ до версии 5.2 (В компилятор добавлены последние патчи от jcmvbkbc);
 * Обновлена RTOS SDK до версии 1.4.0 (папка ESP8266_RTOS_SDK);
-* Обновлена SDK до версии 1.5.3 + MDNS_Patch (папка ESP8266_SDK);
+* Обновлена SDK до версии 1.5.4 (папка ESP8266_SDK);
+* SDK версии 1.5.3 перенесена в папку ESP8266_SDK_153;
 * SDK версии 1.5.2 перенесена в папку ESP8266_SDK_152;
 * SDK версии 1.5.1 перенесена в папку ESP8266_SDK_151;
 * SDK версии 1.5.0 перенесена в папку ESP8266_SDK_150;
@@ -14,15 +15,36 @@ v2.1.0 Beta (26.04.2016):
 * Утилиты перенесены в подпапку utils\ESP8266;
 * Обновлена документация:
   - Удалены файлы:
-    2C-ESP8266__SDK__Programming Guide__EN_v1.5.pdf
-    30A_ESP8266__Mesh_User Guide__EN_v1.0.pdf
-    20B-ESP8266__RTOS_SDK_API Reference__v1.3.0.pdf
-  + Добавлены файлы:
-    2C-ESP8266__SDK__API Guide__EN_v1.5.2.pdf
     2A_ESP8266_SDK Getting_Started_Guide_EN_v1.5_20151118.pdf
-    30A-ESP8266_NONOS_MESH_API_Reference_V1.0.0_20160203.pdf
-    30A-ESP8266__Mesh_User_Guide__EN_V1.2_20160203.pdf
+    2C-ESP8266__SDK__Programming Guide__EN_v1.5.pdf
+    2C-ESP8266__SDK__API Guide__EN_v1.5.2.pdf
+    4A-ESP8266__AT Instruction Set__EN_v0.40.pdf
+    4B-ESP8266__AT Command Examples__EN_v0.6.pdf
+    5A-ESP8266__SDK__SSL_User_Manual__EN_v1.1.pdf
+    9B-ESP8266__Sleep__Function Description__EN_v1.0.pdf
+    20A-ESP8266__RTOS_SDK__Programming Guide__EN_v1.3.0.pdf
+    20B-ESP8266__RTOS_SDK_API Reference__v1.3.0.pdf
+    30A_ESP8266__Mesh_User Guide__EN_v1.0.pdf
+    99A-ESP8266__Flash_RW_Operation__EN_v0.2.pdf
+    99C-ESP8266__OTA_Upgrade__EN_v1.5.pdf
+  + Добавлены файлы:
+    2A-ESP8266-SDK__Getting_Started_Guide__EN.pdf
+    2C-ESP8266-SDK__API Guide__EN_V1.5.3.pdf
+    4A-ESP8266__AT Instruction Set__EN_v1.5.3.pdf
+    4B-ESP8266__AT_Command_Examples__EN_v1.3.pdf
+    5A-ESP8266__SDK__SSL_User_Manual__EN_v1.4.pdf
+    9B-ESP8266-Sleep_Mode_Low_Power_Solutions__EN_V1.1_20160415.pdf
+    20A-ESP8266__RTOS_SDK__Programming_Guide__EN_v1.3.0_20160321.pdf
     20B-ESP8266__RTOS_SDK_API Reference.pdf
+    30A-ESP8266_NONOS_MESH_API_Reference_PDF_V1.0_20160203.pdf
+    30A-ESP8266__Mesh_User_Guide__EN_V1.2_20160402.pdf
+    30B-ESP-TOUCH_User_Guide__EN_V1.1_20160412.pdf
+    30C_ESP-NOW__User_Guide_EN.pdf
+    40C-ESP_Smart_Plug__User_Guide__EN_V1.2_20160413.pdf
+    99A-SDK-Espressif IOT Flash RW Operation__EN_v1.0.pdf
+    99C-ESP8266__OTA_Upgrade__EN_v1.6.pdf
+  * Обновлены файлы:
+    2B-ESP8266__SDK__IOT_Demo__EN_v1.3.pdf
 * Обновлены примеры:
   lwip_open_demo_app;
   ESP8266_Relay_Board;
