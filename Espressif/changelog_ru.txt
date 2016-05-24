@@ -51,6 +51,7 @@ v2.1.0 Beta (26.04.2016):
   at;
   smart_config;
   IoT_Demo;
+  rboot;
 + Добавлены примеры:
   wps;
 
