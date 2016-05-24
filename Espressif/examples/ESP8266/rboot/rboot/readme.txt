@@ -18,6 +18,7 @@ Espressif loader:
   - Wastes no stack space (SDK boot loader uses 144 bytes).
   - Documented config structure to allow easy editing from user code.
   - Can validate .irom0.text section with checksum.
+  - Temporary next-boot rom selection.
 
 Limitations
 -----------
@@ -58,7 +59,7 @@ flash size correctly with your chosen flash tool (e.g. for esptool.py use the
 -fs option). When run rBoot will create it's own config at the start of sector
 two for a simple two rom system. You can can then write your two roms to flash
 addresses 0x2000 and (half chip size + 0x2000). E.g. for 8Mbit flash:
-  esptool.py -fs 8m 0x0000 rboot.bin 0x2000 user1.bin 0x82000 user2.bin
+  esptool.py write_flash -fs 8m 0x0000 rboot.bin 0x2000 user1.bin 0x82000 user2.bin
 
 Note: your device may need other options specified. E.g. The nodemcu devkit v1.0
 (commonly, but incorrectly, sold as v2) also needs the "-fm dio" option.
@@ -95,10 +96,9 @@ Rom addresses must be sector aligned i.e start on a multiple of 4096.
     defined as 0x01 (BOOT_CONFIG_VERSION). I don't intend to increase this, but
     you should if you choose to reflash the bootloader after deployment and
     the config structure has changed.
-  - mode can be 0x00 (MODE_STANDARD) or 0x01 (MODE_GPIO_ROM). If you set GPIO
-    you will need to set gpio_rom as well. The sample GPIO code uses GPIO 16 on
-    a nodemcu dev board, if you want to use a different GPIO you'll need to
-    adapt the code in rBoot slightly.
+  - mode can be 0x00 (MODE_STANDARD) or 0x01 (MODE_GPIO_ROM). See below for an
+    explanation of MODE_GPIO_ROM. There is also an optional extra mode flag 0x04
+    (MODE_GPIO_ERASES_SDKCONFIG), see below for details.
   - current_rom is the rom to boot, numbered 0 to count-1.
   - gpio_rom is the rom to boot when the GPIO is triggered at boot.
   - count is the number of roms available (may be less than MAX_ROMS, but not
@@ -109,6 +109,39 @@ Rom addresses must be sector aligned i.e start on a multiple of 4096.
   - chksum (if enabled, not by deafult) should be the xor of 0xef followed by
     each of the bytes of the config structure up to (but obviously not
     including) the chksum byte itself.
+
+GPIO boot mode
+--------------
+If rBoot is compiled with BOOT_GPIO_ENABLED set in rboot.h (or
+RBOOT_GPIO_ENABLED set in the Makefile), then GPIO boot functionality will
+included in the rBoot binary. The feature can then be enabled by setting the
+rboot_config 'mode' field to MODE_GPIO_ROM. You must also set 'gpio_rom' in the
+config to indicate which rom to boot when the GPIO is activated at boot.
+
+If the GPIO input pin reads high at boot then rBoot will start the currently
+selected normal or temp rom (as appropriate). However if the GPIO is pulled low
+then the rom indicated in config option 'gpio_rom' is started instead.
+
+The default GPIO is 16, but this can be overriden in the Makefile
+(RBOOT_GPIO_NUMBER) or rboot.h (BOOT_GPIO_NUM). If GPIOs other than 16 are used,
+the internal pullup resistor is enabled before the pin is read and disabled
+immediately afterwards. For pins that default on reset to configuration other
+than GPIO input, the pin mode is changed to input when reading but changed back
+before rboot continues.
+
+After a GPIO boot the current_rom field will be updated in the config, so the
+GPIO booted rom should change this again if required.
+
+Erasing SDK configuration on GPIO boot
+--------------------------------------
+If you set the MODE_GPIO_ERASES_SDKCONFIG flag in the configuration like this:
+  conf.mode = MODE_GPIO_ROM|MODE_GPIO_ERASES_SDKCONFIG;
+then a GPIO boot will also the erase the Espressif SDK persistent settings
+store in the final 16KB of flash. This includes removing calibration
+constants, saved SSIDs, etc.
+
+Note that MODE_GPIO_ERASES_SDKCONFIG is a flag, so it has to be set as
+well as MODE_GPIO_ROM to take effect.
 
 Linking user code
 -----------------
@@ -208,3 +241,24 @@ make sure you are getting your version into the rom.
 Now when rBoot starts your rom, the SDK code linked in it that normally performs
 the memory mapping will delegate part of that task to rBoot code (linked in your
 rom, not in rBoot itself) to choose which part of the flash to map.
+
+Temporary boot option and rBoot<-->app communication
+----------------------------------------------------
+To enable communication between rBoot and your app you should enable the
+BOOT_RTC_ENABLED option in rboot.h. rBoot will then use the RTC data area to
+pass a structure with boot information which can be read by the app. This will
+allow the app to determine the boot mode (normal, temporary or GPIO) and the
+booted rom (even if it is a tempoary boot). Your app can also update this
+structure to communicate with rBoot when the device is next rebooted, e.g. to
+instruct it to temporarily boot a different rom to the one saved in the config.
+See the api documentation and/or the rBoot sample project for more details.
+Note: the message "don't use rtc mem data", commonly seen on startup, comes from
+the sdk and is not related to this rBoot feature.
+
+Integration into other frameworks
+---------------------------------
+If you wish to integrate rBoot into a development framework (e.g. Sming) you
+can set the define RBOOT_INTEGRATION and at compile time the file
+rboot-integration.h will be included into the source. This should allow you to
+set some platform specific options without having to modify the source of rBoot
+which makes it easier to integrate and maintain.
