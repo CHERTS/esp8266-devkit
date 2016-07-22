@@ -24,7 +24,8 @@ DisableProgramGroupPage=True
 AlwaysShowDirOnReadyPage=True
 AlwaysShowGroupOnReadyPage=True
 DefaultGroupName=Espressif
-OutputBaseFilename=Espressif-ESP8266-DevKit-v{#DevKitVersion}-x86
+;OutputBaseFilename=Espressif-ESP8266-DevKit-v{#DevKitVersion}-x86
+OutputBaseFilename=Espressif-ESP8266-DevKit-Beta-v{#DevKitVersion}-x86
 Compression=lzma
 AllowRootDirectory=True
 RestartIfNeededByRun=False
@@ -57,6 +58,7 @@ Source: "Espressif\ESP8266_SDK_151\*"; DestDir: "{app}\ESP8266_SDK_151"; Flags: 
 Source: "Espressif\ESP8266_SDK_152\*"; DestDir: "{app}\ESP8266_SDK_152"; Flags: ignoreversion createallsubdirs recursesubdirs; Components: sdk
 Source: "Espressif\ESP8266_SDK_153\*"; DestDir: "{app}\ESP8266_SDK_153"; Flags: ignoreversion createallsubdirs recursesubdirs; Components: sdk
 Source: "Espressif\Espressif web site.url"; DestDir: "{app}"; Flags: ignoreversion
+Source: "Espressif\Espressif Documents.url"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Espressif\DevKit web site.url"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Espressif\Command line Unofficial Development Kit for Espressif ESP8266.lnk"; DestDir: "{app}"; Flags: ignoreversion; Languages: english turkish; Components: utils
 Source: "Espressif\Командная строка Unofficial Development Kit for Espressif ESP8266.lnk"; DestDir: "{app}"; Flags: ignoreversion; Languages: russian; Components: utils
@@ -111,6 +113,9 @@ Name: "{group}\Командная строка Unofficial Development Kit for Es
 Name: "{group}\Espressif Web site"; Filename: "{app}\Espressif web site.url"; WorkingDir: "{app}"; IconFilename: "%SystemRoot%\system32\SHELL32.dll"; IconIndex: 13; MinVersion: 0.0,5.0; Languages: english
 Name: "{group}\Beб-сайт Espressif"; Filename: "{app}\Espressif web site.url"; WorkingDir: "{app}"; IconFilename: "%SystemRoot%\system32\SHELL32.dll"; IconIndex: 13; MinVersion: 0.0,5.0; Languages: russian
 Name: "{group}\Web sitesi Espressif"; Filename: "{app}\Espressif web site.url"; WorkingDir: "{app}"; IconFilename: "%SystemRoot%\system32\SHELL32.dll"; IconIndex: 13; MinVersion: 0.0,5.0; Languages: turkish
+Name: "{group}\Espressif Documents"; Filename: "{app}\Espressif Documents.url"; WorkingDir: "{app}"; IconFilename: "%SystemRoot%\system32\SHELL32.dll"; IconIndex: 13; MinVersion: 0.0,5.0; Languages: english
+Name: "{group}\Документация Espressif"; Filename: "{app}\Espressif Documents.url"; WorkingDir: "{app}"; IconFilename: "%SystemRoot%\system32\SHELL32.dll"; IconIndex: 13; MinVersion: 0.0,5.0; Languages: russian
+Name: "{group}\Espressif Documents"; Filename: "{app}\Espressif Documents.url"; WorkingDir: "{app}"; IconFilename: "%SystemRoot%\system32\SHELL32.dll"; IconIndex: 13; MinVersion: 0.0,5.0; Languages: turkish
 Name: "{group}\Сhangelog"; Filename: "{app}\changelog.txt"; WorkingDir: "{app}"; MinVersion: 0.0,5.0; Languages: english
 Name: "{group}\Список изменений"; Filename: "{app}\changelog.txt"; WorkingDir: "{app}"; MinVersion: 0.0,5.0; Languages: russian
 Name: "{group}\Değişikliklerin listesi"; Filename: "{app}\changelog.txt"; WorkingDir: "{app}"; MinVersion: 0.0,5.0; Languages: turkish
@@ -140,6 +145,7 @@ Type: files; Name: "{app}\Command line Unofficial Development Kit for Espressif 
 Type: files; Name: "{app}\Командная строка Unofficial Development Kit for Espressif ESP8266.lnk"; Languages: russian; Components: utils
 Type: files; Name: "{app}\DevKit web site.url"
 Type: files; Name: "{app}\Espressif web site.url"
+Type: files; Name: "{app}\Espressif Documents.url"
 Type: files; Name: "{app}\changelog.txt"; Languages: english turkish
 Type: files; Name: "{app}\changelog_ru.txt"; Languages: russian
 Type: files; Name: "{app}\Install.ico"
