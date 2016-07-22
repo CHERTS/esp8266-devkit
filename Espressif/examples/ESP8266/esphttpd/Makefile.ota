@@ -85,7 +85,7 @@ $(FW_BASE): $(TARGET_BIN) libesphttpd/mkupgimg/mkupgimg
 	$(Q) libesphttpd/mkupgimg/mkupgimg $(TARGET_BIN_USR1) $(TARGET_BIN_USR2) $(TAGNAME) $(TARGET_OTAFILE)
 
 flash: $(TARGET_OUT) $(FW_BASE)
-	$(Q) $(ESPTOOL) $(ESPTOOL_OPTS) write_flash $(ESPTOOL_FLASHDEF) 0x00000 "$(SDK_BASE)/bin/boot_v1.5.bin" 0x1000 $(TARGET_BIN_USR1)
+	$(Q) $(ESPTOOL) $(ESPTOOL_OPTS) write_flash $(ESPTOOL_FLASHDEF) 0x00000 "$(SDK_BASE)/bin/boot_v1.6.bin" 0x1000 $(TARGET_BIN_USR1)
 
 blankflash:
 	$(Q) $(ESPTOOL) $(ESPTOOL_OPTS) write_flash $(ESPTOOL_FLASHDEF) $(BLANKPOS) $(SDK_BASE)/bin/blank.bin $(INITDATAPOS) $(SDK_BASE)/bin/esp_init_data_default.bin
