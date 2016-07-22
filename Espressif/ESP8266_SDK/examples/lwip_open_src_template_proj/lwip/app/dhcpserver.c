@@ -93,10 +93,12 @@ void ICACHE_FLASH_ATTR node_remove_from_list(list_node **phead, list_node* pdele
     } else {
         if (plist == pdelete){
             *phead = plist->pnext;
+            pdelete->pnext = NULL;
         } else {
             while (plist != NULL) {
                 if (plist->pnext == pdelete){
                     plist->pnext = pdelete->pnext;
+                    pdelete->pnext = NULL;
                 }
                 plist = plist->pnext;
             }
@@ -764,11 +766,18 @@ void ICACHE_FLASH_ATTR dhcps_stop(void)
     //udp_remove(pcb_dhcps);
     list_node *pnode = NULL;
     list_node *pback_node = NULL;
+    struct dhcps_pool* dhcp_node = NULL;
+    struct ip_addr ip_zero;
+
+    os_memset(&ip_zero,0x0,sizeof(ip_zero));
     pnode = plist;
     while (pnode != NULL) {
         pback_node = pnode;
         pnode = pback_node->pnext;
         node_remove_from_list(&plist, pback_node);
+        dhcp_node = (struct dhcps_pool*)pback_node->pnode;
+        //wifi_softap_dhcps_client_leave(dhcp_node->mac,&dhcp_node->ip,TRUE); // force to delete
+        wifi_softap_set_station_info(dhcp_node->mac, &ip_zero);
         os_free(pback_node->pnode);
         pback_node->pnode = NULL;
         os_free(pback_node);
@@ -1100,6 +1109,8 @@ uint32 ICACHE_FLASH_ATTR wifi_softap_dhcps_client_update(u8 *bssid, struct ip_ad
 
                 // mac exists and ip exists in other node,delete mac
                 node_remove_from_list(&plist,pmac_node);
+                os_free(pmac_node->pnode);
+                pmac_node->pnode = NULL;
                 os_free(pmac_node);
                 pmac_node = pip_node;
                 os_memcpy(pdhcps_pool->mac, bssid, sizeof(pdhcps_pool->mac));

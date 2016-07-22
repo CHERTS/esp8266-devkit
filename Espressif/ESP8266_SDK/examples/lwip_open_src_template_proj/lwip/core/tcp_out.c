@@ -231,7 +231,7 @@ tcp_pbuf_prealloc(pbuf_layer layer, u16_t length, u16_t max_length,
   LWIP_UNUSED_ARG(apiflags);
   LWIP_UNUSED_ARG(first_seg);
   /* always create MSS-sized pbufs */
-  alloc = TCP_MSS;
+  alloc = pcb->mss;		//TCP_MSS;
 #else /* LWIP_NETIF_TX_SINGLE_PBUF */
   if (length < max_length) {
     /* Should we allocate an oversized pbuf, or just the minimum
@@ -420,8 +420,8 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
 
   /* Find the tail of the unsent queue. */
   if (pcb->unsent != NULL) {
-    u16_t space;
-    u16_t unsent_optlen;
+    u16_t space = 0;
+    u16_t unsent_optlen = 0;
 
     /* @todo: this could be sped up by keeping last_unsent in the pcb */
     for (last_unsent = pcb->unsent; last_unsent->next != NULL;
@@ -457,7 +457,11 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
     LWIP_ASSERT("inconsistend oversize vs. len", (oversize == 0) || (pos == len));
 #endif /* TCP_OVERSIZE */
 
-    /*
+    if (pos > len) {
+      return ERR_MEM;
+    }
+
+   /*
      * Phase 2: Chain a new pbuf to the end of pcb->unsent.
      *
      * We don't extend segments containing SYN/FIN flags or options
@@ -1241,10 +1245,46 @@ void
 tcp_rexmit_rto(struct tcp_pcb *pcb)
 {
   struct tcp_seg *seg;
+  struct tcp_seg *t0_head = NULL, *t0_tail = NULL; /* keep in unacked */
+  struct tcp_seg *t1_head = NULL, *t1_tail = NULL; /* link to unsent */
+  bool t0_1st = true, t1_1st = true;
 
   if (pcb->unacked == NULL) {
     return;
   }
+
+#if 1 /* by Snake: resolve the bug of pbuf reuse */
+  seg = pcb->unacked;
+  while (seg != NULL) {
+	if (seg->p->eb) {
+		if (t0_1st) {
+			t0_head = t0_tail = seg;
+			t0_1st = false;
+		} else {
+			t0_tail->next = seg;
+			t0_tail = seg;
+		}
+		seg = seg->next;
+		t0_tail->next = NULL;
+	} else {
+		if (t1_1st) {
+			t1_head = t1_tail = seg;
+			t1_1st = false;
+		} else {
+			t1_tail->next = seg;
+			t1_tail = seg;
+		}
+		seg = seg->next;
+		t1_tail->next = NULL;
+	}
+  }
+  if (t1_head && t1_tail) {
+	t1_tail->next = pcb->unsent;
+	pcb->unsent = t1_head;
+  }
+  pcb->unacked = t0_head;
+
+#else
 
   /* Move all unacked segments to the head of the unsent queue */
   for (seg = pcb->unacked; seg->next != NULL; seg = seg->next);
@@ -1254,6 +1294,7 @@ tcp_rexmit_rto(struct tcp_pcb *pcb)
   pcb->unsent = pcb->unacked;
   /* unacked queue is now empty */
   pcb->unacked = NULL;
+#endif
   /* last unsent hasn't changed, no need to reset unsent_oversize */
 
   /* increment number of retransmissions */

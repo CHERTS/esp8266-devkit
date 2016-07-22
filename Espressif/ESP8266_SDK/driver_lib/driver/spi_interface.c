@@ -231,7 +231,7 @@ int ICACHE_FLASH_ATTR SPIMasterSendData(SpiNum spiNum, SpiData* pInData)
         // Load send buffer
         do {
             WRITE_PERI_REG((SPI_W0(spiNum) + (idx << 2)), *value++);
-        } while (++idx < (pInData->dataLen / 4));
+        } while (++idx < ((pInData->dataLen / 4) + ((pInData->dataLen % 4) ? 1 : 0)));
         // Set data send buffer length.Max data length 64 bytes.
         SET_PERI_REG_BITS(SPI_USER1(spiNum), SPI_USR_MOSI_BITLEN, ((pInData->dataLen << 3) - 1), SPI_USR_MOSI_BITLEN_S);
     } else {
@@ -314,8 +314,9 @@ int ICACHE_FLASH_ATTR SPIMasterRecvData(SpiNum spiNum, SpiData* pOutData)
     while (READ_PERI_REG(SPI_CMD(spiNum))&SPI_USR);
     // Read data out
     do {
-        *pOutData->data++ = READ_PERI_REG(SPI_W0(spiNum) + (idx << 2));
-    } while (++idx < (pOutData->dataLen / 4));
+        *value++ = READ_PERI_REG(SPI_W0(spiNum) + (idx << 2));
+    } while (++idx < ((pOutData->dataLen / 4) + ((pOutData->dataLen % 4) ? 1 : 0)));
+    
 
     return 0;
 }
@@ -329,9 +330,10 @@ int ICACHE_FLASH_ATTR SPISlaveSendData(SpiNum spiNum, uint32_t *pInData, uint8_t
     if (NULL == pInData) {
         return -1;
     }
+	uint32_t *value = pInData;
     char i;
     for (i = 0; i < inLen; ++i) {
-        WRITE_PERI_REG((SPI_W8(spiNum) + (i << 2)), *pInData++);
+        WRITE_PERI_REG((SPI_W8(spiNum) + (i << 2)), *value++);
     }
     // Enable slave transmission liston
     SET_PERI_REG_MASK(SPI_CMD(spiNum), SPI_USR);
