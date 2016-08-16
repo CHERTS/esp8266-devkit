@@ -49,7 +49,7 @@ typedef enum {          // timer interrupt mode
 
 static void (* user_hw_timer_cb)(void) = NULL;
 
-static void hw_timer_isr_cb(void *arg)
+static void hw_timer_isr_cb(void)
 {
     if (user_hw_timer_cb != NULL) {
         (*(user_hw_timer_cb))();
