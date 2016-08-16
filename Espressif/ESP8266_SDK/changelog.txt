@@ -1,3 +1,12 @@
+ESP8266_NONOS_SDK_V2.0.0_patch Release Notes
+---------------------------------------------
+
+The updates are as follows:
+1. Slow connection problems in some cases have been solved.
+2. Provided an interface to enable automatic calibration of frequency offset: void system_phy_freq_trace_enable(bool enable); By default, the automatic calibration of frequency offset is off. To enable it, this function should be called in user_rf_pre_init(). Its parameter is true.
+
+Note: Users should confirm that only when ambient temperature is higher than the normal operating temperature range that crystal oscillator requires does this function need to be enabled. In general,  this function is not recommended to be enabled if ambient temperature is lower than 80
+
 ESP8266_NONOS_SDK_V2.0.0_16_07_19 Release Notes
 -----------------------------------------------
 
