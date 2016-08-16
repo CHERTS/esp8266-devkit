@@ -1,6 +1,13 @@
 Changelog:
 ----------
 
+v2.1.0 Beta (16.08.2016):
+* Update SDK v2.0.0 (folder ESP8266_SDK);
++ Added patch for SDK 2.0.0;
+* Update RTOS SDK v1.4.2 (folder ESP8266_RTOS_SDK);
+* SDK version 1.5.4 moved to a folder ESP8266_SDK_154;
+* Update a utility "utils\esptool-ck.exe" to version 0.4.11;
+
 v2.1.0 Beta (24.05.2016):
 * Updated compiler xtensa-lx106-gcc and xtensa-lx106-g++ up to version 5.2 (added latest patches from jcmvbkbc);
 * Update RTOS SDK v1.4.0 (folder ESP8266_RTOS_SDK);
