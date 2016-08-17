@@ -57,6 +57,7 @@ Source: "Espressif\ESP8266_SDK_150\*"; DestDir: "{app}\ESP8266_SDK_150"; Flags: 
 Source: "Espressif\ESP8266_SDK_151\*"; DestDir: "{app}\ESP8266_SDK_151"; Flags: ignoreversion createallsubdirs recursesubdirs; Components: sdk
 Source: "Espressif\ESP8266_SDK_152\*"; DestDir: "{app}\ESP8266_SDK_152"; Flags: ignoreversion createallsubdirs recursesubdirs; Components: sdk
 Source: "Espressif\ESP8266_SDK_153\*"; DestDir: "{app}\ESP8266_SDK_153"; Flags: ignoreversion createallsubdirs recursesubdirs; Components: sdk
+Source: "Espressif\ESP8266_SDK_154\*"; DestDir: "{app}\ESP8266_SDK_154"; Flags: ignoreversion createallsubdirs recursesubdirs; Components: sdk
 Source: "Espressif\Espressif web site.url"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Espressif\Espressif Documents.url"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Espressif\DevKit web site.url"; DestDir: "{app}"; Flags: ignoreversion
@@ -91,6 +92,7 @@ Name: "{app}\ESP8266_SDK_150"; Components: sdk
 Name: "{app}\ESP8266_SDK_151"; Components: sdk
 Name: "{app}\ESP8266_SDK_152"; Components: sdk
 Name: "{app}\ESP8266_SDK_153"; Components: sdk
+Name: "{app}\ESP8266_SDK_154"; Components: sdk
 
 [Registry]
 Root: "HKCU"; Subkey: "Software\Terminal\TmacroForm"; ValueType: string; ValueName: "macro1E_Text"; ValueData: "%SCRS""C:\Espressif\utils\esp-reboot.tsc"""
@@ -141,6 +143,7 @@ Type: filesandordirs; Name: "{app}\ESP8266_SDK_150\*"; Components: sdk
 Type: filesandordirs; Name: "{app}\ESP8266_SDK_151\*"; Components: sdk
 Type: filesandordirs; Name: "{app}\ESP8266_SDK_152\*"; Components: sdk
 Type: filesandordirs; Name: "{app}\ESP8266_SDK_153\*"; Components: sdk
+Type: filesandordirs; Name: "{app}\ESP8266_SDK_154\*"; Components: sdk
 Type: files; Name: "{app}\Command line Unofficial Development Kit for Espressif ESP8266.lnk"; Languages: english turkish; Components: utils
 Type: files; Name: "{app}\Командная строка Unofficial Development Kit for Espressif ESP8266.lnk"; Languages: russian; Components: utils
 Type: files; Name: "{app}\DevKit web site.url"
