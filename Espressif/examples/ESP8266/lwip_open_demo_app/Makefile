@@ -19,10 +19,18 @@ ESPTOOL		?= $(SDK_TOOLS)/esptool.exe
 ESPPORT		?= COM3
 ESPBAUD		?= 256000
 
+# BOOT = none
+# BOOT = old - boot_v1.1
+# BOOT = new - boot_v1.2+
+BOOT?=none
+# APP = 0 - eagle.flash.bin + eagle.irom0text.bin
+# APP = 1 - user1.bin
+# APP = 2 - user2.bin
+APP?=0
 # SPI_SPEED = 40, 26, 20, 80
 SPI_SPEED ?= 40
-# SPI_MODE: qio, qout, dio, dout
-SPI_MODE ?= qio
+# SPI_MODE: QIO, QOUT, DIO, DOUT
+SPI_MODE ?= QIO
 # SPI_SIZE_MAP
 # 0 : 512 KB (256 KB + 256 KB)
 # 1 : 256 KB
@@ -31,7 +39,27 @@ SPI_MODE ?= qio
 # 4 : 4096 KB (512 KB + 512 KB)
 # 5 : 2048 KB (1024 KB + 1024 KB)
 # 6 : 4096 KB (1024 KB + 1024 KB)
-SPI_SIZE_MAP ?= 0
+SPI_SIZE_MAP ?= 2
+
+ifeq ($(BOOT), new)
+    boot = new
+else
+    ifeq ($(BOOT), old)
+        boot = old
+    else
+        boot = none
+    endif
+endif
+
+ifeq ($(APP), 1)
+    app = 1
+else
+    ifeq ($(APP), 2)
+        app = 2
+    else
+        app = 0
+    endif
+endif
 
 ifeq ($(SPI_SPEED), 26.7)
     freqdiv = 1
@@ -56,8 +84,8 @@ ifeq ($(SPI_MODE), QOUT)
     flashimageoptions += -fm qout
 else
     ifeq ($(SPI_MODE), DIO)
-		mode = 2
-		flashimageoptions += -fm dio
+	mode = 2
+	flashimageoptions += -fm dio
     else
         ifeq ($(SPI_MODE), DOUT)
             mode = 3
@@ -69,6 +97,8 @@ else
     endif
 endif
 
+addr = 0x01000
+
 ifeq ($(SPI_SIZE_MAP), 1)
   size_map = 1
   flash = 256
@@ -78,30 +108,48 @@ else
     size_map = 2
     flash = 1024
     flashimageoptions += -fs 8m
+    ifeq ($(app), 2)
+      addr = 0x81000
+    endif
   else
     ifeq ($(SPI_SIZE_MAP), 3)
       size_map = 3
       flash = 2048
       flashimageoptions += -fs 16m
+      ifeq ($(app), 2)
+        addr = 0x81000
+      endif
     else
       ifeq ($(SPI_SIZE_MAP), 4)
-		size_map = 4
-		flash = 4096
-		flashimageoptions += -fs 32m
+	size_map = 4
+	flash = 4096
+	flashimageoptions += -fs 32m
+        ifeq ($(app), 2)
+          addr = 0x81000
+        endif
       else
         ifeq ($(SPI_SIZE_MAP), 5)
           size_map = 5
           flash = 2048
           flashimageoptions += -fs 16m
+          ifeq ($(app), 2)
+            addr = 0x101000
+          endif
         else
           ifeq ($(SPI_SIZE_MAP), 6)
             size_map = 6
             flash = 4096
             flashimageoptions += -fs 32m
+            ifeq ($(app), 2)
+              addr = 0x101000
+            endif
           else
             size_map = 0
             flash = 512
             flashimageoptions += -fs 4m
+            ifeq ($(app), 2)
+              addr = 0x41000
+            endif
           endif
         endif
       endif
@@ -197,15 +245,45 @@ endef
 
 $(BINODIR)/%.bin: $(IMAGEODIR)/%.out
 	@mkdir -p $(BINODIR)
-	$(vecho) "------------------------------------------------------------------------------"
-	$(vecho) "Section info:"
-	$(Q) $(OBJDUMP) -h -j .data -j .rodata -j .bss -j .text -j .irom0.text $<
-	$(vecho) "------------------------------------------------------------------------------"
-	$(Q) $(ESPTOOL) elf2image $< -o../$(FW_BASE)/ $(flashimageoptions)
-	$(vecho) "------------------------------------------------------------------------------"
-	$(vecho) "Generate 0x00000.bin and 0x40000.bin successully in folder $(FW_BASE)."
-	$(vecho) "0x00000.bin-------->0x00000"
-	$(vecho) "0x40000.bin-------->0x40000"
+	@mkdir -p $(BINODIR)/upgrade
+	$(vecho) "Run objcopy, please wait..."
+	$(Q) $(OBJCOPY) --only-section .text -O binary $< eagle.app.v6.text.bin
+	$(Q) $(OBJCOPY) --only-section .data -O binary $< eagle.app.v6.data.bin
+	$(Q) $(OBJCOPY) --only-section .rodata -O binary $< eagle.app.v6.rodata.bin
+	$(Q) $(OBJCOPY) --only-section .irom0.text -O binary $< eagle.app.v6.irom0text.bin
+	$(vecho) "objcopy done"
+	$(vecho) "Run gen_appbin.exe"
+ifeq ($(app), 0)
+	$(Q) $(SDK_TOOLS)/gen_appbin.exe $< 0 $(mode) $(freqdiv) $(size_map) $(app)
+	$(Q) mv eagle.app.flash.bin ../$(FW_BASE)/eagle.flash.bin
+	$(Q) mv eagle.app.v6.irom0text.bin ../$(FW_BASE)/eagle.irom0text.bin
+	$(Q) rm eagle.app.v6.*
+	$(vecho) "No boot needed."
+	$(vecho) "Generate eagle.flash.bin and eagle.irom0text.bin successully in folder $(FW_BASE)"
+	$(vecho) "eagle.flash.bin-------->0x00000"
+	$(vecho) "eagle.irom0text.bin---->0x10000"
+else
+    ifneq ($(boot), new)
+	$(Q) $(SDK_TOOLS)/gen_appbin.exe $< 1 $(mode) $(freqdiv) $(size_map) $(app)
+	$(vecho) "Support boot_v1.1 and +"
+    else
+	$(Q) $(SDK_TOOLS)/gen_appbin.exe $< 2 $(mode) $(freqdiv) $(size_map) $(app)
+    	ifeq ($(size_map), 6)
+		$(vecho) "Support boot_v1.4 and +"
+        else
+            ifeq ($(size_map), 5)
+		$(vecho) "Support boot_v1.4 and +"
+            else
+		$(vecho) "Support boot_v1.2 and +"
+            endif
+        endif
+    endif
+	$(Q) mv eagle.app.flash.bin ../$(FW_BASE)/upgrade/$(BIN_NAME).bin
+	$(Q) rm eagle.app.v6.*
+	$(vecho) "Generate $(BIN_NAME).bin successully in folder $(FW_BASE)/upgrade"
+	$(vecho) "boot.bin------->0x00000"
+	$(vecho) "$(BIN_NAME).bin--->$(addr)"
+endif
 	$(vecho) "Done"
 
 .PHONY: .subdirs all clean clobber progr flash flashinit rebuild
@@ -224,14 +302,41 @@ clobber: $(SPECIAL_CLOBBER)
 	$(RM) -r $(ODIR)
 	#$(RM) $(FW_BASE)/*.bin
 
+flashboot:
+ifeq ($(app), 0)
+	$(vecho) "No boot needed."
+else
+    ifneq ($(boot), new)
+	$(vecho) "Flash boot_v1.1 and +"
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x00000 $(SDK_BASE)/bin/boot_v1.1.bin
+    else
+    	ifeq ($(size_map), 6)
+		$(vecho) "Flash boot_v1.5 and +"
+		$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x00000 $(SDK_BASE)/bin/boot_v1.6.bin
+        else
+            ifeq ($(size_map), 5)
+		$(vecho) "Flash boot_v1.5 and +"
+		$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x00000 $(SDK_BASE)/bin/boot_v1.6.bin
+            else
+		$(vecho) "Flash boot_v1.2 and +"
+		$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x00000 $(SDK_BASE)/bin/boot_v1.2.bin
+            endif
+        endif
+    endif
+endif
+
 flash:
 	$(foreach d, $(SUBDIRS), $(MAKE) -C $(d) progr;)
 
 progr: all
-ifndef PDIR
-	$(MAKE) -C ./app flash
+ifeq ($(app), 0) 
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x00000 ../$(FW_BASE)/eagle.flash.bin 0x10000 ../$(FW_BASE)/eagle.irom0text.bin
 else
-	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x00000 ../$(FW_BASE)/0x00000.bin 0x40000 ../$(FW_BASE)/0x40000.bin
+ifeq ($(boot), none)
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x00000 ../$(FW_BASE)/eagle.flash.bin 0x10000 ../$(FW_BASE)/eagle.irom0text.bin
+else
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) $(addr) ../$(FW_BASE)/upgrade/$(BIN_NAME).bin
+endif
 endif
 
 # ===============================================================
@@ -254,15 +359,8 @@ endif
 
 # FLASH SIZE
 flashinit:
-	$(vecho) "Flash init data:"
-	$(vecho) "Default config (Clear SDK settings):"
-	$(vecho) "blank.bin-------->0x3e000"
-	$(vecho) "blank.bin-------->0x3fc000"
-	$(vecho) "esp_init_data_default.bin-------->0x3fc000"
-	$(ESPTOOL) -p $(ESPPORT) write_flash $(flashimageoptions) \
-		0x3e000 $(SDK_BASE)/bin/blank.bin \
-		0x3fc000 $(SDK_BASE)/bin/esp_init_data_default.bin \
-		0x3fe000 $(SDK_BASE)/bin/blank.bin
+	$(vecho) "Flash init data default and blank data."
+	$(ESPTOOL) -p $(ESPPORT) write_flash $(flashimageoptions) 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
 
 .subdirs:
 	@set -e; $(foreach d, $(SUBDIRS), $(MAKE) -C $(d);)

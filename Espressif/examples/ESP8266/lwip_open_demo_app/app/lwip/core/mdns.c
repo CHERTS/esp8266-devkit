@@ -921,7 +921,6 @@ mdns_close(void)
 		mdns_pcb = NULL;
 		ms_info = NULL;
 	}
-
 }
 
 void ICACHE_FLASH_ATTR
