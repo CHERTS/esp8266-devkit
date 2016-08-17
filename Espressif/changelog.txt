@@ -1,7 +1,7 @@
 Changelog:
 ----------
 
-v2.1.0 Beta (17.08.2016):
+v2.1.0 (17.08.2016):
 * Update SDK v2.0.0 (folder ESP8266_SDK);
 + Added patch for SDK 2.0.0;
 * Update RTOS SDK v1.4.2 (folder ESP8266_RTOS_SDK);
