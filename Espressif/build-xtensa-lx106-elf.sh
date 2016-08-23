@@ -260,7 +260,8 @@ echo "==> Building first stage GCC..."
 cd $XTDLP/$GCC/build-1
 if [ $RECONF -gt 0 -o ! -f .configured ]; then
   rm -f .configured
-  ../configure --prefix=$XTTC --target=$TARGET --enable-multilib --enable-languages=c --with-newlib --disable-nls --disable-shared --disable-threads --with-gnu-as --with-gnu-ld --with-gmp=$XTBP/gmp --with-mpfr=$XTBP/mpfr --with-mpc=$XTBP/mpc  --disable-libssp --without-headers --disable-__cxa_atexit --enable-decimal-float=yes --enable-cxx-flags="-mlongcalls -mtext-section-literals"
+  export CFLAGS_FOR_TARGET+="-mlongcalls"
+  ../configure --prefix=$XTTC --target=$TARGET --enable-multilib --enable-languages=c --with-newlib --disable-nls --disable-shared --disable-threads --with-gnu-as --with-gnu-ld --with-gmp=$XTBP/gmp --with-mpfr=$XTBP/mpfr --with-mpc=$XTBP/mpc  --disable-libssp --without-headers --disable-__cxa_atexit --enable-cxx-flags="-fno-exceptions -fno-rtti"
   touch .configured
 fi
 if [ $REBUILD -gt 0 -o ! -f .built ]; then
@@ -295,7 +296,7 @@ echo "==> Buidling Newlib..."
 cd $XTDLP/$NEWLIB/build
 if [ $RECONF -gt 0 -o ! -f .configured ]; then
   rm -f .configured
-  ../configure  --prefix=$XTTC --target=$TARGET --enable-multilib --with-gnu-as --with-gnu-ld --disable-nls --disable-newlib-io-c99-formats --disable-newlib-io-long-long --disable-newlib-io-float --disable-newlib-io-long-double --disable-newlib-supplied-syscalls --enable-target-optspace
+  ../configure CFLAGS_FOR_TARGET="-DMALLOC_PROVIDED" --prefix=$XTTC --target=$TARGET --enable-multilib --with-gnu-as --with-gnu-ld --disable-nls --disable-newlib-io-c99-formats --disable-newlib-io-long-long --disable-newlib-io-float --disable-newlib-io-long-double --disable-newlib-supplied-syscalls --enable-target-optspace
   touch .configured
 fi
 if [ $REBUILD -gt 0 -o ! -f .built ]; then
@@ -313,7 +314,8 @@ echo "==> Building final GCC..."
 cd $XTDLP/$GCC/build-2
 if [ $RECONF -gt 0 -o ! -f .configured ]; then
   rm -f .configured
-  ../configure --prefix=$XTTC --target=$TARGET --enable-multilib --disable-nls --disable-shared --disable-threads --with-gnu-as --with-gnu-ld --with-gmp=$XTBP/gmp --with-mpfr=$XTBP/mpfr --with-mpc=$XTBP/mpc --enable-languages=c,c++ --with-newlib --disable-libssp --disable-__cxa_atexit --enable-decimal-float=yes --enable-cxx-flags="-mlongcalls -mtext-section-literals"
+  export CFLAGS_FOR_TARGET+="-mlongcalls"
+  ../configure --prefix=$XTTC --target=$TARGET --enable-multilib --disable-nls --disable-shared --disable-threads --with-gnu-as --with-gnu-ld --with-gmp=$XTBP/gmp --with-mpfr=$XTBP/mpfr --with-mpc=$XTBP/mpc --enable-languages=c,c++ --with-newlib --disable-libssp --disable-__cxa_atexit --enable-cxx-flags="-fno-exceptions -fno-rtti"
   touch .configured
 fi
 if [ $REBUILD -gt 0 -o ! -f .built ]; then
@@ -398,6 +400,19 @@ if [ $REINSTALL -gt 0 -o ! -f .installed ]; then
   rm -rf .installed
   cp src/libhal.a "$XTTC/$TARGET/lib/"
   touch .installed
+fi
+
+cd $XTDLP
+if [ -f $XTPTH/overlays/xtensa_include.zip ]; then
+  if [ ! -d $XTTC/$TARGET/include ]; then
+    mkdir -p $XTTC/$TARGET/include
+  fi  
+  if [ ! -f $XTDLP/overlays/.extract_xtensa_include ]; then
+    rm -f $XTDLP/overlays/.extract_xtensa_include
+    echo "==> Extracting overlays xtensa_include.zip..."
+    unzip $XTPTH/overlays/xtensa_include.zip -d $XTTC/$TARGET/include
+    touch $XTDLP/overlays/.extract_xtensa_include
+  fi
 fi
 
 echo "==> Done!"

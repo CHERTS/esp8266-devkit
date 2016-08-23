@@ -1,6 +1,13 @@
 Changelog:
 ----------
 
+v2.1.1 (31.08.2016):
+* Updated the compiler xtensa-lx106-gcc and xtensa-lx106-g++ (added patches from jcmvbkbc to implement -fstack-usage and -Wstack-usage and -mlongcalls);
+- Deleted examples:
+  esp_mesh_sdk_app_controller;
+  esp_mesh_sdk_app_light;
+  esp_mesh_sdk_app_switch;
+
 v2.1.0 (17.08.2016):
 * Update SDK v2.0.0 (folder ESP8266_SDK);
 + Added patch for SDK 2.0.0;
@@ -8,6 +15,57 @@ v2.1.0 (17.08.2016):
 * SDK version 1.5.4 moved to a folder ESP8266_SDK_154;
 * Update a utility "utils\esptool-ck.exe" to version 0.4.11;
 * Updated all samples to be compatible with SDK v2.0.0;
+* Updated documentation:
+  - Delete files:
+    0A-ESP8266__WiFi_Specifications__EN_v4.2.pdf
+    0B-ESP8266__Hardware_User_Guide__EN_v0.7.pdf
+    2A_ESP8266_SDK Getting_Started_Guide_EN_v1.5_20151118.pdf
+    2A-ESP8266-SDK__Getting_Started_Guide__EN.pdf
+    2A-ESP8266__IOT_SDK_User_Manual__EN_v1.4.pdf
+    2B-ESP8266__SDK__IOT_Demo__EN_v1.3.pdf
+    2C-ESP8266__SDK__Programming Guide__EN_v1.5.pdf
+    2C-ESP8266__SDK__API Guide__EN_v1.5.2.pdf
+    2C-ESP8266-SDK__API Guide__EN_V1.5.3.pdf
+    4A-ESP8266__AT Instruction Set__EN_v0.40.pdf
+    4A-ESP8266__AT Instruction Set__EN_v1.5.3.pdf
+    4B-ESP8266__AT Command Examples__EN_v0.6.pdf
+    4B-ESP8266__AT_Command_Examples__EN_v1.3.pdf
+    5A-ESP8266__SDK__SSL_User_Manual__EN_v1.1.pdf
+    9B-ESP8266__Sleep__Function Description__EN_v1.0.pdf
+    9B-ESP8266-Sleep_Mode_Low_Power_Solutions__EN_V1.1_20160415.pdf
+    20A-ESP8266__RTOS_SDK__Programming Guide__EN_v1.3.0.pdf
+    20A-ESP8266__RTOS_SDK__Programming_Guide__EN_v1.3.0_20160321.pdf
+    20B-ESP8266__RTOS_SDK_API Reference__v1.3.0.pdf
+    20B-ESP8266__RTOS_SDK_API Reference.pdf
+    30A_ESP8266__Mesh_User Guide__EN_v1.0.pdf
+    30A-ESP8266_NONOS_MESH_API_Reference_PDF_V1.0_20160203.pdf
+    30A-ESP8266__Mesh_User_Guide__EN_V1.2_20160402.pdf
+    40C-ESP_Smart_Plug__User_Guide__EN_V1.2_20160413.pdf
+    99A-ESP8266__Flash_RW_Operation__EN_v0.2.pdf
+    99C-ESP8266__OTA_Upgrade__EN_v1.5.pdf
+  + Added files:
+    esp-now_user_guide_en.pdf
+    esp8266-hardware_matching_guide_en.pdf
+    esp8266-sdk_application_note_firmware_download_protocol_en.pdf
+    esp8266-technical_reference_en.pdf
+    esp8266_quick_start_guide_en.pdf
+    esp8266_wi-fi_channel_selection_guidelines_en.pdf
+    simple-pair_user_guide_en.pdf
+    2a-esp8266-sdk_getting_started_guide_en.pdf
+    2b-esp8266_sdk_iot_demo_en_v1.3.pdf
+    2c-esp8266_non_os_sdk_api_reference_en.pdf
+    4a-esp8266_at_instruction_set_en.pdf
+    4b-esp8266_at_command_examples_en.pdf
+    5A-ESP8266__SDK__SSL_User_Manual__EN_v1.4.pdf
+    9b-esp8266_low_power_solutions_en.pdf
+    20a-esp8266_rtos_sdk_programming_guide_en_v1.4.0.pdf
+    20b-esp8266_rtos_sdk_api_reference_v1.4.0_0.pdf
+    30a-esp8266_nonos_mesh_api_reference_v1.0.0_20160203.pdf
+    30B-ESP-TOUCH_User_Guide__EN_V1.1_20160412.pdf
+    30C_ESP-NOW__User_Guide_EN.pdf
+    40c-esp_smart_plug_user_guide_en_v1.2_20160413.pdf
+    99A-SDK-Espressif IOT Flash RW Operation__EN_v1.0.pdf
+    99C-ESP8266__OTA_Upgrade__EN_v1.6.pdf
 
 v2.1.0 Beta (24.05.2016):
 * Updated compiler xtensa-lx106-gcc and xtensa-lx106-g++ up to version 5.2 (added latest patches from jcmvbkbc);
