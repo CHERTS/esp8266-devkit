@@ -7,6 +7,9 @@ v2.1.1 (31.08.2016):
   esp_mesh_sdk_app_controller;
   esp_mesh_sdk_app_light;
   esp_mesh_sdk_app_switch;
+* Updated documentation:
+  + Added files:
+    esp8266_faq_en.pdf
 
 v2.1.0 (17.08.2016):
 * Update SDK v2.0.0 (folder ESP8266_SDK);
