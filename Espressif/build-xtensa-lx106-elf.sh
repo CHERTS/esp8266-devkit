@@ -410,7 +410,7 @@ if [ -f $XTPTH/overlays/xtensa_include.zip ]; then
   if [ ! -f $XTDLP/overlays/.extract_xtensa_include ]; then
     rm -f $XTDLP/overlays/.extract_xtensa_include
     echo "==> Extracting overlays xtensa_include.zip..."
-    unzip $XTPTH/overlays/xtensa_include.zip -d $XTTC/$TARGET/include
+    unzip -o $XTPTH/overlays/xtensa_include.zip -d $XTTC/$TARGET/include
     touch $XTDLP/overlays/.extract_xtensa_include
   fi
 fi
