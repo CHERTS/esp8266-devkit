@@ -314,8 +314,8 @@ echo "==> Building final GCC..."
 cd $XTDLP/$GCC/build-2
 if [ $RECONF -gt 0 -o ! -f .configured ]; then
   rm -f .configured
-  export CFLAGS_FOR_TARGET+="-mlongcalls"
-  ../configure --prefix=$XTTC --target=$TARGET --enable-multilib --disable-nls --disable-shared --disable-threads --with-gnu-as --with-gnu-ld --with-gmp=$XTBP/gmp --with-mpfr=$XTBP/mpfr --with-mpc=$XTBP/mpc --enable-languages=c,c++ --with-newlib --disable-libssp --disable-__cxa_atexit --enable-cxx-flags="-fno-exceptions -fno-rtti"
+  #export CFLAGS_FOR_TARGET+="-mlongcalls"
+  ../configure CFLAGS_FOR_TARGET="-mlongcalls" --prefix=$XTTC --target=$TARGET --enable-multilib --disable-nls --disable-shared --disable-threads --with-gnu-as --with-gnu-ld --with-gmp=$XTBP/gmp --with-mpfr=$XTBP/mpfr --with-mpc=$XTBP/mpc --enable-languages=c,c++ --with-newlib --disable-libssp --disable-__cxa_atexit --enable-cxx-flags="-fno-exceptions -fno-rtti"
   touch .configured
 fi
 if [ $REBUILD -gt 0 -o ! -f .built ]; then
