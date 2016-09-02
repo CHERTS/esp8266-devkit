@@ -1,7 +1,7 @@
 Список изменений:
 -----------------
 
-v2.1.1 (31.08.2016):
+v2.1.1 (10.09.2016):
 * Обновлен компилятор xtensa-lx106-gcc и xtensa-lx106-g++ (добавлены патчи от jcmvbkbc для реализации -fstack-usage и -Wstack-usage и -mlongcalls);
 - Удалены примеры:
   esp_mesh_sdk_app_controller;
