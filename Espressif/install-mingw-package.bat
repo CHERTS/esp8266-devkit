@@ -23,6 +23,22 @@ cd /d %~dp0
 echo.
 
 if exist "C:\MinGW" (
+  if exist "C:\MinGW\var\cache\mingw-get" (
+    if not exist "mingw-cache-packages.zip" (
+      utils\ESP8266\wget.exe http://dl.programs74.ru/get.php?file=mingw-cache-packages -O mingw-cache-packages.zip
+    )
+    if exist "mingw-cache-packages.zip" (
+      copy /Y mingw-cache-packages.zip "C:\MinGW\var\cache\mingw-get"
+      copy /Y utils\ESP8266\unzip.exe "C:\MinGW\var\cache\mingw-get"
+      C:
+      cd C:\MinGW\var\cache\mingw-get
+      if exist "C:\MinGW\var\cache\mingw-get\mingw-cache-packages.zip" (
+        unzip.exe -o mingw-cache-packages.zip
+        del /Q /F mingw-cache-packages.zip
+        del /Q /F unzip.exe
+      )
+    )
+  )
   C:
   cd C:\MinGW\bin
   if exist mingw-get.exe (
@@ -39,7 +55,9 @@ if exist "C:\MinGW" (
     mingw-get install libz
     mingw-get install bzip2
     mingw-get install gettext
+    mingw-get install pthreads-w32
     mingw-get install msys-base
+    mingw-get install msys-coreutils
     mingw-get install msys-coreutils-ext
     mingw-get install msys-gcc-bin
     mingw-get install msys-wget-bin
@@ -47,12 +65,15 @@ if exist "C:\MinGW" (
     mingw-get install msys-bison-bin
     mingw-get install msys-flex-bin
     mingw-get install msys-gawk
+    mingw-get install msys-sed
+    mingw-get install msys-patch
     mingw-get install msys-autoconf
     mingw-get install msys-automake
     mingw-get install msys-mktemp
     mingw-get install msys-libtool
     mingw-get install msys-help2man
     mingw-get install msys-gettext
+    mingw-get install msys-perl
     echo.
     echo Installing additional packages for MinGW complete.
     echo.
