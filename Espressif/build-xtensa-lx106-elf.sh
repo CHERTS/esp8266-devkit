@@ -1,6 +1,6 @@
 #!/bin/bash
 # Author: Mikhail Grigorev
-# Last edit: 08/03/2016
+# Last edit: 03/09/2016
 #
 # You will need the following mingw32/64 or equivalent linux packages to build it:
 # msys gcc msys-coreutils msys-wget msys-autoconf msys-automake msys-mktemp
