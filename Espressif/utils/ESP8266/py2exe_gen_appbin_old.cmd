@@ -29,13 +29,29 @@ if exist %pythondir% (
         pip install argparse
       )
       if not exist "%pythondir%\Lib\site-packages\py2exe\__init__.py" (
-        echo Downloading py2exe for Python 2.7...
-	"%curdir%\wget.exe" "http://kent.dl.sourceforge.net/project/py2exe/py2exe/0.6.9/py2exe-0.6.9.win32-py2.7.exe" -O "%curdir%\py2exe-0.6.9.win32-py2.7.exe"
-	if exist "%curdir%\py2exe-0.6.9.win32-py2.7.exe" (
-	        echo Installing py2exe...
-		"%curdir%\py2exe-0.6.9.win32-py2.7.exe"
+        rem echo "Check Windows architecture..."
+	rem echo %PROCESSOR_ARCHITECTURE%|FINDSTR AMD64>NUL && SET ARCH=AMD64 || SET ARCH=x86
+        echo "Check Python architecture..."
+	%pythondir%\python.exe -c "import platform; print platform.architecture()">%TEMP%\py_arch.txt
+	for /f "delims=" %%x in (%TEMP%\py_arch.txt) do set py_arch=%%x
+	echo %py_arch%|FINDSTR 64bit>NUL && SET ARCH=AMD64 || SET ARCH=x86
+	del /Q/ /F %TEMP%\py_arch.txt
+        echo "Downloading py2exe for Python 2.7..."
+	if "%ARCH%"=="x86" (
+		"%curdir%\wget.exe" "http://kent.dl.sourceforge.net/project/py2exe/py2exe/0.6.9/py2exe-0.6.9.win32-py2.7.exe" -O "%curdir%\py2exe-0.6.9.win32-py2.7.exe"
+	) else (
+		"%curdir%\wget.exe" "http://kent.dl.sourceforge.net/project/py2exe/py2exe/0.6.9/py2exe-0.6.9.win64-py2.7.amd64.exe" -O "%curdir%\py2exe-0.6.9.win64-py2.7.amd64.exe"
 	)
-        rem pip.exe install py2exe
+	if exist "%curdir%\py2exe-0.6.9.win32-py2.7.exe" (
+	        echo "Installing py2exe..."
+		"%curdir%\py2exe-0.6.9.win32-py2.7.exe"
+		del /Q /F "%curdir%\py2exe-0.6.9.win32-py2.7.exe"
+	)
+	if exist "%curdir%\py2exe-0.6.9.win64-py2.7.amd64.exe" (
+	        echo "Installing py2exe..."
+		"%curdir%\py2exe-0.6.9.win64-py2.7.amd64.exe"
+		del /Q /F "%curdir%\py2exe-0.6.9.win64-py2.7.amd64.exe"
+	)
       )
       cd ..
     ) else (
