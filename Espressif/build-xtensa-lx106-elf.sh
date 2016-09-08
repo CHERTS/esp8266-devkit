@@ -225,7 +225,7 @@ echo "==> Buidling Binutils..."
 cd $XTDLP/$BINUTILS/build
 if [ $RECONF -gt 0 -o ! -f .configured ]; then
   rm -f .configured
-  ../configure --prefix=$XTTC --target=$TARGET --enable-werror=no  --enable-multilib --disable-nls --disable-shared --disable-threads --with-gcc --with-gnu-as --with-gnu-ld
+  ../configure --prefix=$XTTC --target=$TARGET --enable-werror=no --disable-multilib --disable-nls --disable-shared --disable-threads --with-gcc --with-gnu-as --with-gnu-ld
   touch .configured
 fi
 if [ $REBUILD -gt 0 -o ! -f .built ]; then
@@ -260,7 +260,7 @@ echo "==> Building first stage GCC..."
 cd $XTDLP/$GCC/build-1
 if [ $RECONF -gt 0 -o ! -f .configured ]; then
   rm -f .configured
-  ../configure CFLAGS_FOR_TARGET="-mlongcalls" --prefix=$XTTC --target=$TARGET --enable-multilib --enable-languages=c --with-newlib --disable-nls --disable-shared --disable-threads --with-gnu-as --with-gnu-ld --with-gmp=$XTBP/gmp --with-mpfr=$XTBP/mpfr --with-mpc=$XTBP/mpc  --disable-libssp --without-headers --disable-__cxa_atexit --enable-cxx-flags="-fno-exceptions -fno-rtti"
+  ../configure CFLAGS_FOR_TARGET="-mlongcalls" --prefix=$XTTC --target=$TARGET --disable-multilib --enable-languages=c --with-newlib --disable-nls --disable-shared --disable-threads --with-gnu-as --with-gnu-ld --with-gmp=$XTBP/gmp --with-mpfr=$XTBP/mpfr --with-mpc=$XTBP/mpc  --disable-libssp --without-headers --disable-__cxa_atexit --enable-cxx-flags="-fno-exceptions -fno-rtti" --enable-target-optspace --without-libiconv
   touch .configured
 fi
 if [ $REBUILD -gt 0 -o ! -f .built ]; then
@@ -295,7 +295,7 @@ echo "==> Buidling Newlib..."
 cd $XTDLP/$NEWLIB/build
 if [ $RECONF -gt 0 -o ! -f .configured ]; then
   rm -f .configured
-  ../configure CFLAGS_FOR_TARGET="-DMALLOC_PROVIDED" --prefix=$XTTC --target=$TARGET --enable-multilib --with-gnu-as --with-gnu-ld --disable-nls --disable-newlib-io-c99-formats --disable-newlib-io-long-long --disable-newlib-io-float --disable-newlib-io-long-double --disable-newlib-supplied-syscalls --enable-target-optspace
+  ../configure CFLAGS_FOR_TARGET="-DMALLOC_PROVIDED" --prefix=$XTTC --target=$TARGET --disable-multilib --with-gnu-as --with-gnu-ld --disable-nls --disable-newlib-io-c99-formats --disable-newlib-io-long-long --disable-newlib-io-float --disable-newlib-io-long-double --disable-newlib-supplied-syscalls --enable-target-optspace --enable-newlib-mb --enable-newlib-hw-fp
   touch .configured
 fi
 if [ $REBUILD -gt 0 -o ! -f .built ]; then
@@ -313,7 +313,7 @@ echo "==> Building final GCC..."
 cd $XTDLP/$GCC/build-2
 if [ $RECONF -gt 0 -o ! -f .configured ]; then
   rm -f .configured
-  ../configure CFLAGS_FOR_TARGET="-mlongcalls" --prefix=$XTTC --target=$TARGET --enable-multilib --disable-nls --disable-shared --disable-threads --with-gnu-as --with-gnu-ld --with-gmp=$XTBP/gmp --with-mpfr=$XTBP/mpfr --with-mpc=$XTBP/mpc --enable-languages=c,c++ --with-newlib --disable-libssp --disable-__cxa_atexit --enable-cxx-flags="-fno-exceptions -fno-rtti"
+  ../configure CFLAGS_FOR_TARGET="-mlongcalls" --prefix=$XTTC --target=$TARGET --disable-multilib --disable-nls --disable-shared --disable-threads --with-gnu-as --with-gnu-ld --with-gmp=$XTBP/gmp --with-mpfr=$XTBP/mpfr --with-mpc=$XTBP/mpc --enable-languages=c,c++ --with-newlib --disable-libssp --disable-__cxa_atexit --enable-cxx-flags="-fno-exceptions -fno-rtti" --enable-target-optspace --without-libiconv
   touch .configured
 fi
 if [ $REBUILD -gt 0 -o ! -f .built ]; then
