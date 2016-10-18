@@ -1,9 +1,16 @@
 Changelog:
 ----------
 
-v2.1.1 (10.09.2016):
+v2.2.0 (20.10.2016):
 * Updated the compiler xtensa-lx106-gcc and xtensa-lx106-g++ (added patches from jcmvbkbc to implement -fstack-usage and -Wstack-usage and -mlongcalls);
+- Remove all old SDK and all related examples;
 - Deleted examples:
+  ESP8266_Relay_Board;
+  at_v0.20_on_SDKv0.9.4;
+  esp8266_ili9341;
+  rboot;
+  nodemcu-spiffy;
+  nodemcu-firmware;
   esp_mesh_sdk_app_controller;
   esp_mesh_sdk_app_light;
   esp_mesh_sdk_app_switch;

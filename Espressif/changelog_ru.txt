@@ -1,9 +1,22 @@
 Список изменений:
 -----------------
 
-v2.1.1 (10.09.2016):
+v2.2.0 (20.10.2016):
 * Обновлен компилятор xtensa-lx106-gcc и xtensa-lx106-g++ (добавлены патчи от jcmvbkbc для реализации -fstack-usage и -Wstack-usage и -mlongcalls);
+* Обновлены все Makefile во всех примерах.
+  Cделана модульная структура Makefile:
+  examples\ESP8266\settings.mk - основные общие настройки для всех примеров, могут быть переопределены индивидуально в Makefile;
+  examples\ESP8266\common_nonos.mk - основной сценарий для сборки прошивок на Espressif NONOS SDK;
+  examples\ESP8266\common_rtos.mk - основной сценарий для сборки прошивок на Espressif RTOS SDK;
+  examples\ESP8266\common_cpp.mk - основной сценарий для сборки прошивок на С++ и Espressif NONOS SDK;
+- Удалены все старые SDK и все связанные с ними примеры;
 - Удалены примеры:
+  ESP8266_Relay_Board;
+  at_v0.20_on_SDKv0.9.4;
+  esp8266_ili9341;
+  rboot;
+  nodemcu-spiffy;
+  nodemcu-firmware;
   esp_mesh_sdk_app_controller;
   esp_mesh_sdk_app_light;
   esp_mesh_sdk_app_switch;
