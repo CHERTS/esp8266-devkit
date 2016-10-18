@@ -1,1 +1,0 @@
-void broadcastd_init(void);
