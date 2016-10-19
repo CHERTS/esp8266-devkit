@@ -136,6 +136,38 @@ LDFLAGS		= -nostdlib -Wl,--no-check-sections -u call_user_start -Wl,-static
 # linker script used for the above linkier step
 LD_SCRIPT	= eagle.app.v6.cpp.ld
 
+ifneq ($(boot), none)
+ifneq ($(app),0)
+    ifeq ($(size_map), 6)
+      LD_SCRIPT = eagle.app.v6.$(boot).2048.cpp.ld
+    else
+      ifeq ($(size_map), 5)
+        LD_SCRIPT = eagle.app.v6.$(boot).2048.cpp.ld
+      else
+        ifeq ($(size_map), 4)
+          LD_SCRIPT = eagle.app.v6.$(boot).1024.app$(app).cpp.ld
+        else
+          ifeq ($(size_map), 3)
+            LD_SCRIPT = eagle.app.v6.$(boot).1024.app$(app).cpp.ld
+          else
+            ifeq ($(size_map), 2)
+              LD_SCRIPT = eagle.app.v6.$(boot).1024.app$(app).cpp.ld
+            else
+              ifeq ($(size_map), 0)
+                LD_SCRIPT = eagle.app.v6.$(boot).512.app$(app).cpp.ld
+              endif
+            endif
+	      endif
+	    endif
+	  endif
+	endif
+	BIN_NAME = user$(app).$(flash).$(boot).$(size_map)
+	CFLAGS += -DAT_UPGRADE_SUPPORT
+endif
+else
+    app = 0
+endif
+
 # various paths from the SDK used in this project
 SDK_LIBDIR	= lib
 SDK_LDDIR	= ld
