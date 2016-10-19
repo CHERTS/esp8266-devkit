@@ -14,6 +14,7 @@ v2.2.0 (20.10.2016):
   esp_mesh_sdk_app_controller;
   esp_mesh_sdk_app_light;
   esp_mesh_sdk_app_switch;
++ Added examples directory esp8266-nonos-sample-code from the repository https://github.com/espressif/esp8266-nonos-sample-code
 * Updated documentation:
   + Added files:
     esp8266_faq_en.pdf
