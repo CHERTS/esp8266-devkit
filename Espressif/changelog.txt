@@ -1,8 +1,14 @@
 Changelog:
 ----------
 
-v2.2.0 (20.10.2016):
+v2.2.0 (24.10.2016):
 * Updated the compiler xtensa-lx106-gcc and xtensa-lx106-g++ (added patches from jcmvbkbc to implement -fstack-usage and -Wstack-usage and -mlongcalls);
+* Updated all Makefile in all examples.
+  To make the modular structure of the Makefile:
+  examples\ESP8266\common_nonos.mk - the main scenario for the build of firmware on Espressif NONOS SDK;
+  examples\ESP8266\common_nonos_app.mk - the main scenario for the build of firmware on Espressif NONOS SDK based on standard examples Espressif (see examples directory examples\ESP8266\esp8266-nonos-sample-code\);
+  examples\ESP8266\common_rtos.mk - the main scenario for the build of firmware on Espressif RTOS SDK;
+  examples\ESP8266\common_cpp.mk - the main scenario for the build of firmware in C++ with Espressif NONOS SDK;
 - Remove all old SDK and all related examples;
 - Deleted examples:
   ESP8266_Relay_Board;
