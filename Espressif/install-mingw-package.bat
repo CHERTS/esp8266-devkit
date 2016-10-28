@@ -25,7 +25,7 @@ echo.
 if exist "C:\MinGW" (
   if exist "C:\MinGW\var\cache\mingw-get" (
     if not exist "mingw-cache-packages.zip" (
-      utils\ESP8266\wget.exe http://dl.programs74.ru/get.php?file=mingw-cache-packages -O mingw-cache-packages.zip
+      utils\ESP8266\wget.exe https://dl.programs74.ru/get.php?file=mingw-cache-packages -O mingw-cache-packages.zip --no-check-certificate
     )
     if exist "mingw-cache-packages.zip" (
       copy /Y mingw-cache-packages.zip "C:\MinGW\var\cache\mingw-get"
