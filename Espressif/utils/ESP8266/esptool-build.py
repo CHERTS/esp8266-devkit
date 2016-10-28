@@ -22,5 +22,5 @@ setup(
         'Programming Language :: Python :: 2.7',
     ],
     console=[{'script': 'esptool.py'}],
-    options={'py2exe': {'includes':['binascii','re','string','sys','serial','argparse'],'optimize':2}}
+    options={'py2exe': {'includes':['binascii','re','string','sys','serial','argparse','json'],'optimize':2}}
 )
