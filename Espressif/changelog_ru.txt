@@ -1,6 +1,9 @@
 Список изменений:
 -----------------
 
+v2.2.1 (30.10.2016):
+* Обновлена утилита esptool.exe и library.zip (pyserial for winxp fix - https://goo.gl/agn8zu) для совместимости с WindowsXP;
+
 v2.2.0 (24.10.2016):
 * Обновлен компилятор xtensa-lx106-gcc и xtensa-lx106-g++ (добавлены патчи от jcmvbkbc для реализации -fstack-usage и -Wstack-usage и -mlongcalls);
 * Обновлены все Makefile во всех примерах.
