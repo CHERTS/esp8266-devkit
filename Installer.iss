@@ -92,7 +92,7 @@ Name: "{group}\Espressif Documents"; Filename: "{app}\Espressif Documents.url"; 
 Name: "{group}\Документация Espressif"; Filename: "{app}\Espressif Documents.url"; WorkingDir: "{app}"; IconFilename: "%SystemRoot%\system32\SHELL32.dll"; IconIndex: 13; MinVersion: 0.0,5.0; Languages: russian
 Name: "{group}\Espressif Documents"; Filename: "{app}\Espressif Documents.url"; WorkingDir: "{app}"; IconFilename: "%SystemRoot%\system32\SHELL32.dll"; IconIndex: 13; MinVersion: 0.0,5.0; Languages: turkish
 Name: "{group}\Сhangelog"; Filename: "{app}\changelog.txt"; WorkingDir: "{app}"; MinVersion: 0.0,5.0; Languages: english
-Name: "{group}\Список изменений"; Filename: "{app}\changelog.txt"; WorkingDir: "{app}"; MinVersion: 0.0,5.0; Languages: russian
+Name: "{group}\Список изменений"; Filename: "{app}\changelog_ru.txt"; WorkingDir: "{app}"; MinVersion: 0.0,5.0; Languages: russian
 Name: "{group}\Değişikliklerin listesi"; Filename: "{app}\changelog.txt"; WorkingDir: "{app}"; MinVersion: 0.0,5.0; Languages: turkish
 Name: "{group}\{cm:UninstallProgram,{#DevKitAppName}}"; Filename: "{uninstallexe}"; IconFilename: "{app}\Install.ico"; MinVersion: 0.0,5.0
 
