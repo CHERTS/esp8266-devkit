@@ -52,17 +52,6 @@ static struct ip_info ipConfig;
 static ETSTimer WiFiLinker;
 static tConnState connState = WIFI_CONNECTING;
 
-const char *FlashSizeMap[] =
-{
-		"512 KB (256 KB + 256 KB)",	// 0x00
-		"256 KB",			// 0x01
-		"1024 KB (512 KB + 512 KB)", 	// 0x02
-		"2048 KB (512 KB + 512 KB)"	// 0x03
-		"4096 KB (512 KB + 512 KB)"	// 0x04
-		"2048 KB (1024 KB + 1024 KB)"	// 0x05
-		"4096 KB (1024 KB + 1024 KB)"	// 0x06
-};
-
 const char *WiFiMode[] =
 {
 		"NULL",		// 0x00
@@ -261,7 +250,7 @@ void ICACHE_FLASH_ATTR user_init(void)
 	DHT22_DEBUG("Time = %ld\n", system_get_time());
 	DHT22_DEBUG("Chip id = 0x%x\n", system_get_chip_id());
 	DHT22_DEBUG("CPU freq = %d MHz\n", system_get_cpu_freq());
-	DHT22_DEBUG("Flash size map = %s\n", FlashSizeMap[system_get_flash_size_map()]);
+	DHT22_DEBUG("Flash size map = %d\n", system_get_flash_size_map());
 	DHT22_DEBUG("Free heap size = %d\n", system_get_free_heap_size());
 	DHT22_DEBUG("==== End System info ====\n");
 	os_delay_us(10000);
