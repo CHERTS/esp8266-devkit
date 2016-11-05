@@ -1,6 +1,10 @@
 Changelog:
 ----------
 
+v2.2.2 (in developing):
++ Added examples:
+  i2c_bme280;
+
 v2.2.1 (30.10.2016):
 * Updated utility esptool.exe and library.zip (pyserial for WinXP fix - https://goo.gl/agn8zu) for compatibility with WindowsXP;
 
