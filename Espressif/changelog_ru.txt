@@ -4,6 +4,9 @@
 v2.2.2 (в разработке):
 + Добавлены примеры:
   i2c_bme280;
+* Обновлены примеры:
+  dht22_thingspeak;
+  sysinfo;
 
 v2.2.1 (30.10.2016):
 * Обновлена утилита esptool.exe и library.zip (pyserial for winxp fix - https://goo.gl/agn8zu) для совместимости с WindowsXP;
