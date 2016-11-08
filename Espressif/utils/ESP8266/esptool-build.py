@@ -7,8 +7,8 @@ setup(
     version='0.1.0',
     license='GPLv2+',
     author='Fredrik Ahlberg (themadinventor) & Angus Gratton (projectgus)',
-    author_email='gus@projectgus.com',
-    url='https://github.com/themadinventor/esptool',
+    author_email='angus@espressif.com',
+    url='https://github.com/espressif/esptool',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
