@@ -98,7 +98,7 @@ else
         ifeq ($(SPI_SIZE_MAP), 5)
           size_map = 5
           flash = 2048
-          flashimageoptions += -fs 16m
+          flashimageoptions += -fs 16m-c1
           ifeq ($(app), 2)
             addr = 0x101000
           endif
@@ -106,7 +106,7 @@ else
           ifeq ($(SPI_SIZE_MAP), 6)
             size_map = 6
             flash = 4096
-            flashimageoptions += -fs 32m
+            flashimageoptions += -fs 32m-c1
             ifeq ($(app), 2)
               addr = 0x101000
             endif
