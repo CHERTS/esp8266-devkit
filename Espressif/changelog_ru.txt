@@ -4,6 +4,8 @@
 v2.2.2 (в разработке):
 + Добавлены примеры:
   i2c_bme280;
+* Обновлена утилита "utils\ESP8266\esptool.exe" до версии 1.3-dev;
+* Исправлены опции утилиты esptool.exe в файлах examples\ESP8266\common_*.mk;
 * Обновлены примеры:
   dht22_thingspeak;
   sysinfo;
