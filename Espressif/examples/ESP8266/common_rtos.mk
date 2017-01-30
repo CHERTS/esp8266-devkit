@@ -244,7 +244,7 @@ ifeq ($(app), 0)
 	$(vecho) "No boot needed."
 	$(vecho) "Generate eagle.flash.bin and eagle.irom0text.bin successully in folder $(FW_BASE)"
 	$(vecho) "eagle.flash.bin-------->0x00000"
-	$(vecho) "eagle.irom0text.bin---->0x10000"
+	$(vecho) "eagle.irom0text.bin---->0x20000"
 else
     ifneq ($(boot), new)
 	$(Q) $(SDK_TOOLS)/gen_appbin.exe $@ 1 $(mode) $(freqdiv) $(size_map) $(app)
@@ -307,10 +307,10 @@ endif
 
 flash: all
 ifeq ($(app), 0) 
-	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x00000 $(FW_BASE)/eagle.flash.bin 0x10000 $(FW_BASE)/eagle.irom0text.bin
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x00000 $(FW_BASE)/eagle.flash.bin 0x20000 $(FW_BASE)/eagle.irom0text.bin
 else
 ifeq ($(boot), none)
-	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x00000 $(FW_BASE)/eagle.flash.bin 0x10000 $(FW_BASE)/eagle.irom0text.bin
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x00000 $(FW_BASE)/eagle.flash.bin 0x20000 $(FW_BASE)/eagle.irom0text.bin
 else
 	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) $(addr) $(FW_BASE)/upgrade/$(BIN_NAME).bin
 endif
