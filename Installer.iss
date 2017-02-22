@@ -1,5 +1,5 @@
 ﻿;InnoSetupVersion=5.5.0
-#define DevKitVersion "2.2.1"
+#define DevKitVersion "2.2.2"
 #define DevKitSDKVersion "2.0.0"
 #define DevKitAppName "Unofficial Development Kit for Espressif ESP8266"
 #define DevKitAppURL "http://www.programs74.ru"
@@ -11,7 +11,7 @@
 [Setup]
 AppName={#DevKitAppName}
 AppVerName={#DevKitAppName}
-AppCopyright=Copyright © 2014-2016 {#DevKitAppPublisher}
+AppCopyright=Copyright © 2014-2017 {#DevKitAppPublisher}
 AppContact=sleuthhound@gmail.com
 AppPublisher={#DevKitAppPublisher}
 AppPublisherURL={#DevKitAppURL}
@@ -51,6 +51,7 @@ Source: "Espressif\Command line Unofficial Development Kit for Espressif ESP8266
 Source: "Espressif\Командная строка Unofficial Development Kit for Espressif ESP8266.lnk"; DestDir: "{app}"; Flags: ignoreversion; Languages: russian; Components: utils
 Source: "Espressif\changelog.txt"; DestDir: "{app}"; Flags: ignoreversion; Languages: english turkish
 Source: "Espressif\changelog_ru.txt"; DestDir: "{app}"; Flags: ignoreversion; Languages: russian
+Source: "Espressif\version"; DestDir: "{app}"; Flags: ignoreversion; Languages: russian
 Source: "Install.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Uninstall.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "donate-en.bmp"; DestDir: "{tmp}"; Flags: dontcopy; Languages: english
@@ -113,6 +114,7 @@ Type: files; Name: "{app}\changelog.txt"; Languages: english turkish
 Type: files; Name: "{app}\changelog_ru.txt"; Languages: russian
 Type: files; Name: "{app}\Install.ico"
 Type: files; Name: "{app}\Uninstall.ico"
+Type: files; Name: "{app}\version"
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"

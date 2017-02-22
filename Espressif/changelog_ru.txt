@@ -1,14 +1,38 @@
 Список изменений:
 -----------------
 
-v2.2.2 (в разработке):
+v2.2.2 (22.02.2017):
 + Добавлены примеры:
   i2c_bme280;
-* Обновлена утилита "utils\ESP8266\esptool.exe" до версии 1.3-dev;
+* Обновлена утилита "utils\ESP8266\esptool.exe" до версии 2.0-beta2;
 * Исправлены опции утилиты esptool.exe в файлах examples\ESP8266\common_*.mk;
+* Исправлен адрес в common_rtos.mk для прошивки файла eagle.irom0text.bin;
 * Обновлены примеры:
   dht22_thingspeak;
   sysinfo;
+  esphttpd;
+* Обновлена документация:
+  - Удалены файлы:
+    esp8266_faq_en.pdf
+    20a-esp8266_rtos_sdk_programming_guide_en_v1.4.0.pdf
+    40c-esp_smart_plug_user_guide_en_v1.2_20160413.pdf
+  + Добавлены файлы:
+    espressif_faq_en.pdf
+    0c-esp-wroom-02_datasheet_en.pdf
+    esp-wroom-s2_datasheet_en.pdf
+    20a-esp8266_rtos_sdk_programming_guide_en.pdf
+    30a-esp8266_mesh_user_guide_en.pdf
+    40c-esp_smart_plug_user_guide_en.pdf
+    jump_test_project_of_esp8266_2nd_boot_v1.6_en.pdf
+    99c-esp8266_fota_guide_en_.pdf
+    esp8266_reset_causes_and_common_fatal_exception_causes_en.pdf
+  * Обновлены файлы:
+    0a-esp8266ex_datasheet_en.pdf
+    0b-esp8266_system_description_en.pdf
+    esp8266-hardware_matching_guide_en.pdf
+    2a-esp8266-sdk_getting_started_guide_en.pdf
+    2c-esp8266_non_os_sdk_api_reference_en.pdf
+    esp8266_quick_start_guide_en.pdf
 
 v2.2.1 (30.10.2016):
 * Обновлена утилита esptool.exe и library.zip (pyserial for winxp fix - https://goo.gl/agn8zu) для совместимости с WindowsXP;
