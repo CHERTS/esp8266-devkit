@@ -18,5 +18,5 @@ setup(
         'Programming Language :: Python :: 2.7',
     ],
     console=[{'script': 'nodemcutil.py'}],
-    options={'py2exe': {'includes':['binascii','re','string','sys','serial','argparse'],'optimize':2}}
+    options={'py2exe': {'includes':['binascii','re','os','re','string','sys','serial','argparse','json','hashlib','inspect','base64','zlib','shlex','time','struct'],'optimize':2}}
 )

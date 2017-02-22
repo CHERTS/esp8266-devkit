@@ -6,5 +6,5 @@ setup(
     version='0.1.0',
     license='GPLv3+',
     console=[{'script': 'gen_appbin_old.py'}],
-    options={'py2exe': {'includes':['binascii','re','string','sys','serial','argparse'],'optimize':2}}
+    options={'py2exe': {'includes':['binascii','re','os','re','string','sys','serial','argparse','json','hashlib','inspect','base64','zlib','shlex','time','struct'],'optimize':2}}
 )
