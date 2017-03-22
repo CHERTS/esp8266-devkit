@@ -17,6 +17,7 @@ v2.2.2 (22.02.2017):
     20a-esp8266_rtos_sdk_programming_guide_en_v1.4.0.pdf
     40c-esp_smart_plug_user_guide_en_v1.2_20160413.pdf
   + Добавлены файлы:
+    save_esp8266ex_ram_with_progmem_en.pdf
     espressif_faq_en.pdf
     0c-esp-wroom-02_datasheet_en.pdf
     esp-wroom-s2_datasheet_en.pdf
@@ -27,6 +28,7 @@ v2.2.2 (22.02.2017):
     99c-esp8266_fota_guide_en_.pdf
     esp8266_reset_causes_and_common_fatal_exception_causes_en.pdf
   * Обновлены файлы:
+    esp-wroom-s2_datasheet_en.pdf
     0a-esp8266ex_datasheet_en.pdf
     0b-esp8266_system_description_en.pdf
     esp8266-hardware_matching_guide_en.pdf
