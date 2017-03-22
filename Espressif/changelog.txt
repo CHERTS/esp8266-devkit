@@ -1,7 +1,7 @@
 Changelog:
 ----------
 
-v2.2.2 (22.02.2017):
+v2.2.2 (22.03.2017):
 + Added examples:
   i2c_bme280;
 * Updated utility "utils\ESP8266\esptool.exe" to version 2.0-beta2;

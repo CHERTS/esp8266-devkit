@@ -94,7 +94,7 @@ class ESPLoader(object):
     CHIP_NAME = "Espressif device"
     IS_STUB = False
 
-    DEFAULT_PORT = "COM2"
+    DEFAULT_PORT = "/dev/ttyUSB0"
 
     # Commands supported by ESP8266 ROM bootloader
     ESP_FLASH_BEGIN = 0x02
@@ -281,6 +281,62 @@ class ESPLoader(object):
         for i in range(7):
             self.command()
 
+    def _connect_attempt(self, mode='default_reset', esp32r0_delay=False):
+        """ A single connection attempt, with esp32r0 workaround options """
+        # esp32r0_delay is a workaround for bugs with the most common auto reset
+        # circuit and Windows, if the EN pin on the dev board does not have
+        # enough capacitance.
+        #
+        # Newer dev boards shouldn't have this problem (higher value capacitor
+        # on the EN pin), and ESP32 revision 1 can't use this workaround as it
+        # relies on a silicon bug.
+        #
+        # Details: https://github.com/espressif/esptool/issues/136
+        last_error = None
+
+        # issue reset-to-bootloader:
+        # RTS = either CH_PD/EN or nRESET (both active low = chip in reset
+        # DTR = GPIO0 (active low = boot to flasher)
+        #
+        # DTR & RTS are active low signals,
+        # ie True = pin @ 0V, False = pin @ VCC.
+        if mode != 'no_reset':
+            self._port.setDTR(False)  # IO0=HIGH
+            self._port.setRTS(True)   # EN=LOW, chip in reset
+            time.sleep(0.1)
+            if esp32r0_delay:
+                # Some chips are more likely to trigger the esp32r0
+                # watchdog reset silicon bug if they're held with EN=LOW
+                # for a longer period
+                time.sleep(1.2)
+            self._port.setDTR(True)   # IO0=LOW
+            self._port.setRTS(False)  # EN=HIGH, chip out of reset
+            if esp32r0_delay:
+                # Sleep longer after reset.
+                # This workaround only works on revision 0 ESP32 chips,
+                # it exploits a silicon bug spurious watchdog reset.
+                time.sleep(0.4)  # allow watchdog reset to occur
+            time.sleep(0.05)
+            self._port.setDTR(False)  # IO0=HIGH, done
+
+        self._port.timeout = 0.1
+        for _ in range(5):
+            try:
+                self.flush_input()
+                self._port.flushOutput()
+                self.sync()
+                self._port.timeout = 5
+                return None
+            except FatalError as e:
+                if esp32r0_delay:
+                    print('_', end='')
+                else:
+                    print('.', end='')
+                sys.stdout.flush()
+                time.sleep(0.05)
+                last_error = e
+        return last_error
+
     def connect(self, mode='default_reset'):
         """ Try connecting repeatedly until successful, or giving up """
         print('Connecting...', end='')
@@ -289,44 +345,12 @@ class ESPLoader(object):
 
         try:
             for _ in range(10):
-                # issue reset-to-bootloader:
-                # RTS = either CH_PD/EN or nRESET (both active low = chip in reset
-                # DTR = GPIO0 (active low = boot to flasher)
-                #
-                # DTR & RTS are active low signals,
-                # ie True = pin @ 0V, False = pin @ VCC.
-                if mode != 'no_reset':
-                    self._port.setDTR(False)  # IO0=HIGH
-                    self._port.setRTS(True)   # EN=LOW, chip in reset
-                    time.sleep(0.05)
-                    self._port.setDTR(True)   # IO0=LOW
-                    self._port.setRTS(False)  # EN=HIGH, chip out of reset
-                    if mode == 'esp32r0':
-                        # this is a workaround for a bug with the most
-                        # common auto reset circuit and Windows, if the EN
-                        # pin on the dev board does not have enough
-                        # capacitance. This workaround only works on
-                        # revision 0 ESP32 chips, it exploits a silicon
-                        # bug spurious watchdog reset.
-                        #
-                        # Details: https://github.com/espressif/esptool/issues/136
-                        time.sleep(0.4)  # allow watchdog reset to occur
-                    time.sleep(0.05)
-                    self._port.setDTR(False)  # IO0=HIGH, done
-
-                self._port.timeout = 0.1
-                for _ in range(4):
-                    try:
-                        self.flush_input()
-                        self._port.flushOutput()
-                        self.sync()
-                        self._port.timeout = 5
-                        return
-                    except FatalError as e:
-                        print('.', end='')
-                        sys.stdout.flush()
-                        time.sleep(0.05)
-                        last_error = e
+                last_error = self._connect_attempt(mode=mode, esp32r0_delay=False)
+                if last_error is None:
+                    return
+                last_error = self._connect_attempt(mode=mode, esp32r0_delay=True)
+                if last_error is None:
+                    return
         finally:
             print('')  # end 'Connecting...' line
         raise FatalError('Failed to connect to %s: %s' % (self.CHIP_NAME, last_error))
@@ -1850,7 +1874,7 @@ def main():
     parser.add_argument(
         '--before',
         help='What to do before connecting to the chip',
-        choices=['default_reset', 'no_reset', 'esp32r0'],
+        choices=['default_reset', 'no_reset'],
         default=os.environ.get('ESPTOOL_BEFORE', 'default_reset'))
 
     parser.add_argument(
