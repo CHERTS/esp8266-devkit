@@ -69,12 +69,12 @@ addr = 0x01000
 ifeq ($(SPI_SIZE_MAP), 1)
   size_map = 1
   flash = 256
-  flashimageoptions += -fs 2m
+  flashimageoptions += -fs 256KB
 else
   ifeq ($(SPI_SIZE_MAP), 2)
     size_map = 2
     flash = 1024
-    flashimageoptions += -fs 8m
+    flashimageoptions += -fs 1MB
     ifeq ($(app), 2)
       addr = 0x81000
     endif
@@ -82,7 +82,7 @@ else
     ifeq ($(SPI_SIZE_MAP), 3)
       size_map = 3
       flash = 2048
-      flashimageoptions += -fs 16m
+      flashimageoptions += -fs 2MB
       ifeq ($(app), 2)
         addr = 0x81000
       endif
@@ -90,7 +90,7 @@ else
       ifeq ($(SPI_SIZE_MAP), 4)
 	size_map = 4
 	flash = 4096
-	flashimageoptions += -fs 32m
+	flashimageoptions += -fs 4MB
         ifeq ($(app), 2)
           addr = 0x81000
         endif
@@ -98,7 +98,7 @@ else
         ifeq ($(SPI_SIZE_MAP), 5)
           size_map = 5
           flash = 2048
-          flashimageoptions += -fs 16m-c1
+          flashimageoptions += -fs 2MB-c1
           ifeq ($(app), 2)
             addr = 0x101000
           endif
@@ -106,14 +106,14 @@ else
           ifeq ($(SPI_SIZE_MAP), 6)
             size_map = 6
             flash = 4096
-            flashimageoptions += -fs 32m-c1
+            flashimageoptions += -fs 4MB-c1
             ifeq ($(app), 2)
               addr = 0x101000
             endif
           else
             size_map = 0
             flash = 512
-            flashimageoptions += -fs 4m
+            flashimageoptions += -fs 512KB
             ifeq ($(app), 2)
               addr = 0x41000
             endif
