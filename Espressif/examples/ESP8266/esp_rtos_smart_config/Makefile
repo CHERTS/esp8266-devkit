@@ -12,8 +12,9 @@ SDK_BASE	= c:/Espressif/ESP8266_RTOS_SDK
 #ESPBAUD		= 256000
 
 # Basic project settings
+CFLAGS = -DICACHE_FLASH
 MODULES	= user
-LIBS	= gcc hal phy pp net80211 wpa crypto main freertos lwip minic smartconfig
+LIBS	= cirom crypto espconn espnow freertos gcc hal lwip main mesh mirom net80211 nopoll phy pp mbedtls openssl smartconfig wpa wps airkiss
 
 # Root includes
 include	../common_rtos.mk

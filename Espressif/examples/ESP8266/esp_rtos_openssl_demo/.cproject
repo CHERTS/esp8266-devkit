@@ -71,12 +71,12 @@
 		</cconfiguration>
 	</storageModule>
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-		<project id="esp_rtos_sdk_example_2.null.3828550" name="esp_rtos_sdk_example_2"/>
+		<project id="esp_rtos_openssl_demo.null.3828550" name="esp_rtos_openssl_demo"/>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="refreshScope" versionNumber="2">
 		<configuration configurationName="Default">
-			<resource resourceType="PROJECT" workspacePath="/esp_rtos_sdk_example_2"/>
+			<resource resourceType="PROJECT" workspacePath="/esp_rtos_openssl_demo"/>
 		</configuration>
 	</storageModule>
 	<storageModule moduleId="scannerConfiguration">
