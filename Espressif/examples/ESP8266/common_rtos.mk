@@ -291,11 +291,11 @@ else
 	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x00000 $(SDK_BASE)/bin/boot_v1.1.bin
     else
     	ifeq ($(size_map), 6)
-		$(vecho) "Flash boot_v1.5 and +"
+		$(vecho) "Flash boot_v1.6 and +"
 		$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x00000 $(SDK_BASE)/bin/boot_v1.6.bin
         else
             ifeq ($(size_map), 5)
-		$(vecho) "Flash boot_v1.5 and +"
+		$(vecho) "Flash boot_v1.6 and +"
 		$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x00000 $(SDK_BASE)/bin/boot_v1.6.bin
             else
 		$(vecho) "Flash boot_v1.2 and +"
