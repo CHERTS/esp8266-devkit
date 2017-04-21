@@ -260,6 +260,12 @@ int ICACHE_FLASH_ATTR cgiSendLongString(HttpdConnData *connData) {
 }
 
 ```
+In this case, the CGI is called again after each chunk of data has been sent over the socket. If you need to suspend the
+HTTP response and resume it asynchronously for some other reason, you may save the `HttpdConnData` pointer, return
+`HTTPD_CGI_MORE`, then later call `httpdContinue` with the saved connection pointer. For example, if you need to
+communicate with another device over a different connection, you could send data to that device in the initial CGI call,
+then return `HTTPD_CGI_MORE`, then, in the `espconn_recv_callback` for the response, you can call `httpdContinue` to
+resume the HTTP response with data retrieved from the other device.
 
 For POST data, a similar technique is used. For small amounts of POST data (smaller than MAX_POST, typically
 1024 bytes) the entire thing will be stored in `connData->post->buff` and is accessible in its entirely

@@ -1,4 +1,6 @@
 // Combined include file for esp8266
+// Actually misnamed, as it also works for ESP32.
+// ToDo: Figure out better name
 
 
 #include <ctype.h>
@@ -8,7 +10,12 @@
 
 #ifdef FREERTOS
 #include <stdint.h>
+
+#ifdef ESP32
+#include <esp_common.h>
+#else
 #include <espressif/esp_common.h>
+#endif
 
 #else
 #include <c_types.h>

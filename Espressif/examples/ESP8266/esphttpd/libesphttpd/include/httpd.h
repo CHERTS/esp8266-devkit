@@ -11,6 +11,10 @@
 #define HTTPD_METHOD_GET 1
 #define HTTPD_METHOD_POST 2
 
+#define HTTPD_TRANSFER_CLOSE 0
+#define HTTPD_TRANSFER_CHUNKED 1
+#define HTTPD_TRANSFER_NONE 2
+
 typedef struct HttpdPriv HttpdPriv;
 typedef struct HttpdConnData HttpdConnData;
 typedef struct HttpdPostData HttpdPostData;
@@ -63,13 +67,16 @@ int httpdUrlDecode(char *val, int valLen, char *ret, int retLen);
 int httpdFindArg(char *line, char *arg, char *buff, int buffLen);
 void httpdInit(HttpdBuiltInUrl *fixedUrls, int port);
 const char *httpdGetMimetype(char *url);
-void httpdDisableTransferEncoding(HttpdConnData *conn);
+void httdSetTransferMode(HttpdConnData *conn, int mode);
 void httpdStartResponse(HttpdConnData *conn, int code);
 void httpdHeader(HttpdConnData *conn, const char *field, const char *val);
 void httpdEndHeaders(HttpdConnData *conn);
 int httpdGetHeader(HttpdConnData *conn, char *header, char *ret, int retLen);
 int httpdSend(HttpdConnData *conn, const char *data, int len);
 void httpdFlushSendBuffer(HttpdConnData *conn);
+void httpdContinue(HttpdConnData *conn);
+void httpdConnSendStart(HttpdConnData *conn);
+void httpdConnSendFinish(HttpdConnData *conn);
 
 //Platform dependent code should call these.
 void httpdSentCb(ConnTypePtr conn, char *remIp, int remPort);

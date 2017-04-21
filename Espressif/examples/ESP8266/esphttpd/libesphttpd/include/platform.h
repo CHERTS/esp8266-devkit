@@ -5,10 +5,15 @@
 //#include "esp_timer.h"
 typedef struct RtosConnType RtosConnType;
 typedef RtosConnType* ConnTypePtr;
+#if 0
+//Unfortunately, this does not always work... the latest esp32 sdk, for example, breaks this.
 #define httpd_printf(fmt, ...) do {	\
 	static const char flash_str[] ICACHE_RODATA_ATTR STORE_ATTR = fmt;	\
 	printf(flash_str, ##__VA_ARGS__);	\
 	} while(0)
+#else
+#define httpd_printf(fmt, ...) os_printf(fmt, ##__VA_ARGS__)
+#endif
 #else
 #define printf(...) os_printf(__VA_ARGS__)
 #define sprintf(str, ...) os_sprintf(str, __VA_ARGS__)

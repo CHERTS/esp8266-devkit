@@ -7,6 +7,11 @@
 #include <string.h>
 #include <stdlib.h>
 
+//Cygwin e.a. needs O_BINARY. Don't miscompile if it's not set.
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+
 typedef struct __attribute__((packed)) {
 	char magic[4];
 	char tag[28];
@@ -16,7 +21,7 @@ typedef struct __attribute__((packed)) {
 
 
 int openFile(char *file) {
-	int r=open(file, O_RDONLY);
+	int r=open(file, O_RDONLY|O_BINARY);
 	if (r<=0) {
 		perror(file);
 		exit(1);
@@ -77,7 +82,7 @@ int main(int argc, char **argv) {
 	}
 	close(u1);
 	close(u2);
-	of=open(argv[4], O_WRONLY|O_CREAT|O_TRUNC, 0666);
+	of=open(argv[4], O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, 0666);
 	if (of<=0) {
 		perror(argv[4]);
 		exit(1);

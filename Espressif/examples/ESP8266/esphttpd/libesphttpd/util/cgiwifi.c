@@ -70,6 +70,10 @@ void ICACHE_FLASH_ATTR wifiScanDoneCb(void *arg, STATUS status) {
 	}
 	//Allocate memory for access point data
 	cgiWifiAps.apData=(ApData **)malloc(sizeof(ApData *)*n);
+	if (cgiWifiAps.apData==NULL) {
+		printf("Out of memory allocating apData\n");
+		return;
+	}
 	cgiWifiAps.noAps=n;
 	httpd_printf("Scan done: found %d APs\n", n);
 
@@ -85,6 +89,11 @@ void ICACHE_FLASH_ATTR wifiScanDoneCb(void *arg, STATUS status) {
 		}
 		//Save the ap data.
 		cgiWifiAps.apData[n]=(ApData *)malloc(sizeof(ApData));
+		if (cgiWifiAps.apData[n]==NULL) {
+			httpd_printf("Can't allocate mem for ap buff.\n");
+			cgiWifiAps.scanInProgress=0;
+			return;
+		}
 		cgiWifiAps.apData[n]->rssi=bss_link->rssi;
 		cgiWifiAps.apData[n]->channel=bss_link->channel;
 		cgiWifiAps.apData[n]->enc=bss_link->authmode;

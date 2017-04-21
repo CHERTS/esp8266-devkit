@@ -14,7 +14,6 @@ typedef struct {
 	char *tagName;
 } CgiUploadFlashDef;
 
-int cgiReadFlash(HttpdConnData *connData);
 int cgiGetFirmwareNext(HttpdConnData *connData);
 int cgiUploadFirmware(HttpdConnData *connData);
 int cgiRebootFirmware(HttpdConnData *connData);

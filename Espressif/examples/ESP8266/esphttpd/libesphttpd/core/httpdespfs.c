@@ -116,6 +116,7 @@ int ICACHE_FLASH_ATTR cgiEspFsTemplate(HttpdConnData *connData) {
 	if (tpd==NULL) {
 		//First call to this cgi. Open the file so we can read it.
 		tpd=(TplData *)malloc(sizeof(TplData));
+		if (tpd==NULL) return HTTPD_CGI_NOTFOUND;
 		tpd->file=espFsOpen(connData->url);
 		tpd->tplArg=NULL;
 		tpd->tokenPos=-1;

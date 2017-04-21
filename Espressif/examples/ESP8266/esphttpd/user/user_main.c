@@ -26,6 +26,7 @@ some pictures of cats.
 #include "captdns.h"
 #include "webpages-espfs.h"
 #include "cgiwebsocket.h"
+#include "cgi-test.h"
 
 //The example can print out the heap use every 3 seconds. You can use this to catch memory leaks.
 //#define SHOW_HEAP_USE
@@ -120,11 +121,9 @@ should be placed above the URLs they protect.
 HttpdBuiltInUrl builtInUrls[]={
 	{"*", cgiRedirectApClientToHostname, "esp8266.nonet"},
 	{"/", cgiRedirect, "/index.tpl"},
-	{"/flash.bin", cgiReadFlash, NULL},
 	{"/led.tpl", cgiEspFsTemplate, tplLed},
 	{"/index.tpl", cgiEspFsTemplate, tplCounter},
 	{"/led.cgi", cgiLed, NULL},
-	{"/flash/download", cgiReadFlash, NULL},
 #ifdef INCLUDE_FLASH_FNS
 	{"/flash/next", cgiGetFirmwareNext, &uploadParams},
 	{"/flash/upload", cgiUploadFirmware, &uploadParams},
@@ -146,6 +145,10 @@ HttpdBuiltInUrl builtInUrls[]={
 
 	{"/websocket/ws.cgi", cgiWebsocket, myWebsocketConnect},
 	{"/websocket/echo.cgi", cgiWebsocket, myEchoWebsocketConnect},
+
+	{"/test", cgiRedirect, "/test/index.html"},
+	{"/test/", cgiRedirect, "/test/index.html"},
+	{"/test/test.cgi", cgiTestbed, NULL},
 
 	{"*", cgiEspFsHook, NULL}, //Catch-all cgi function for the filesystem
 	{NULL, NULL, NULL}
@@ -205,12 +208,12 @@ uint32 ICACHE_FLASH_ATTR user_rf_cal_sector_set(void)
     return rf_cal_sec;
 }
 
-void ICACHE_FLASH_ATTR user_rf_pre_init(void)
+void user_rf_pre_init(void)
 {
 }
 
 //Main routine. Initialize stdout, the I/O, filesystem and the webserver and we're done.
-void ICACHE_FLASH_ATTR user_init(void)
+void user_init(void)
 {
 	stdoutInit();
 	ioInit();

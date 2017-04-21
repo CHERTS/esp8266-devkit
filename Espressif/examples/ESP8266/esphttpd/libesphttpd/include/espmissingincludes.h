@@ -33,6 +33,7 @@ void ets_timer_arm_new(os_timer_t *a, int b, int c, int isMstimer);
 void ets_timer_disarm(os_timer_t *a);
 void ets_timer_setfn(os_timer_t *t, ETSTimerFunc *fn, void *parg);
 void ets_update_cpu_frequency(int freqmhz);
+void *os_memmove(void *dest, const void *src, size_t n);
 int os_printf(const char *format, ...)  __attribute__ ((format (printf, 1, 2)));
 int os_snprintf(char *str, size_t size, const char *format, ...) __attribute__ ((format (printf, 3, 4)));
 int os_printf_plus(const char *format, ...)  __attribute__ ((format (printf, 1, 2)));

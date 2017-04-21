@@ -7,23 +7,27 @@
 var xhr=j();
 
 function doReboot() {
+	//Grab the /flash/reboot url in order to reboot into the new firmware.
 	xhr.open("GET", "reboot");
 	xhr.onreadystatechange=function() {
 		if (xhr.readyState==4 && xhr.status>=200 && xhr.status<300) {
+			//Reload the window after 5 seconds.
 			window.setTimeout(function() {
 				location.reload(true);
-			}, 3000);
+			}, 5000);
 		}
 	}
-	//ToDo: set timer to 
 	xhr.send();
 }
 
+//Sets the progress bar to a specific level. Amt is between 0 and 1.
 function setProgress(amt) {
 	$("#progressbarinner").style.width=String(amt*200)+"px";
 }
 
+//Called when the submit button is called.
 function doUpgrade() {
+	//Grab the file, see if it's a real file.
 	var f=$("#file").files[0];
 	if (typeof f=='undefined') {
 		$("#remark").innerHTML="Can't read file!";
@@ -41,17 +45,20 @@ function doUpgrade() {
 			}
 		}
 	}
+	//If the webbrowser enables it, make progress bar show progress.
 	if (typeof xhr.upload.onprogress != 'undefined') {
 		xhr.upload.onprogress=function(e) {
 			setProgress(e.loaded / e.total);
 		}
 	}
+	//Upload the file
 	xhr.send(f);
 	return false;
 }
 
 
 window.onload=function(e) {
+	//Grab the initial remark telling user which userx.bin file to upload.
 	xhr.open("GET", "next");
 	xhr.onreadystatechange=function() {
 		if (xhr.readyState==4 && xhr.status>=200 && xhr.status<300) {

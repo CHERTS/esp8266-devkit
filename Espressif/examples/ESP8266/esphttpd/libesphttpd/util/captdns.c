@@ -17,7 +17,6 @@ the internal webserver.
 
 #include <esp8266.h>
 #ifdef FREERTOS
-#include "espressif/esp_common.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -313,7 +312,11 @@ static void captdnsTask(void *pvParameters) {
 }
 
 void captdnsInit(void) {
+#ifdef ESP32
+	xTaskCreate(captdnsTask, (const char *)"captdns_task", 1200, NULL, 3, NULL);
+#else
 	xTaskCreate(captdnsTask, (const signed char *)"captdns_task", 1200, NULL, 3, NULL);
+#endif
 }
 
 #else

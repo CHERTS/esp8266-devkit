@@ -121,24 +121,18 @@ int ICACHE_FLASH_ATTR cgiWebsocketSend(Websock *ws, char *data, int len, int fla
 
 //Broadcast data to all websockets at a specific url. Returns the amount of connections sent to.
 int ICACHE_FLASH_ATTR cgiWebsockBroadcast(char *resource, char *data, int len, int flags) {
-//This is majorly broken (and actually, always, it just tended to work because the circumstances
-//were juuuust right). Because the socket is used outside of the httpd send/receive context, it 
-//will not have an associated send buffer. This means httpdSend will write to a dangling pointer!
-//Disabled for now. If you really need this, open an issue on github or otherwise poke me and I'll
-//see what I can do.
-/*
 	Websock *lw=llStart;
 	int ret=0;
 	while (lw!=NULL) {
 		if (strcmp(lw->conn->url, resource)==0) {
+			httpdConnSendStart(lw->conn);
 			cgiWebsocketSend(lw, data, len, flags);
+			httpdConnSendFinish(lw->conn);
 			ret++;
 		}
 		lw=lw->priv->next;
 	}
 	return ret;
-*/
-	return 0;
 }
 
 
@@ -307,16 +301,26 @@ int ICACHE_FLASH_ATTR cgiWebsocket(HttpdConnData *connData) {
 				//Seems like a WebSocket connection.
 				// Alloc structs
 				connData->cgiData=malloc(sizeof(Websock));
+				if (connData->cgiData==NULL) {
+					httpd_printf("Can't allocate mem for websocket\n");
+					return HTTPD_CGI_DONE;
+				}
 				memset(connData->cgiData, 0, sizeof(Websock));
 				Websock *ws=(Websock*)connData->cgiData;
 				ws->priv=malloc(sizeof(WebsockPriv));
+				if (ws->priv==NULL) {
+					httpd_printf("Can't allocate mem for websocket priv\n");
+					free(connData->cgiData);
+					connData->cgiData=NULL;
+					return HTTPD_CGI_DONE;
+				}
 				memset(ws->priv, 0, sizeof(WebsockPriv));
 				ws->conn=connData;
 				//Reply with the right headers.
 				strcat(buff, WS_GUID);
 				sha1_init(&s);
 				sha1_write(&s, buff, strlen(buff));
-				httpdDisableTransferEncoding(connData);
+				httdSetTransferMode(connData, HTTPD_TRANSFER_NONE);
 				httpdStartResponse(connData, 101);
 				httpdHeader(connData, "Upgrade", "websocket");
 				httpdHeader(connData, "Connection", "upgrade");

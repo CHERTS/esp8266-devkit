@@ -15,12 +15,15 @@ Thanks to my collague at Espressif for writing the foundations of this code.
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
+#include "freertos/semphr.h"
 
 #include "lwip/lwip/sockets.h"
 
 
 static int httpPort;
 static int httpMaxConnCt;
+static xQueueHandle httpdMux;
+
 
 struct  RtosConnType{
 	int fd;
@@ -46,6 +49,15 @@ void httpdPlatDisableTimeout(ConnTypePtr conn) {
 	//Unimplemented for FreeRTOS
 }
 
+//Set/clear global httpd lock.
+void ICACHE_FLASH_ATTR httpdPlatLock() {
+	xSemaphoreTakeRecursive(httpdMux, portMAX_DELAY);
+}
+
+void ICACHE_FLASH_ATTR httpdPlatUnlock() {
+	xSemaphoreGiveRecursive(httpdMux);
+}
+
 
 #define RECV_BUF_SIZE 2048
 static void platHttpServerTask(void *pvParameters) {
@@ -61,7 +73,9 @@ static void platHttpServerTask(void *pvParameters) {
 	//struct timeval timeout;
 	struct sockaddr_in server_addr;
 	struct sockaddr_in remote_addr;
-
+	
+	httpdMux=xSemaphoreCreateRecursiveMutex();
+	
 	for (x=0; x<HTTPD_MAX_CONNECTIONS; x++) {
 		rconn[x].fd=-1;
 	}
@@ -191,7 +205,12 @@ static void platHttpServerTask(void *pvParameters) {
 
 				if (FD_ISSET(rconn[x].fd, &readset)) {
 					precvbuf=(char*)malloc(RECV_BUF_SIZE);
-					if (precvbuf==NULL) httpd_printf("platHttpServerTask: memory exhausted!\n");
+					if (precvbuf==NULL) {
+						httpd_printf("platHttpServerTask: memory exhausted!\n");
+						httpdDisconCb(&rconn[x], rconn[x].ip, rconn[x].port);
+						close(rconn[x].fd);
+						rconn[x].fd=-1;
+					}
 					ret=recv(rconn[x].fd, precvbuf, RECV_BUF_SIZE,0);
 					if (ret > 0) {
 						//Data received. Pass to httpd.
@@ -236,7 +255,11 @@ static void platHttpServerTask(void *pvParameters) {
 void ICACHE_FLASH_ATTR httpdPlatInit(int port, int maxConnCt) {
 	httpPort=port;
 	httpMaxConnCt=maxConnCt;
+#ifdef ESP32
+	xTaskCreate(platHttpServerTask, (const char *)"esphttpd", HTTPD_STACKSIZE, NULL, 4, NULL);
+#else
 	xTaskCreate(platHttpServerTask, (const signed char *)"esphttpd", HTTPD_STACKSIZE, NULL, 4, NULL);
+#endif
 }
 
 
