@@ -226,7 +226,7 @@ $(BINODIR)/%.bin: $(IMAGEODIR)/%.out
 	$(vecho) "objcopy done"
 	$(vecho) "Run gen_appbin.exe"
 ifeq ($(app), 0)
-	$(Q) $(SDK_TOOLS)/gen_appbin.exe $< 0 $(mode) $(freqdiv) $(size_map)
+	$(Q) $(SDK_TOOLS)/gen_appbin.exe $< 0 $(mode) $(freqdiv) $(size_map) $(app)
 	$(Q) mv eagle.app.flash.bin ../$(FW_BASE)/eagle.flash.bin
 	$(Q) mv eagle.app.v6.irom0text.bin ../$(FW_BASE)/eagle.irom0text.bin
 	$(Q) rm eagle.app.v6.*
@@ -236,10 +236,10 @@ ifeq ($(app), 0)
 	$(vecho) "eagle.irom0text.bin---->0x10000"
 else
     ifneq ($(boot), new)
-	$(Q) $(SDK_TOOLS)/gen_appbin.exe $< 1 $(mode) $(freqdiv) $(size_map)
+	$(Q) $(SDK_TOOLS)/gen_appbin.exe $< 1 $(mode) $(freqdiv) $(size_map) $(app)
 	$(vecho) "Support boot_v1.1 and +"
     else
-	$(Q) $(SDK_TOOLS)/gen_appbin.exe $< 2 $(mode) $(freqdiv) $(size_map)
+	$(Q) $(SDK_TOOLS)/gen_appbin.exe $< 2 $(mode) $(freqdiv) $(size_map) $(app)
     	ifeq ($(size_map), 6)
 		$(vecho) "Support boot_v1.4 and +"
         else
