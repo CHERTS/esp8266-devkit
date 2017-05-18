@@ -11,8 +11,8 @@ extern int ets_uart_printf(const char *fmt, ...);
 
 os_event_t user_procTaskQueue[user_procTaskQueueLen];
 static void user_procTask(os_event_t *events);
-static volatile os_timer_t some_timer;
-static volatile os_timer_t lpd6803_timer;
+static os_timer_t some_timer;
+static os_timer_t lpd6803_timer;
 
 static void ICACHE_FLASH_ATTR user_procTask(os_event_t *events)
 {

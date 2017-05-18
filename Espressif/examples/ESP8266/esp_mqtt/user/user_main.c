@@ -150,7 +150,7 @@ void ICACHE_FLASH_ATTR user_rf_pre_init(void)
 void ICACHE_FLASH_ATTR user_init(void)
 {
 	uart_init(BIT_RATE_115200, BIT_RATE_115200);
-	os_delay_us(1000000);
+	os_delay_us(65535);
 
 	CFG_Load();
 

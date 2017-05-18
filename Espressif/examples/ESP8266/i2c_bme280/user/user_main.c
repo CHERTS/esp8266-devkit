@@ -16,7 +16,7 @@
 #include "driver/i2c.h"
 #include "driver/bme280.h"
 
-static volatile os_timer_t sensor_timer;
+static os_timer_t sensor_timer;
 
 void sensor_timerfunc(void *arg)
 {
@@ -41,7 +41,7 @@ void sensor_timerfunc(void *arg)
 void user_init(void)
 {
 	uart_init(BIT_RATE_115200, BIT_RATE_115200);
-	os_delay_us(1000000);
+	os_delay_us(65535);
 
 	i2c_master_gpio_init();
 

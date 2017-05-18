@@ -4,8 +4,7 @@ volatile PageData _PageData[DISPLAY_PAGE_MAX];
 
 volatile uint8 display_page = 1;
 volatile uint8 startup_done = 0;
-static volatile os_timer_t refresh_timer;
-
+static os_timer_t refresh_timer;
 
 void ICACHE_FLASH_ATTR 
 display_draw_page(uint8 page)
@@ -19,6 +18,7 @@ display_draw_page(uint8 page)
     LCD_setCursor(0,3);
     LCD_print(_PageData[page].line4);
 }
+
 void ICACHE_FLASH_ATTR 
 display_redraw(void)
 {

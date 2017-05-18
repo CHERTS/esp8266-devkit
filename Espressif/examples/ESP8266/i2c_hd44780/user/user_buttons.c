@@ -5,9 +5,9 @@
 extern volatile uint32_t PIN_IN;
 #define CHECK_BIT(var,pos) ((var) & (1<<(pos)))
 
-static volatile os_timer_t rotary_debounce_timer;
-static volatile os_timer_t button_timer;
-static volatile uint8 button_last_state = 0;
+static os_timer_t rotary_debounce_timer;
+static os_timer_t button_timer;
+static uint8 button_last_state = 0;
 
 void ICACHE_FLASH_ATTR
 button_push(uint8 debounce)

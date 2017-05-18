@@ -43,7 +43,7 @@ static uint8_t openhardware_logo[] = {
 #define user_procTaskPrio        0
 #define user_procTaskQueueLen    1
 
-static volatile os_timer_t loop_timer;
+static os_timer_t loop_timer;
 os_event_t user_procTaskQueue[user_procTaskQueueLen];
 static PCD8544_Settings pcd8544_settings;
 

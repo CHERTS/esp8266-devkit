@@ -20,7 +20,7 @@ os_event_t user_procTaskQueue[user_procTaskQueueLen];
 extern int ets_uart_printf(const char *fmt, ...);
 int (*console_printf)(const char *fmt, ...) = ets_uart_printf;
 static void user_procTask(os_event_t *events);
-static volatile os_timer_t sensor_timer;
+static os_timer_t sensor_timer;
 
 void sensor_timerfunc(void *arg)
 {

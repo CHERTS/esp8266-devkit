@@ -152,7 +152,7 @@ user_rf_cal_sector_set(void)
 void user_init(void)
 {
 	uart_init(74880, 74880);
-	os_delay_us(1000000);
+	os_delay_us(65535);
 
 	//CFG_Load();
 	INFO(" default configuration\r\n");

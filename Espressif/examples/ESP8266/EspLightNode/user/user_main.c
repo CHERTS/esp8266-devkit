@@ -32,7 +32,7 @@
 #include "httpd.h"
 #include "config.h"
 
-static volatile os_timer_t client_timer;
+static os_timer_t client_timer;
 
 static void ICACHE_FLASH_ATTR wait_for_ip(uint8 flag)
 {

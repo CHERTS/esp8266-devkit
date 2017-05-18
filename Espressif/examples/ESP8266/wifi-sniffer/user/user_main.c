@@ -6,8 +6,8 @@
 #include "user_interface.h"
 #include "driver/uart.h"
 
-os_event_t    user_procTaskQueue[user_procTaskQueueLen];
-static volatile os_timer_t channelHop_timer;
+os_event_t user_procTaskQueue[user_procTaskQueueLen];
+static os_timer_t channelHop_timer;
 
 static void loop(os_event_t *events);
 static void promisc_cb(uint8 *buf, uint16 len);

@@ -214,7 +214,7 @@ LCD_init(){
   
     // Now we pull both RS and R/W low to begin commands
     LCD_expanderWrite(0);   // reset expanderand turn backlight off
-    os_delay_us(1000000);
+    os_delay_us(65535);
 
     //put the LCD into 4 bit mode
     // this is according to the hitachi HD44780 datasheet
