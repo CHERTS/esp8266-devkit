@@ -26,9 +26,10 @@ void ICACHE_FLASH_ATTR send_code_task(void *pvParameters)
  * Parameters   : none
  * Returns      : rf cal sector
 *******************************************************************************/
-uint32 user_rf_cal_sector_set(void)
+uint32 ICACHE_FLASH_ATTR
+user_rf_cal_sector_set(void)
 {
-    flash_size_map size_map = system_get_flash_size_map();
+    enum flash_size_map size_map = system_get_flash_size_map();
     uint32 rf_cal_sec = 0;
 
     switch (size_map) {
@@ -50,6 +51,12 @@ uint32 user_rf_cal_sector_set(void)
             rf_cal_sec = 1024 - 5;
             break;
 
+        case FLASH_SIZE_64M_MAP_1024_1024:
+            rf_cal_sec = 2048 - 5;
+            break;
+        case FLASH_SIZE_128M_MAP_1024_1024:
+            rf_cal_sec = 4096 - 5;
+            break;
         default:
             rf_cal_sec = 0;
             break;

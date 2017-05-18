@@ -18,8 +18,6 @@
 
 static ETSTimer test_timer;//test http
 
-
-
 /******************************************************************************
  * FunctionName : user_rf_cal_sector_set
  * Description  : SDK just reversed 4 sectors, used for rf init data and paramters.
@@ -57,6 +55,12 @@ user_rf_cal_sector_set(void)
             rf_cal_sec = 1024 - 5;
             break;
 
+        case FLASH_SIZE_64M_MAP_1024_1024:
+            rf_cal_sec = 2048 - 5;
+            break;
+        case FLASH_SIZE_128M_MAP_1024_1024:
+            rf_cal_sec = 4096 - 5;
+            break;
         default:
             rf_cal_sec = 0;
             break;
@@ -64,7 +68,6 @@ user_rf_cal_sector_set(void)
 
     return rf_cal_sec;
 }
-
 
 /******************************************************************************
  * FunctionName : user_init

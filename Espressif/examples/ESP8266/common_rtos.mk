@@ -329,17 +329,13 @@ ifeq ($(app), 0)
 else
     ifneq ($(boot), new)
 	$(Q) $(SDK_TOOLS)/gen_appbin.exe $@ 1 $(mode) $(freqdiv) $(size_map) $(app)
-	$(vecho) "Support boot_v1.1 and +"
+	$(vecho) "Support boot_v1.6 and +"
     else
 	$(Q) $(SDK_TOOLS)/gen_appbin.exe $@ 2 $(mode) $(freqdiv) $(size_map) $(app)
-    	ifeq ($(size_map), 6)
-		$(vecho) "Support boot_v1.4 and +"
+    	ifneq ($(findstring $(size_map),  6  8  9),)
+		$(vecho) "Support boot_v1.7 and +"
         else
-            ifeq ($(size_map), 5)
-		$(vecho) "Support boot_v1.4 and +"
-            else
-		$(vecho) "Support boot_v1.2 and +"
-            endif
+		$(vecho) "Support boot_v1.6 and +"
         endif
     endif
 	$(Q) mv eagle.app.flash.bin $(FW_BASE)/upgrade/$(BIN_NAME).bin
@@ -368,20 +364,15 @@ ifeq ($(app), 0)
 	$(vecho) "No boot needed."
 else
     ifneq ($(boot), new)
-	$(vecho) "Flash boot_v1.1 and +"
-	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x00000 $(SDK_BASE)/bin/boot_v1.1.bin
+	$(vecho) "Flash boot_v1.6 and +"
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x00000 $(SDK_BASE)/bin/boot_v1.6.bin
     else
-    	ifeq ($(size_map), 6)
-		$(vecho) "Flash boot_v1.6 and +"
-		$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x00000 $(SDK_BASE)/bin/boot_v1.6.bin
+    	ifneq ($(findstring $(size_map),  6  8  9),)
+		$(vecho) "Flash boot_v1.7 and +"
+		$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x00000 $(SDK_BASE)/bin/boot_v1.7.bin
         else
-            ifeq ($(size_map), 5)
 		$(vecho) "Flash boot_v1.6 and +"
 		$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x00000 $(SDK_BASE)/bin/boot_v1.6.bin
-            else
-		$(vecho) "Flash boot_v1.2 and +"
-		$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash $(flashimageoptions) 0x00000 $(SDK_BASE)/bin/boot_v1.2.bin
-            endif
         endif
     endif
 endif
