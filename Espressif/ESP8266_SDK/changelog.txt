@@ -1,3 +1,71 @@
+ESP8266_NONOS_SDK_V2.1.0_17_05_05 Release Notes
+-----------------------------------------------
+
+System
+
+1. Fix and update the license;
+2. Add definitions of ROM functions;
+3. Add efuse mac crc, save efuse mac into the system parameter area of flash, as a backup mac;
+4. Implement uart_div_modify, which can support a 32-bit DivLatchValue in the SDK instead of the ROM one, and also remove uart_div_modify from the ld file;
+5. Reduce iRAM usage by transferring some functions to flash;
+   - add weak function void user_spi_flash_dio_to_qio_pre_init(void). If the dio to qio flash mode is not used, users can add an empty user_spi_flash_dio_to_qio_pre_init on the application side to reduce iRAM usage;
+6. Fix WDT in system_restart;
+7. Fix Write & Read issue in SPI overlap mode;
+8. Support 8MB & 16MB spi flash;
+9. Update boot v1.7;
+   - Support 8MB & 16MB spi flash;
+   - Try boot the first bin for 3 times. If it fails, then boot the backup bin;
+10. Fix http packet error, BBP301;
+11. Support long periods of deep sleep;
+12. Fix NMI handle crash on unaligned memory access, BBP309;
+
+Lwip
+
+1. Add set and get dns server APIs:
+   - espconn_dns_setserver
+   - espconn_dns_getserver
+2. Fix 2038 overflow bug in sntp_get_current_timestamp;
+3. Fix MTU negotiate bug;
+
+AT
+
+1. Add new commands, AT+UART? and AT+UART_DEF?;
+2. Add new command, AT+SYSRAM?;
+3. Add new commands, AT+SYSIO series;
+4. Add new command, AT+CWHOSTNAME;
+5. Add new command, AT+SYSADC?;
+6. Add new commands, AT+CIPSNTPCFG and AT+CIPSNTPTIME;
+7. Add new commands, AT+CIPDNS_CUR and AT+CIPDNS_DEF;
+8. Support a maximum of 8 stations;
+9. Modify keepalive count to 3 times;
+10. Fix scan hidden ssid issue in AT+CWLAP;
+11. Fix the issue of the UART stop bit being 0 when queried for the first time;
+12. Fix MAC addr conflict in AP+STA mode;
+13. Add new commands, AT+RFAUTOTRACE;
+
+WiFi
+
+1. Optimize the RF frequency calibration workflow, having the frequency trace disabled by default;
+   - users can call system_phy_freq_trace_enable in user_rf_pre_init to enable it;
+2. Update libphy.a to version 1134_0;
+3. Allow sending a broadcast ESP-NOW packet, but make sure that the packet is unencrypted;
+4. Fix soft queue error;
+5. Fix EVENT_STAMODE_AUTHMODE_CHANGE event mode info;
+6. Fix lmac assert;
+7. Fix bug in sniffer mode;
+8. Fix arp loss continously issue;
+9. Fix bug in WiFi event;
+   - auth mode changed event cannot be throw when station is in the process of scanning;
+   - error old auth mode and new auth mode;
+   - op mode change process cannot be blocked, so add an event to notify the caller that op mode is changed;
+10. Fix the bug in mic failure handler;
+11. Fix the bug which causes failure of connection to an AP with shared WEP;
+12. Fix the bug which causes failure of connection to an AP with hidden ssid;
+13. Fix softAP deauth;
+14. Fix reconnect policy when trying to connect to an AP that does not exist;
+15. Fix scan issue;
+16. Fix extra bytes in UDP broadcast packet, BBP310;
+
 ESP8266_NONOS_SDK_V2.0.0_patch Release Notes
 ---------------------------------------------
 

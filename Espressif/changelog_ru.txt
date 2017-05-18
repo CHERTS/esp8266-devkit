@@ -8,6 +8,7 @@ v2.2.2 (18.05.2017):
   esp_rtos_smart_config;
   esp_rtos_websocket_demo;
   esp_rtos_wifi_station_machine_demo;
+* Обновлена SDK до версии 2.1.0 (папка ESP8266_SDK);
 * Обновлена RTOS SDK до версии 1.5.0-dev(7f7a714) (папка ESP8266_RTOS_SDK);
 * Обновлена утилита "utils\ESP8266\esptool.exe" до версии 2.0-beta2;
 * Исправлены опции утилиты esptool.exe в файлах examples\ESP8266\common_*.mk;
