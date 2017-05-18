@@ -42,6 +42,8 @@ v2.2.2 (18.05.2017):
     2a-esp8266-sdk_getting_started_guide_en.pdf
     2c-esp8266_non_os_sdk_api_reference_en.pdf
     esp8266_quick_start_guide_en.pdf
+- Deleted examples:
+  i2c_hd44780;
 
 v2.2.1 (30.10.2016):
 * Updated utility esptool.exe and library.zip (pyserial for WinXP fix - https://goo.gl/agn8zu) for compatibility with WindowsXP;
