@@ -128,7 +128,7 @@ int ICACHE_FLASH_ATTR ds18b20()
 
 	write(DS1820_CONVERT_T, 1); // perform temperature conversion
 
-	sleepms(1000); // sleep 1s
+	sleepms(65); // sleep 65ms
 
 	console_printf("Scratchpad: ");
 	reset();

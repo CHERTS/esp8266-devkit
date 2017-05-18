@@ -68,7 +68,10 @@ struct dht_sensor_data *ICACHE_FLASH_ATTR DHTRead(void)
 
 	// Wake up device, 250ms of high
 	GPIO_OUTPUT_SET(DHT_PIN, 1);
-	sleepms(250);
+	sleepms(50);
+	sleepms(50);
+	sleepms(50);
+	sleepms(50);
 	// Hold low for 20ms
 	GPIO_OUTPUT_SET(DHT_PIN, 0);
 	sleepms(20);

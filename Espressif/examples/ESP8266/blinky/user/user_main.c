@@ -13,7 +13,7 @@
 #define LED_GPIO_MUX PERIPHS_IO_MUX_GPIO2_U
 #define LED_GPIO_FUNC FUNC_GPIO2
 
-#define DELAY 500000 /* microseconds */
+#define sleepms(x) os_delay_us(x*1000);
 
 extern void ets_wdt_enable (void);
 extern void ets_wdt_disable (void);
@@ -83,7 +83,16 @@ void ICACHE_FLASH_ATTR user_init(void)
 	for(;;)
 	{
 		GPIO_OUTPUT_SET(LED_GPIO, state);
-		os_delay_us(DELAY);
+		sleepms(50);
+		sleepms(50);
+		sleepms(50);
+		sleepms(50);
+		sleepms(50);
+		sleepms(50);
+		sleepms(50);
+		sleepms(50);
+		sleepms(50);
+		sleepms(50);
 		state ^=1;
 	}
 }

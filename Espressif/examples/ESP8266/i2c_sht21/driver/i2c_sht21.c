@@ -58,7 +58,7 @@ SHT21_GetVal(uint8 mode)
   
   i2c_stop();
   
-  os_delay_us(70000);
+  os_delay_us(65535);
   
   uint8 ack = 0;
   while (!ack) {
