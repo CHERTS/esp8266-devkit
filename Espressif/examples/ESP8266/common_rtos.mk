@@ -28,7 +28,7 @@ else
     endif
 endif
 
-ifeq ($(SPI_SPEED), 26.7)
+ifeq ($(SPI_SPEED), 26)
     freqdiv = 1
     flashimageoptions = -ff 26m
 else
@@ -111,11 +111,29 @@ else
               addr = 0x101000
             endif
           else
-            size_map = 0
-            flash = 512
-            flashimageoptions += -fs 512KB
-            ifeq ($(app), 2)
-              addr = 0x41000
+            ifeq ($(SPI_SIZE_MAP), 8)
+              size_map = 8
+              flash = 8192
+              flashimageoptions += -fs 8MB
+              ifeq ($(app), 2)
+                addr = 0x101000
+              endif
+            else
+              ifeq ($(SPI_SIZE_MAP), 9)
+                size_map = 9
+                flash = 16384
+                flashimageoptions += -fs 16MB
+                ifeq ($(app), 2)
+                  addr = 0x101000
+                endif
+              else
+                size_map = 0
+                flash = 512
+                flashimageoptions += -fs 512KB
+                ifeq ($(app), 2)
+                addr = 0x41000
+                endif
+              endif
             endif
           endif
         endif
@@ -175,7 +193,7 @@ LD_SCRIPT	= eagle.app.v6.ld
 
 ifneq ($(boot), none)
 ifneq ($(app),0)
-    ifeq ($(size_map), 6)
+    ifneq ($(findstring $(size_map),  6  8  9),)
       LD_SCRIPT = eagle.app.v6.$(boot).2048.ld
     else
       ifeq ($(size_map), 5)

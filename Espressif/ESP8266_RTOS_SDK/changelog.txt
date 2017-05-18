@@ -1,3 +1,49 @@
+ESP8266_RTOS_SDK_v1.5.0-dev(7f7a714)_15_05_17
+---------------------------------------------
+
+- support 8MB & 16MB spi flash;
+- update compile ENV to generate image in 8MB & 16MB flash size map
+- update function "user_rf_cal_sector" in example code
+- try boot first bin 3 times, then boot backup bin;
+- Fix the bug in mic failure handler;
+- Support eon flash, dio -> qio;
+- Support 8MB & 16MB spi flash;
+- Add beacon & probe response freq ie;
+- Workaround for boot v1.4;
+- Fix websocket and delete some useless test cases;
+- Refer to ld/eagle.app.v6.common.ld, you can add your libraries into .irom0.text segment;
+
+ESP8266_RTOS_SDK_v1.5.0_06_11_16 Release Note
+---------------------------------------------
+
+- add spi flash erase protect mechanism, boot and current runing user bin can not been erased;
+- add memleak debug feature;
+- fix spi overlap issue;
+- fix call wifi_station_disconnect, disconnect event enter twice issue;
+- fix crash when set opmode from station to softAP in scan done callback;
+- modify spi flash erase/write flow, clear protect status if needed;
+- fix rf init data sector broken issue, add user_rf_cal_sector_set, user application MUST have this function, refer to examples;
+- fix system parameter sector broken issue when frequently power on/off;
+- fix the max value of os_timer_arm;
+- fix dns issue in some routers;
+- add sntp support;
+- update smartconfig to 2.5.4;
+- update open freedom to support send beacon packet;
+- fix seldom rf not work issue after external reset;
+- fix pwm issue;
+- fix status error got by wifi_station_get_connect_status;
+- fix assert in pp;
+- fix huawei X4 connect softAP issue;
+- optimize sleep strategy;
+- add vendor IE support;
+- update libphy.a to 1055;
+- add weak function wifi_set_backup_mac to let user set MAC;
+- fix bug of lwip and optimize socket mechanism;
+- update boot loader to v1.6;
+- update esp_init_data_default.bin
+- add mbedtls support;
+- fix other bugs;
+
 ESP8266_RTOS_SDK_v1.4.2_16_07_04 Patch Release Note
 ---------------------------------------------------
 
@@ -19,7 +65,7 @@ ESP8266_RTOS_SDK_v1.4.0_16_02_28 Release Note
 - update esp_init_data_default.bin;
 - IROM start address changed to 0x20000;
 - improved system stability;
-- many other optimizations…
+- many other optimizations;
 
 ESP8266_RTOS_SDK_V1.3.0_15_11_02 Release Note 
 ---------------------------------------------
