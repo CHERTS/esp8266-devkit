@@ -1,3 +1,20 @@
+ESP8266_RTOS_SDK_v1.5.0-dev(61124bba)_27_05_17
+---------------------------------------------
+
+- driver:
+  Fix hw_timer issue, #96;
+  Fix SPI output data error;
+  Fix SPI read data bug;
+  Fix driver lib compile issue;
+  Fix uart flow control issue;
+
+- lwip:
+  Enable lwip ETHARP_TRUS_IP_MAC;
+  Modify dhcp/dhcps timer from 60 seconds to 1 second;
+
+- WiFi:
+  Support CSA;
+
 ESP8266_RTOS_SDK_v1.5.0-dev(7f7a714)_15_05_17
 ---------------------------------------------
 
