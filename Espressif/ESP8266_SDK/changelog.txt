@@ -1,3 +1,33 @@
+ESP8266_NONOS_SDK_V2.1.0_17_07_03(git) Release Notes
+----------------------------------------------------
+
+Note:
+1. libmain.a/libpp.a/libphy.a will be operated in next step;
+2. Modify ld to put this .text.* in .irom0.text;
+3. Also pre-compiled libmbedtls.a, if you want to modify and re-compile libmbedtls.a.
+   Run `./make_lib.sh mbedtls` in third_party folder, new libmbedtls.a will be in SDK/lib/.
+   If you want to use libmbedtls.a, modify your Makefile, change -lssl to -lmbedtls.
+
+System:
+1. New version of libc.a and libgcc.a
+  1). libc.a from newlib 2.0.0, libgcc.a from gcc 4.8.5;
+      Those libs are stripped the functions which are already in rom code.
+  2). Add a readme to show how to strip the origin libs.
+2. Update strip script, remove rand & srand in libc.a; (suggested by @davydnorris)
+3. Fix deep-sleep sleep 0 and long time issue;
+4. Add flash erase protect feature;
+5. Fix driver compile issue;
+6. Modify ld to put the function in libm.a to .irom0.text;
+
+WiFi:
+1. add set wpa2 enterprise identity API;
+2. add an example for wpa2 enterprise;
+3. Update libphy.a to version 1136;
+4. Add passive scan support;
+
+Lwip:
+1. Fix duplicate UDP packet sent by espconn_sendto;
+
 ESP8266_NONOS_SDK_V2.1.0_17_05_05 Release Notes
 -----------------------------------------------
 

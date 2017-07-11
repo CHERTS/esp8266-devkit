@@ -55,4 +55,7 @@ typedef SpiFlashOpResult (* user_spi_flash_read)(
 
 void spi_flash_set_read_func(user_spi_flash_read read);
 
+bool spi_flash_erase_protect_enable(void);
+bool spi_flash_erase_protect_disable(void);
+
 #endif

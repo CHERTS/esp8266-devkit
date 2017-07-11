@@ -1,15 +1,15 @@
 Changelog:
 ----------
 
-v2.2.2 (18.05.2017):
+v2.2.2 (11.07.2017):
 + Added examples:
   i2c_bme280;
   esp_rtos_openssl_demo ;
   esp_rtos_smart_config;
   esp_rtos_websocket_demo;
   esp_rtos_wifi_station_machine_demo;
-* Update SDK v2.1.0 (folder ESP8266_SDK);
-* Update RTOS SDK v1.5.0-dev(7f7a714) (folder ESP8266_RTOS_SDK);
+* Update SDK v2.1.0 (git) (folder ESP8266_SDK);
+* Update RTOS SDK v1.5.0-dev(c27334ca) (folder ESP8266_RTOS_SDK);
 * Updated utility "utils\ESP8266\esptool.exe" to version 2.0-beta2;
 * Fixed esptool.exe utility options in file examples\ESP8266\common_*.mk;
 * Fixed firmware address in file common_rtos.mk;
